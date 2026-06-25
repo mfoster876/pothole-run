@@ -7,7 +7,7 @@
 //   toughness — damage resistance (higher = survives more)
 //   sprite    — which body to draw (see cartSprite.js)
 export const VEHICLES = [
-  { id: 'bicycle',   name: 'Bicycle',         price: 0,     speed: 0.78, handling: 1.35, toughness: 0.55, isCar: false, sprite: 'bicycle',   body: '#2b6cb0' },
+  { id: 'bicycle',   name: 'Bicycle',         price: 40,    speed: 0.78, handling: 1.35, toughness: 0.55, isCar: false, sprite: 'bicycle',   body: '#2b6cb0' },
   { id: 'handcart',  name: 'Sound-System Cart', price: 0,   speed: 1.00, handling: 1.00, toughness: 1.00, isCar: false, sprite: 'handcart',  body: '#7a4a22' },
   { id: 'probox',    name: 'White Probox',    price: 220,   speed: 1.15, handling: 1.02, toughness: 1.08, isCar: true,  sprite: 'probox',    body: '#eef0f2' },
   { id: 'yengyeng',  name: 'Yeng Yeng Bike',  price: 450,   speed: 1.38, handling: 1.30, toughness: 0.52, isCar: false, sprite: 'yengyeng',  body: '#c0392b' },
