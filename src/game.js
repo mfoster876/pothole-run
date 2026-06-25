@@ -1,4 +1,5 @@
-import { VIRTUAL, SHOULDER } from './constants.js';
+import { VIRTUAL, SHOULDER, SUPERCHARGE } from './constants.js';
+import { setLetterboxColors } from './main.js';
 import { makeRoad, renderRoad, projectEntity, curveOffsetAt, CART_Z } from './road.js';
 import { createCart, steer, updateCart, onShoulder } from './cart.js';
 import { createField, spawn, advance, activeEntities } from './entities.js';
@@ -75,6 +76,8 @@ export function createGame(audio) {
   function startRun(characterId, stageId) {
     road = makeRoad();
     stage = getStage(stageId);
+    // Match the letterbox bars to this stage so wide phones read full, not black-barred.
+    setLetterboxColors(stage.palette.sky, stage.palette.ground);
     cart = createCart(getCharacter(characterId), getVehicle(save.vehicle), stabilityBonus(save.upgrades), save.condition);
     cart.goldHandcart = !!(save.goldHandcart && save.vehicle === 'handcart');
     field = createField();
@@ -126,9 +129,10 @@ export function createGame(audio) {
 
     // Tick power-up effects
     tickEffects(effects, dt);
-    // Boost: water power-up nudges speed up
-    if (effectActive(effects, 'boost')) {
-      cart.speed = Math.min(cart.speed + 0.5 * dt, (cart.vehicle ? cart.vehicle.speed : 1) * 2.4);
+    // Supercharge: water makes the cart invincible (handled in run.js) and surges
+    // the speed up toward a higher cap so you cover more ground while collecting.
+    if (effectActive(effects, 'super')) {
+      cart.speed = Math.min(cart.speed + SUPERCHARGE.accel * dt, SUPERCHARGE.maxSpeed);
     }
     // Steady: tools power-up raises effective stability
     if (effectActive(effects, 'steady')) {
@@ -145,14 +149,20 @@ export function createGame(audio) {
     if (spawnZ <= 0) {
       // Coffee power-up: suppress hazard spawns during the smooth window
       const inCoffeeWindow = run.coffeeUntilDist && run.distance < run.coffeeUntilDist;
-      let type = inCoffeeWindow ? 'coin' : pickHazard(activeWeights, rng);
+      // Supercharge (water) floods the road with extra money while you're invincible.
+      const supercharged = effectActive(effects, 'super');
+      const spawnWeights = supercharged
+        ? activeWeights.concat([{ type: 'coin', weight: SUPERCHARGE.coinWeightBonus }])
+        : activeWeights;
+      let type = inCoffeeWindow ? 'coin' : pickHazard(spawnWeights, rng);
       // Ultra-rare Blue Mountain coffee bag — not before 600m, ~1-in-500 spawn chance
       if (!inCoffeeWindow && run.distance >= 600 && rng() < 0.002) type = 'coffee';
       const lane = type === 'bus' ? 0 : laneFor(rng, 3); // JUTC buses overtake on the left
       const e = spawn(field, type, lane, 5200);
       if (type === 'coin') {
-        // During coffee window bias to $5000 notes
-        e.value = inCoffeeWindow ? 5000 : pickMoney(run.distance, rng);
+        // During coffee window bias to $5000 notes; supercharge fattens every note.
+        e.value = inCoffeeWindow ? 5000
+          : Math.round(pickMoney(run.distance, rng) * (supercharged ? SUPERCHARGE.moneyMult : 1));
       }
       spawnZ = spawnInterval(run.distance, undefined, undefined, cart.speed) * 8;
     }
@@ -216,7 +226,7 @@ export function createGame(audio) {
     const jitX = (Math.random() - 0.5) * cp.size * 0.0225 * sway + rockX;
     drawCart(ctx, cart, cp.x + cartCurve + jitX, cp.y + 6 + bobPx, cp.size * 0.9);
     renderTouchZones(ctx, W, H);
-    renderHud(ctx, { stageName: stage.name, coins: run.coins, distance: run.distance, condition: cart.condition }, W);
+    renderHud(ctx, { stageName: stage.name, coins: run.coins, distance: run.distance, condition: cart.condition, effects }, W, H);
   }
 
   // --- input ---

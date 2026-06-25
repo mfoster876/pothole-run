@@ -154,6 +154,8 @@ export function createAudio() {
     if (kind === 'squeak') { const b = 1700 + Math.random() * 1000; rub(t, b, b * 0.66, 0.05, 0.16, 2600, 7); }
     // low wooden creak when the cart leans into a turn
     if (kind === 'creak') { const b = 120 + Math.random() * 70; rub(t, b, b * 1.5, 0.08, 0.2, 380, 3); }
+    // bright rising shimmer when SUPERCHARGE activates
+    if (kind === 'super') { note(880, t, 0.1, 'sine', 0.2); note(1320, t + 0.06, 0.1, 'sine', 0.18); note(1760, t + 0.12, 0.14, 'sine', 0.16); }
     // airy whoosh of a vehicle blasting past (sweeping band-passed wash)
     if (kind === 'whoosh') {
       const o = ctx.createOscillator(), g = ctx.createGain(), bp = ctx.createBiquadFilter();

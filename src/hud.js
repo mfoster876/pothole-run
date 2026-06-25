@@ -1,7 +1,8 @@
 import { conditionTier } from './wreck.js';
 import { formatMoney } from './money.js';
+import { SUPERCHARGE } from './constants.js';
 
-export function renderHud(ctx, { stageName, coins, distance, condition }, W) {
+export function renderHud(ctx, { stageName, coins, distance, condition, effects = {} }, W, H = 540) {
   ctx.font = '700 26px "Courier New", monospace';
   ctx.textBaseline = 'middle';
 
@@ -28,6 +29,36 @@ export function renderHud(ctx, { stageName, coins, distance, condition }, W) {
   ctx.textAlign = 'right';
   ctx.font = '500 14px "Courier New", monospace';
   ctx.fillText('CART', mx - 8, my + 8);
+
+  // Supercharge (water / boozy drink boost): glowing frame + countdown so the
+  // player can see they're invincible and exactly how long it lasts.
+  const superT = effects.super || 0;
+  if (superT > 0) renderSupercharge(ctx, superT, effects.superMax || SUPERCHARGE.dur, !!effects.tipsy, W, H);
+}
+
+function renderSupercharge(ctx, remaining, max, tipsy, W, H) {
+  ctx.save();
+  const pulse = 0.5 + 0.5 * Math.sin((typeof performance !== 'undefined' ? performance.now() : 0) / 1000 * 9);
+  const gold = tipsy ? '255,120,60' : '255,215,60';   // boozy boost glows a hotter orange
+  // Pulsing glow frame around the play stage
+  ctx.strokeStyle = `rgba(${gold},${0.45 + 0.4 * pulse})`;
+  ctx.lineWidth = 7 + 5 * pulse;
+  ctx.shadowColor = `rgba(${gold},0.9)`;
+  ctx.shadowBlur = 26 + 14 * pulse;
+  ctx.strokeRect(7, 7, W - 14, H - 14);
+  ctx.shadowBlur = 0;
+  // Countdown bar centred under the cash readout
+  const bw = 264, bx = (W - bw) / 2, by = 44;
+  ctx.fillStyle = 'rgba(0,0,0,0.5)';
+  ctx.fillRect(bx - 2, by - 2, bw + 4, 22);
+  const frac = Math.max(0, Math.min(1, remaining / max));
+  ctx.fillStyle = `rgb(${gold})`;
+  ctx.fillRect(bx, by, bw * frac, 18);
+  ctx.fillStyle = '#1a1208';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.font = '700 14px "Courier New", monospace';
+  ctx.fillText((tipsy ? '🍺 IRIE BOOST  ' : '⚡ SUPERCHARGE  ') + remaining.toFixed(1) + 's', W / 2, by + 9);
+  ctx.restore();
 }
 
 export function renderTouchZones(ctx, W, H) {

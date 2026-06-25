@@ -14,9 +14,10 @@ export const STAGES = [
   {
     id: 'holland-bamboo', name: 'Holland Bamboo', locked: true, musicId: 'bamboo', scenery: 'bamboo',
     palette: { sky: '#e7f3c8', hill: '#6b7a1e', ground: '#7c8a2a', road: '#5a5044', rumble: '#7a6a44' },
+    // livestock (goat/cattle) is rural-only — kept out of new-kingston/negril
     hazardWeights: [
       { type: 'pothole', weight: 4 }, { type: 'coin', weight: 4 },
-      { type: 'goat', weight: 3 }, { type: 'bump', weight: 2 },
+      { type: 'goat', weight: 3 }, { type: 'cattle', weight: 2 }, { type: 'bump', weight: 2 },
       { type: 'taxi', weight: 3 }, { type: 'coaster', weight: 2 }, { type: 'dog', weight: 2 },
       { type: 'cat', weight: 1 }, { type: 'jaywalker', weight: 2 },
       { type: 'tools', weight: 3 }, { type: 'water', weight: 1 }

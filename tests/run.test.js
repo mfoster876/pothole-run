@@ -4,6 +4,7 @@ import { createRun, resolveHits } from '../src/run.js';
 import { createCart } from '../src/cart.js';
 import { getCharacter } from '../src/characters.js';
 import { createField, spawn } from '../src/entities.js';
+import { createEffects, applyPowerup } from '../src/powerups.js';
 
 function setup(charId = 'yute') {
   return { cart: createCart(getCharacter(charId)), field: createField(), run: createRun() };
@@ -23,7 +24,7 @@ test('hitting a pothole damages the cart once, not every frame', () => {
   spawn(field, 'pothole', 1, 0);
   resolveHits(run, cart, field);
   resolveHits(run, cart, field);
-  assert.equal(cart.condition.value, 91); // one 9-pt pothole hit (DAMAGE.pothole=9), not two
+  assert.equal(cart.condition.value, 90); // one 10-pt pothole hit (DAMAGE.pothole=10), not two
 });
 test('manhole is an instant wreck', () => {
   const { cart, field, run } = setup();
@@ -63,4 +64,13 @@ test('a vehicle in the same lane still collides (damages), no free pass', () => 
   spawn(field, 'bus', 1, 0);             // same lane as cart
   resolveHits(run, cart, field);
   assert.ok(cart.condition.value < 100);
+});
+test('SUPERCHARGE: a damaging hazard leaves condition unchanged while super is active', () => {
+  const { cart, field, run } = setup();
+  const effects = createEffects();
+  applyPowerup(effects, cart, run, 'water', 0); // activates fx.super
+  cart.condition.value = 100;
+  spawn(field, 'pothole', 1, 0);
+  resolveHits(run, cart, field, effects);
+  assert.equal(cart.condition.value, 100, 'invincible — no damage taken');
 });

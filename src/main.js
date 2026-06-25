@@ -14,9 +14,22 @@ export const viewport = {
   offsetY: 0
 };
 
+// Letterbox bar colors — filled behind the virtual stage on wide/tall screens.
+// Defaults: a neutral sky and ground that read better than solid black.
+let lbSky    = '#a7bcae';
+let lbGround = '#27592c';
+
+/** Called by the game controller to match bars to the current stage palette. */
+export function setLetterboxColors(sky, ground) {
+  lbSky    = sky;
+  lbGround = ground;
+}
+
 function resize() {
   const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
-  const cssW = window.innerWidth, cssH = window.innerHeight;
+  const vv = window.visualViewport;
+  const cssH = Math.round(vv?.height ?? window.innerHeight);
+  const cssW = Math.round(vv?.width  ?? window.innerWidth);
   canvas.width  = Math.round(cssW * dpr);
   canvas.height = Math.round(cssH * dpr);
   canvas.style.width  = cssW + 'px';
@@ -36,6 +49,7 @@ function resize() {
   viewport.height = canvas.height;
 }
 window.addEventListener('resize', resize);
+window.visualViewport?.addEventListener('resize', resize);
 resize();
 
 let updateFn = (dt) => {};
@@ -64,10 +78,15 @@ function frame(now) {
   }
   last = now;
 
-  // Fill letterbox bars (the areas outside the virtual stage).
+  // Fill letterbox bars with sky (top half) and ground (bottom half) instead of
+  // solid black, so wide-phone pillarbox bars and tall-phone letterbox bars read
+  // as a natural extension of the stage rather than a black border.
   ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.fillStyle = '#000000';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  const midY = Math.floor(canvas.height / 2);
+  ctx.fillStyle = lbSky;
+  ctx.fillRect(0, 0, canvas.width, midY);
+  ctx.fillStyle = lbGround;
+  ctx.fillRect(0, midY, canvas.width, canvas.height - midY);
 
   // Render the game into the centred virtual-stage region.
   ctx.setTransform(viewport.scale, 0, 0, viewport.scale, viewport.offsetX, viewport.offsetY);

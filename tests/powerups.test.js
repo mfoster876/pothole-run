@@ -13,11 +13,15 @@ function damagedCart(value) {
   return c;
 }
 
-test('water fully heals and sets a boost timer', () => {
+test('water does NOT heal and instead sets a super (SUPERCHARGE) timer', () => {
   const c = damagedCart(30); const fx = createEffects(); const run = {};
   applyPowerup(fx, c, run, 'water', 500);
-  assert.equal(c.condition.value, 100);
-  assert.ok(effectActive(fx, 'boost'));
+  // no heal — condition stays at 30
+  assert.equal(c.condition.value, 30);
+  // sets the supercharge window
+  assert.ok(effectActive(fx, 'super'), 'fx.super should be > 0');
+  // does NOT set the old boost key
+  assert.equal(effectActive(fx, 'boost'), false);
 });
 test('tools repair a chunk (not full) and steady briefly', () => {
   const c = damagedCart(30); const fx = createEffects(); const run = {};

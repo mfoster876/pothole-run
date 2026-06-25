@@ -8,17 +8,17 @@ export const ENTITY_HALF_WIDTH = 0.16;
 
 export const CART = {
   maxCondition: 100,
-  startSpeed: 72,      // calmer start (eased ~10%); speed still climbs toward maxSpeed
+  startSpeed: 79,      // ~10% faster start; speed still climbs toward maxSpeed
   maxSpeed: 220,
   accel: 6,
   laneLerp: 7
 };
 
 export const DAMAGE = {
-  pothole: 9,          // ~20% gentler
+  pothole: 10,         // +10% difficulty
   manhole: 100,
-  traffic: 18,
-  animal: 14,
+  traffic: 20,         // +10% difficulty
+  animal: 15,          // +10% difficulty
   bump: 4,
   wiper: 4,
   repairPerCoin: 1
@@ -35,10 +35,10 @@ export const SHOULDER = { drainPerSec: 7 };
 // HARD as `distance` climbs and the ride gets faster — the frustration grows the
 // longer you survive. Floor keeps it just barely survivable.
 // flatter, more forgiving early ramp
-export const SPAWN = { baseInterval: 125, minInterval: 20, ramp: 20 };
+export const SPAWN = { baseInterval: 113, minInterval: 20, ramp: 18 };
 export const FLOOR_CONDITION = 40;
 export const COMBO = { nearBand: 0.18, step: 1, max: 5, bonusPer: 0.25 };
-export const HOP = { air: 0.55 }; // seconds airborne after hitting a sleeping policeman
+export const HOP = { air: 0.85, height: 64 }; // seconds airborne + visual arc-peak amplitude in px
 export const POWERUP = {
   toolsHeal: 35,     // % of max restored by hardware tools
   boost: 3,          // seconds of water speed/steady boost
@@ -46,6 +46,11 @@ export const POWERUP = {
   coffeeDist: 600,   // world-distance length of the smooth-road money window
   toolDrop: 5000     // coffee flood denomination
 };
+// SUPERCHARGE (water powerup): invincibility + speed burst + money flood window.
+// accel/maxSpeed: consumed by game.js to temporarily override CART values.
+// moneyMult/coinWeightBonus: consumed by game.js to flood coin value during the window.
+export const SUPERCHARGE = { dur: 6, accel: 14, maxSpeed: 260, moneyMult: 1.5, coinWeightBonus: 6 };
+
 export const MAX_DPR = 2;
 export const VIRTUAL = { width: 960, height: 540 };
 

@@ -1,4 +1,5 @@
 import { conditionTier } from './wreck.js';
+import { HOP } from './constants.js';
 
 // Draw the player's ride, rear-view, centred at (cx, cy) with body scale s.
 // Dispatches on cart.vehicle.sprite; the handcart is the signature default.
@@ -6,12 +7,19 @@ export function drawCart(ctx, cart, cx, cy, s) {
   const tier = conditionTier(cart.condition);
   const veh = cart.vehicle || { sprite: 'handcart', body: '#7a4a22' };
 
-  // ground shadow (sized to the silhouette)
-  ctx.fillStyle = 'rgba(0,0,0,0.28)';
-  ctx.beginPath(); ctx.ellipse(cx, cy + s * 0.5, s * 1.05, s * 0.22, 0, 0, Math.PI * 2); ctx.fill();
+  // parabolic hop lift when airborne after a sleeping policeman (bump hazard)
+  const peak = (HOP && HOP.height) || 64;   // virtual px at apex
+  const air  = (HOP && HOP.air)    || 0.85; // seconds airborne
+  const p    = Math.min(1, Math.max(0, (cart.jumpT || 0) / air)); // 1→0 as timer decays
+  const lift = peak * 4 * p * (1 - p); // parabola: 0 at takeoff/landing, peak at mid-hop
+
+  // ground shadow — shrinks and fades as the cart climbs
+  const shadowScale = 1 - lift / (peak * 1.6);
+  ctx.fillStyle = `rgba(0,0,0,${(0.28 * shadowScale).toFixed(3)})`;
+  ctx.beginPath(); ctx.ellipse(cx, cy + s * 0.5, s * 1.05 * shadowScale, s * 0.22 * shadowScale, 0, 0, Math.PI * 2); ctx.fill();
 
   ctx.save();
-  ctx.translate(cx, cy);
+  ctx.translate(cx, cy - lift); // subtract lift so cart rises then falls
   ctx.rotate(cart.lean * 0.15 + (cart.reel || 0)); // reel = teetering on two wheels on the shoulder
   switch (veh.sprite) {
     case 'bicycle':    drawBicycle(ctx, cart, s); break;

@@ -2,7 +2,7 @@ import { laneOverlap } from './collision.js';
 import { applyDamage, repair } from './wreck.js';
 import { hazardInfo } from './hazardTypes.js';
 import { DAMAGE, GUST, WIPER, HOP, COMBO } from './constants.js';
-import { applyPowerup } from './powerups.js';
+import { applyPowerup, effectActive } from './powerups.js';
 
 export function createRun() {
   return { distance: 0, coins: 0, combo: 0 };
@@ -52,6 +52,9 @@ export function resolveHits(run, cart, field, effects = cart._effects || {}) {
         const dir = cart.x >= e.x ? 1 : -1;
         cart.vx = (cart.vx || 0) + dir * GUST.push * (GUST[e.gust] || 1);
       }
+    } else if (effectActive(effects, 'super')) {
+      // SUPERCHARGE: cart is invincible — skip all damage and wiper coin-loss
+      // (gusts may still apply at the airborne-parity check above)
     } else {
       const tough = cart.character.toughness * (cart.vehicle ? cart.vehicle.toughness : 1);
       cart.condition = applyDamage(cart.condition, info.damage / tough);

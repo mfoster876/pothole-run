@@ -3,9 +3,10 @@ import assert from 'node:assert/strict';
 import { spawnInterval, pickHazard, laneFor } from '../src/spawner.js';
 
 test('spawnInterval shrinks with distance but never below min', () => {
-  assert.equal(spawnInterval(0), 125);         // wide gaps at the start (baseInterval=125)
+  assert.equal(spawnInterval(0), 113);         // wide gaps at the start (baseInterval=113)
   assert.ok(spawnInterval(10000) >= 20);       // floored, stays survivable
   assert.ok(spawnInterval(800) < spawnInterval(0)); // tightens as you speed up
+  assert.ok(113 < 125, 'baseInterval tightened from 125 (direction-pinning)');
 });
 test('pickHazard is deterministic given rng and respects weights', () => {
   const weights = [{ type: 'pothole', weight: 3 }, { type: 'coin', weight: 1 }];

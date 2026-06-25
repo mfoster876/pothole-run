@@ -1,9 +1,9 @@
 // src/powerups.js
 import { repair } from './wreck.js';
-import { CART, POWERUP } from './constants.js';
+import { CART, POWERUP, SUPERCHARGE } from './constants.js';
 
 export const POWERUPS = {
-  water:  { rarity: 'rare',      boost: POWERUP.boost },
+  water:  { rarity: 'rare' },
   tools:  { rarity: 'common',    steady: POWERUP.steady, heal: POWERUP.toolsHeal },
   coffee: { rarity: 'ultra-rare' }
 };
@@ -14,8 +14,7 @@ export function tickEffects(fx, dt) {
 }
 export function applyPowerup(fx, cart, run, kind, distance) {
   if (kind === 'water') {
-    cart.condition = repair(cart.condition, CART.maxCondition);   // full heal
-    fx.boost = POWERUP.boost;
+    fx.super = SUPERCHARGE.dur;   // invincibility + speed burst + money flood
   } else if (kind === 'tools') {
     cart.condition = repair(cart.condition, CART.maxCondition * POWERUP.toolsHeal / 100);
     fx.steady = POWERUP.steady;
