@@ -11,7 +11,12 @@ export const POWERUPS = {
 export function createEffects() { return {}; }
 export function effectActive(fx, name) { return (fx[name] || 0) > 0; }
 export function tickEffects(fx, dt) {
-  for (const k of Object.keys(fx)) { fx[k] -= dt; if (fx[k] <= 0) delete fx[k]; }
+  for (const k of Object.keys(fx)) {
+    // `*Max` keys are reference maxima for HUD bars, not countdowns — never tick them.
+    if (k.endsWith('Max')) continue;
+    fx[k] -= dt;
+    if (fx[k] <= 0) { delete fx[k]; delete fx[k + 'Max']; }  // drop its companion max too
+  }
 }
 export function applyPowerup(fx, cart, run, kind, distance, info) {
   if (kind === 'water') {

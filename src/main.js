@@ -28,8 +28,10 @@ export function setLetterboxColors(sky, ground) {
 function resize() {
   const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
   const vv = window.visualViewport;
-  const cssH = Math.round(vv?.height ?? window.innerHeight);
-  const cssW = Math.round(vv?.width  ?? window.innerWidth);
+  // Guard against a transient 0 from visualViewport (?? wouldn't catch 0) so the
+  // canvas never collapses to nothing on a flaky Android URL-bar resize.
+  const cssH = Math.round((vv && vv.height) || window.innerHeight);
+  const cssW = Math.round((vv && vv.width)  || window.innerWidth);
   canvas.width  = Math.round(cssW * dpr);
   canvas.height = Math.round(cssH * dpr);
   canvas.style.width  = cssW + 'px';

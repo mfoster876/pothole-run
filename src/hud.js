@@ -34,6 +34,18 @@ export function renderHud(ctx, { stageName, coins, distance, condition, effects 
   // player can see they're invincible and exactly how long it lasts.
   const superT = effects.super || 0;
   if (superT > 0) renderSupercharge(ctx, superT, effects.superMax || SUPERCHARGE.dur, !!effects.tipsy, W, H);
+
+  // Once the boost ends the booze still lingers (sloppy steering) — warn the player
+  // so the swerve isn't a mystery. (During the boost the IRIE BOOST label covers it.)
+  const tipsyT = effects.tipsy || 0;
+  if (tipsyT > 0 && superT <= 0) {
+    ctx.save();
+    const wob = Math.sin((typeof performance !== 'undefined' ? performance.now() : 0) / 1000 * 6) * 3;
+    ctx.fillStyle = '#e88a3a'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = '700 18px "Courier New", monospace';
+    ctx.fillText('🍺 TIPSY — ' + tipsyT.toFixed(1) + 's', W / 2, 78 + wob);
+    ctx.restore();
+  }
 }
 
 function renderSupercharge(ctx, remaining, max, tipsy, W, H) {
