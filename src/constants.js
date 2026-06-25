@@ -37,6 +37,7 @@ export const SHOULDER = { drainPerSec: 7 };
 // flatter, more forgiving early ramp
 export const SPAWN = { baseInterval: 125, minInterval: 20, ramp: 20 };
 export const FLOOR_CONDITION = 40;
+export const HOP = { air: 0.55 }; // seconds airborne after hitting a sleeping policeman
 export const POWERUP = {
   toolsHeal: 35,     // % of max restored by hardware tools
   boost: 3,          // seconds of water speed/steady boost

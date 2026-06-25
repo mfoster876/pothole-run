@@ -1,7 +1,7 @@
 import { laneOverlap } from './collision.js';
 import { applyDamage, repair } from './wreck.js';
 import { hazardInfo } from './hazardTypes.js';
-import { DAMAGE, GUST, WIPER } from './constants.js';
+import { DAMAGE, GUST, WIPER, HOP } from './constants.js';
 
 export function createRun() {
   return { distance: 0, coins: 0 };
@@ -33,6 +33,15 @@ export function resolveHits(run, cart, field) {
       run.coins += value;
       cart.pickupValue = value;     // game.js picks the coin vs cash sound
       cart.condition = repair(cart.condition, DAMAGE.repairPerCoin);
+    } else if (e.type === 'bump') {
+      cart.jumpT = HOP.air;          // launch — the bump itself never damages
+      cart.bumped = true;
+    } else if ((cart.jumpT || 0) > 0) {
+      // airborne over a hazard — sail clear (a passing-traffic gust still applies)
+      if (e.gust && Math.abs(cart.x - e.x) < GUST.range) {
+        const dir = cart.x >= e.x ? 1 : -1;
+        cart.vx = (cart.vx || 0) + dir * GUST.push * (GUST[e.gust] || 1);
+      }
     } else {
       const tough = cart.character.toughness * (cart.vehicle ? cart.vehicle.toughness : 1);
       cart.condition = applyDamage(cart.condition, info.damage / tough);

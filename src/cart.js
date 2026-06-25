@@ -27,7 +27,8 @@ export function createCart(character, vehicle = getVehicle('handcart'), stabilit
     rattle: 0,        // permanent per-run looseness: every hit ratchets it up
     drift: 0,         // slow off-line wander (game.update evolves it; low stability = more)
     stability: (vehicle.stability || 1) + stabilityBonus, // higher = steadier
-    condition: { value: startCondition(savedCondition), max: CART.maxCondition }
+    condition: { value: startCondition(savedCondition), max: CART.maxCondition },
+    jumpT: 0          // seconds remaining airborne (set by sleeping-policeman hop)
   };
 }
 export function steer(cart, dir) {
@@ -41,6 +42,7 @@ function effSpeed(cart)    { return cart.character.topSpeed * cart.vehicle.speed
 function effHandling(cart) { return cart.character.handling * cart.vehicle.handling; }
 
 export function updateCart(cart, dt) {
+  if (cart.jumpT > 0) cart.jumpT = Math.max(0, cart.jumpT - dt);
   const stability = cart.stability || 1;
   // gust push first, then the driver hauls back toward the slot (offset by any drift)
   cart.x += (cart.vx || 0) * dt;
