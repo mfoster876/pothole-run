@@ -33,6 +33,15 @@ export const HAZARD_TYPES = {
   whiterum:   { damage: 0, collectible: true, powerup: 'drink', drink: 'whiterum',   depth: 3, color: '#eef2f5', label: 'White Rum' },
   spirulina:  { damage: 0, collectible: true, powerup: 'drink', drink: 'spirulina',  depth: 3, color: '#1f8a4c', label: 'Spirulina' },
   rootstonic: { damage: 0, collectible: true, powerup: 'drink', drink: 'rootstonic', depth: 3, color: '#7a4a22', label: 'Roots Tonic' },
+  // Conductor-only bleach vanity items — boost then backfire (routed via charitems)
+  cakesoap:    { damage: 0, collectible: true, powerup: 'charitem', item: 'cakesoap',    depth: 3, color: '#3a6ad0', label: 'Cake Soap' },
+  currypowder: { damage: 0, collectible: true, powerup: 'charitem', item: 'currypowder', depth: 3, color: '#d9a01f', label: 'Curry Powder' },
+  toothpaste:  { damage: 0, collectible: true, powerup: 'charitem', item: 'toothpaste',  depth: 3, color: '#e8f2f5', label: 'Toothpaste' },
+  // School-Yute-only wholesome items — steadiness / heal / refreshment dash
+  books:      { damage: 0, collectible: true, powerup: 'charitem', item: 'books',      depth: 3, color: '#c0451f', label: 'Books' },
+  stationery: { damage: 0, collectible: true, powerup: 'charitem', item: 'stationery', depth: 3, color: '#1f9ad9', label: 'Stationery' },
+  bagjuice:   { damage: 0, collectible: true, powerup: 'charitem', item: 'bagjuice',   depth: 3, color: '#e23f7a', label: 'Bag Juice' },
+  lasco:      { damage: 0, collectible: true, powerup: 'charitem', item: 'lasco',      depth: 3, color: '#f0d8a0', label: 'Lasco Shake' },
 };
 export function hazardInfo(type) {
   return HAZARD_TYPES[type] ?? HAZARD_TYPES.pothole;

@@ -2,6 +2,7 @@
 import { repair } from './wreck.js';
 import { CART, POWERUP, SUPERCHARGE } from './constants.js';
 import { applyDrink } from './drinks.js';
+import { applyItem } from './charitems.js';
 
 export const POWERUPS = {
   water:  { rarity: 'rare' },
@@ -30,6 +31,8 @@ export function applyPowerup(fx, cart, run, kind, distance, info) {
     run.coffeeUntilDist = (run.distance || distance) + POWERUP.coffeeDist;
   } else if (kind === 'drink') {
     applyDrink(fx, cart, info && info.drink);
+  } else if (kind === 'charitem') {
+    applyItem(fx, cart, info && info.item);
   }
 }
 export function toolSpriteFor(vehicle) { return vehicle && vehicle.isCar ? 'socket' : 'spanner'; }

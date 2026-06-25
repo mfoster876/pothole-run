@@ -31,6 +31,15 @@ export function drawEntity(ctx, type, sx, sy, size, seed = 0.137, value = 1) {
     case 'whiterum':   drinkBottle(ctx, sx, sy, s, '#eef2f5', '#b0bcc8', 'WR'); break;
     case 'spirulina':  drinkBottle(ctx, sx, sy, s, '#1f8a4c', '#0f5a2e', 'SP'); break;
     case 'rootstonic': drinkBottle(ctx, sx, sy, s, '#7a4a22', '#4a2a10', 'RT'); break;
+    // Conductor bleach vanity items (first-pass labelled icons)
+    case 'cakesoap':    drinkBottle(ctx, sx, sy, s, '#3a6ad0', '#1f3f8a', 'CS'); break;
+    case 'currypowder': drinkCan(ctx, sx, sy, s, '#d9a01f', '#a06e08', 'CY'); break;
+    case 'toothpaste':  drinkBottle(ctx, sx, sy, s, '#e8f2f5', '#9fb4c0', 'TP'); break;
+    // School Yute wholesome items
+    case 'books':      drinkBottle(ctx, sx, sy, s, '#c0451f', '#7a2810', 'BK'); break;
+    case 'stationery': drinkCan(ctx, sx, sy, s, '#1f9ad9', '#0f5e8a', 'ST'); break;
+    case 'bagjuice':   drinkCan(ctx, sx, sy, s, '#e23f7a', '#9a1f4a', 'BJ'); break;
+    case 'lasco':      drinkBottle(ctx, sx, sy, s, '#f0d8a0', '#bca060', 'LA'); break;
     default: crater(ctx, sx, sy, s, seed);
   }
 }

@@ -1,6 +1,7 @@
 import { VIRTUAL, SHOULDER, SUPERCHARGE, IMPAIR, SPAWN_TUNE } from './constants.js';
 import { setLetterboxColors } from './main.js';
 import { drinkWeightsFor } from './drinks.js';
+import { itemWeightsFor } from './charitems.js';
 import { makeRoad, renderRoad, projectEntity, curveOffsetAt, CART_Z } from './road.js';
 import { createCart, steer, updateCart, onShoulder } from './cart.js';
 import { createField, spawn, advance, activeEntities } from './entities.js';
@@ -110,6 +111,7 @@ export function createGame(audio) {
       ? stage.hazardWeights.concat([{ type: 'wiper', weight: 3 }])
       : stage.hazardWeights.slice()
     ).concat(drinkWeightsFor(cart.character))
+      .concat(itemWeightsFor(cart.character))    // character-specific bleach / wholesome items
       // Repair tools are the in-run lifeline — spawn them 20% more often.
       .map(w => w.type === 'tools' ? { type: 'tools', weight: w.weight * SPAWN_TUNE.toolMult } : w);
     // Faith upkeep resets each run — pray/read-bible become available again.
@@ -161,8 +163,9 @@ export function createGame(audio) {
 
     // Tick power-up effects
     tickEffects(effects, dt);
-    // Booze wears off: once the tipsy timer expires, steering steadies again.
-    if (!effectActive(effects, 'tipsy')) cart.tipsy = 0;
+    // Impairment wears off: once both the booze (tipsy) AND bleach-burn timers
+    // expire, steering steadies again. Either one keeps cart.tipsy alive.
+    if (!effectActive(effects, 'tipsy') && !effectActive(effects, 'burn')) cart.tipsy = 0;
     // Supercharge: water makes the cart invincible (handled in run.js) and surges
     // the speed up toward a higher cap so you cover more ground while collecting.
     if (effectActive(effects, 'super')) {

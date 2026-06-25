@@ -50,6 +50,11 @@ it wears off if you neglect it.
 - **Drinks (per driver):** sodas (Ting/Boom) give a clean boost; the Conductor can drink
   Red Stripe & White Rum, the Rasta also Spirulina & Roots Tonic. Stronger alcohol gives
   a bigger boost **but then you steer sloppy** (a lingering "TIPSY" swerve).
+- **Character items (per driver):** the Conductor's bleach vanity (cake soap, curry
+  powder, toothpaste) gives a flashy invincible boost that then **backfires** into a
+  "BLEACH BURN" sloppy-steering tail — vanity has a cost. The School Yute's wholesome
+  items (books, stationery, bag juice, Lasco shake) give steadier hands, a small repair,
+  and a brief refreshment dash — pure upside.
 - **Sleeping policemen** (speed bumps) launch the cart into a **hop** over obstacles —
   but landing on top of one still hurts.
 

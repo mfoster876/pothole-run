@@ -33,25 +33,32 @@ export function renderHud(ctx, { stageName, coins, distance, condition, effects 
   // Supercharge (water / boozy drink boost): glowing frame + countdown so the
   // player can see they're invincible and exactly how long it lasts.
   const superT = effects.super || 0;
-  if (superT > 0) renderSupercharge(ctx, superT, effects.superMax || SUPERCHARGE.dur, !!effects.tipsy, W, H);
+  // Any impairing boost (booze tipsy OR bleach burn) glows the hotter orange.
+  const hot = !!(effects.tipsy || effects.burn);
+  const boostLabel = effects.burn ? '🧴 BLEACH BOOST  ' : (effects.tipsy ? '🍺 IRIE BOOST  ' : '⚡ SUPERCHARGE  ');
+  if (superT > 0) renderSupercharge(ctx, superT, effects.superMax || SUPERCHARGE.dur, hot, boostLabel, W, H);
 
-  // Once the boost ends the booze still lingers (sloppy steering) — warn the player
-  // so the swerve isn't a mystery. (During the boost the IRIE BOOST label covers it.)
+  // Once the boost ends the impairment lingers (sloppy steering) — warn the player
+  // so the swerve isn't a mystery. (During the boost the boost label covers it.)
   const tipsyT = effects.tipsy || 0;
-  if (tipsyT > 0 && superT <= 0) {
+  const burnT  = effects.burn || 0;
+  if (superT <= 0 && (tipsyT > 0 || burnT > 0)) {
     ctx.save();
     const wob = Math.sin((typeof performance !== 'undefined' ? performance.now() : 0) / 1000 * 6) * 3;
     ctx.fillStyle = '#e88a3a'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.font = '700 18px "Courier New", monospace';
-    ctx.fillText('🍺 TIPSY — ' + tipsyT.toFixed(1) + 's', W / 2, 78 + wob);
+    const tail = burnT > 0
+      ? '🧴 BLEACH BURN — ' + burnT.toFixed(1) + 's'
+      : '🍺 TIPSY — ' + tipsyT.toFixed(1) + 's';
+    ctx.fillText(tail, W / 2, 78 + wob);
     ctx.restore();
   }
 }
 
-function renderSupercharge(ctx, remaining, max, tipsy, W, H) {
+function renderSupercharge(ctx, remaining, max, tipsy, label, W, H) {
   ctx.save();
   const pulse = 0.5 + 0.5 * Math.sin((typeof performance !== 'undefined' ? performance.now() : 0) / 1000 * 9);
-  const gold = tipsy ? '255,120,60' : '255,215,60';   // boozy boost glows a hotter orange
+  const gold = tipsy ? '255,120,60' : '255,215,60';   // boozy/bleach boost glows a hotter orange
   // Pulsing glow frame around the play stage
   ctx.strokeStyle = `rgba(${gold},${0.45 + 0.4 * pulse})`;
   ctx.lineWidth = 7 + 5 * pulse;
@@ -69,7 +76,7 @@ function renderSupercharge(ctx, remaining, max, tipsy, W, H) {
   ctx.fillStyle = '#1a1208';
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.font = '700 14px "Courier New", monospace';
-  ctx.fillText((tipsy ? '🍺 IRIE BOOST  ' : '⚡ SUPERCHARGE  ') + remaining.toFixed(1) + 's', W / 2, by + 9);
+  ctx.fillText(label + remaining.toFixed(1) + 's', W / 2, by + 9);
   ctx.restore();
 }
 
