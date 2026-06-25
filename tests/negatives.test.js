@@ -42,10 +42,10 @@ test('every negative belongs to exactly one eligible driver', () => {
 
 // ---- effects ----
 
-test('teenage sex drains almost all the money (and dents condition)', () => {
+test('the sweetheart drains almost all the money (and dents condition)', () => {
   const { effects, cart, run } = fxCart(1000);
   const label = applyNegative(effects, cart, run, 'teensex');
-  assert.equal(label, 'Teenage Sex');
+  assert.equal(label, 'Sweetheart', 'child-appropriate label');
   assert.ok(run.coins <= 100, 'drained ~92% — almost all of $1000 gone');
   assert.ok(run.coins >= 50, 'but not literally zero');
   assert.ok(cart.condition.value < 100, 'some condition damage too');

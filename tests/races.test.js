@@ -74,10 +74,12 @@ test('placement = 1 when leading, grows as rivals get ahead', () => {
 
 test('1st banks the full purse to wallet AND lifetime', () => {
   const save = saveWith(0, 0);
-  const res = settleRace(save, tierById('crosstown'), 1);
-  assert.equal(res.winnings, 5000);
-  assert.equal(save.wallet, 5000);
-  assert.equal(save.lifetimeEarned, 5000, 'a win lifts career bank/rank too');
+  const tier = tierById('crosstown');
+  const res = settleRace(save, tier, 1);
+  assert.equal(res.winnings, tier.purse);
+  assert.equal(save.wallet, tier.purse);
+  assert.equal(save.lifetimeEarned, tier.purse, 'a win lifts career bank/rank too');
+  assert.ok(tier.purse >= tier.buyIn * 10, 'odds pay big — at least 10x the buy-in');
 });
 
 test('2nd returns the buy-in (a push), 4th wins nothing', () => {

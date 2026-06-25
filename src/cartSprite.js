@@ -20,6 +20,14 @@ export function drawCart(ctx, cart, cx, cy, s) {
   ctx.fillStyle = `rgba(0,0,0,${(0.28 * shadowScale).toFixed(3)})`;
   ctx.beginPath(); ctx.ellipse(cx, cy + s * 0.5, s * 1.05 * shadowScale, s * 0.22 * shadowScale, 0, 0, Math.PI * 2); ctx.fill();
 
+  // ---- soft-shoulder TOPPLE death: tip the whole ride onto its side and fling
+  // the driver free. toppleT runs 0 (upright) → 1 (fully over, driver sprawled).
+  const topple = Math.max(0, Math.min(1, cart.toppleT || 0));
+  if (topple > 0) {
+    drawToppledCart(ctx, cart, cx, cy, s, topple, tier, bleach);
+    return;
+  }
+
   ctx.save();
   ctx.translate(cx, cy - lift); // subtract lift so cart rises then falls
   ctx.rotate(cart.lean * 0.15 + (cart.reel || 0)); // reel = teetering on two wheels on the shoulder
@@ -43,6 +51,114 @@ export function drawCart(ctx, cart, cx, cy, s) {
     ctx.beginPath(); ctx.moveTo(-s * 0.3, -s * 0.2); ctx.lineTo(-s * 0.05, s * 0.1);
     ctx.lineTo(s * 0.15, -s * 0.1); ctx.stroke();
   }
+  ctx.restore();
+}
+
+// ============ soft-shoulder topple death ============
+// Rotates the whole ride onto its outer (shoulder) side and flings the driver
+// free in a tumbling arc. t: 0 upright → 1 fully over with the driver sprawled.
+function drawToppledCart(ctx, cart, cx, cy, s, t, tier, bleach) {
+  const veh = cart.vehicle || { sprite: 'handcart', body: '#7a4a22' };
+  const angle = t * 1.4; // up to ~90° onto its side
+
+  // ground shadow stretches out as the ride goes over
+  ctx.fillStyle = `rgba(0,0,0,${(0.26 + 0.08 * t).toFixed(3)})`;
+  ctx.beginPath();
+  ctx.ellipse(cx + s * 0.4 * t, cy + s * 0.5, s * (1.05 + 0.5 * t), s * 0.22, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // ---- the ride, rotated about its base (wheels stay planted, body falls over) ----
+  ctx.save();
+  ctx.translate(cx, cy + s * 0.34);   // pivot near the wheel/base line
+  ctx.rotate(angle);                  // positive = toward the outer shoulder
+  ctx.translate(0, -s * 0.34);        // back up so the body draws in its usual frame
+  // draw the ride WITHOUT its own driver where possible — the handcart bakes the
+  // driver in, so for it we skip the driver by using a tierless body; other rides
+  // keep their through-window head (fine — the flung body reads as the ejection).
+  switch (veh.sprite) {
+    case 'bicycle':    drawBicycle(ctx, cart, s, bleach); break;
+    case 'yengyeng':   drawYengYeng(ctx, cart, s, bleach); break;
+    case 'probox':     drawCar(ctx, cart, s, { roof: 0.92, taper: 0.04, light: '#d23a2a', wagon: true }, bleach); break;
+    case 'swift':      drawCar(ctx, cart, s, { roof: 0.86, taper: 0.10, light: '#d23a2a' }, bleach); break;
+    case 'x6':         drawCar(ctx, cart, s, { roof: 1.08, taper: 0.06, light: '#c81e1e', suv: true }, bleach); break;
+    case 'audi':       drawCar(ctx, cart, s, { roof: 0.82, taper: 0.12, light: '#e23a3a' }, bleach); break;
+    case 'porsche':    drawCar(ctx, cart, s, { roof: 0.70, taper: 0.18, light: '#e23a3a', wide: true }, bleach); break;
+    case 'pickup':     drawCar(ctx, cart, s, { roof: 0.90, taper: 0.04, light: '#d23a2a', tray: true }, bleach); break;
+    case 'jetour':     drawCar(ctx, cart, s, { roof: 1.10, taper: 0.05, light: '#37e0c8', suv: true, ev: true }, bleach); break;
+    case 'cybertruck': drawCyber(ctx, cart, s, bleach); break;
+    default:           drawHandcartShell(ctx, cart, s, tier); break; // handcart sans driver
+  }
+  ctx.restore();
+
+  // ---- the driver, flung free, tumbling out and landing beside the ride ----
+  // arc OUT (toward the shoulder) and DOWN to the ground by t=1.
+  const ex = cx + s * (0.5 + 1.0 * t);            // outward along the shoulder
+  const ey = cy - s * 1.1 * Math.sin(Math.PI * t) + s * 0.5 * t; // up then down onto ground
+  const spin = t * 2.6;                            // tumbling rotation
+  drawEjectedDriver(ctx, cart.character, s, ex, ey, spin, t, bleach);
+}
+
+// The handcart body WITHOUT the driver baked in (used by the topple so the driver
+// can be flung separately). Mirrors drawHandcart minus drawDriver().
+function drawHandcartShell(ctx, cart, s, tier) {
+  const gold = cart.goldHandcart;
+  const bodyColor  = gold ? '#d8b020' : '#7a4a22';
+  const rimColor   = gold ? '#f0d040' : '#8a8a8a';
+  const strokeBody = gold ? '#a07808' : '#5c3413';
+  const strutColor = gold ? '#c09010' : '#9a9a9a';
+  const wheelRim   = gold ? '#f0d040' : '#c9c9c9';
+
+  wheel(ctx, -s * 0.8, s * 0.35, s * 0.32, rimColor);
+  wheel(ctx, s * 0.8, s * 0.35, s * 0.32, rimColor);
+  ctx.fillStyle = bodyColor;
+  ctx.fillRect(-s * 0.95, -s * 0.2, s * 1.9, s * 0.42);
+  ctx.strokeStyle = strokeBody; ctx.lineWidth = 3;
+  ctx.strokeRect(-s * 0.95, -s * 0.2, s * 1.9, s * 0.42);
+  for (let i = -2; i <= 2; i++) { ctx.beginPath(); ctx.moveTo(i * s * 0.38, -s * 0.2); ctx.lineTo(i * s * 0.38, s * 0.22); ctx.stroke(); }
+  // sound-system box
+  ctx.fillStyle = '#222226';
+  ctx.fillRect(-s * 0.5, -s * 0.85, s, s * 0.7);
+  ctx.strokeStyle = '#0e0e10'; ctx.strokeRect(-s * 0.5, -s * 0.85, s, s * 0.7);
+  ctx.beginPath(); ctx.arc(-s * 0.16, -s * 0.5, s * 0.2, 0, Math.PI * 2); ctx.fillStyle = '#3a3a40'; ctx.fill();
+  ctx.beginPath(); ctx.arc(-s * 0.16, -s * 0.5, s * 0.1, 0, Math.PI * 2); ctx.fillStyle = '#15151a'; ctx.fill();
+  // steering rod + rim wheel
+  ctx.strokeStyle = strutColor; ctx.lineWidth = s * 0.08;
+  ctx.beginPath(); ctx.moveTo(s * 0.1, -s * 0.2); ctx.lineTo(s * 0.2, -s * 0.95); ctx.stroke();
+  ctx.beginPath(); ctx.arc(s * 0.22, -s * 1.02, s * 0.18, 0, Math.PI * 2);
+  ctx.strokeStyle = wheelRim; ctx.lineWidth = s * 0.06; ctx.stroke();
+  if (tier !== 'good') {
+    ctx.strokeStyle = tier === 'critical' ? '#2a160a' : '#3a2412'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(-s * 0.3, -s * 0.1); ctx.lineTo(-s * 0.1, s * 0.15); ctx.lineTo(s * 0.1, -s * 0.05); ctx.stroke();
+  }
+}
+
+// A simple tumbling body — head + limbs in the driver's shirt/skin colours —
+// flung free of the ride. (ex,ey) = body centre, spin = rotation, t = progress.
+function drawEjectedDriver(ctx, ch, s, ex, ey, spin, t, bleach = 0) {
+  const skin = '#7a4a28', shirt = shirtColor(ch);
+  ctx.save();
+  ctx.translate(ex, ey);
+  ctx.rotate(spin);
+
+  // torso
+  ctx.fillStyle = shirt;
+  rr(ctx, -s * 0.18, -s * 0.22, s * 0.36, s * 0.44, s * 0.08); ctx.fill();
+  // legs (two stubs, splayed as it tumbles)
+  ctx.strokeStyle = '#2a2a30'; ctx.lineWidth = s * 0.12; ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(-s * 0.06, s * 0.18); ctx.lineTo(-s * 0.22, s * 0.42);
+  ctx.moveTo(s * 0.06, s * 0.18);  ctx.lineTo(s * 0.24, s * 0.4);
+  ctx.stroke();
+  // arms (flailing out)
+  ctx.strokeStyle = skin; ctx.lineWidth = s * 0.1;
+  ctx.beginPath();
+  ctx.moveTo(-s * 0.12, -s * 0.12); ctx.lineTo(-s * 0.36, -s * 0.26);
+  ctx.moveTo(s * 0.12, -s * 0.12);  ctx.lineTo(s * 0.34, -s * 0.04);
+  ctx.stroke();
+  ctx.lineCap = 'butt';
+  // head (reuse persona headgear so the right character is recognisable)
+  drawHead(ctx, ch, s, 0, -s * 0.34, bleach);
+
   ctx.restore();
 }
 

@@ -6,10 +6,11 @@
 // race reuses the run loop (game.js) for the actual driving + rival rendering.
 
 export const RACE_TIERS = [
-  // unlockBank = career bank (lifetimeEarned) needed; buyIn/purse are strict bills.
-  { id: 'corner',       name: 'Corner Hustle',       unlockBank: 0,      buyIn: 100,  purse: 500,   distance: 1200, rivalPace: 0.92 },
-  { id: 'crosstown',    name: 'Cross-Town Dash',     unlockBank: 5000,   buyIn: 1000, purse: 5000,  distance: 1800, rivalPace: 1.00 },
-  { id: 'championship', name: 'Island Championship', unlockBank: 100000, buyIn: 5000, purse: 25000, distance: 2600, rivalPace: 1.08 },
+  // unlockBank = career bank (lifetimeEarned) needed; buyIn is a strict bill. Odds are
+  // juicy — a win pays ~15× the buy-in (these are "pay to play, WIN BIG" street races).
+  { id: 'corner',       name: 'Corner Hustle',       unlockBank: 0,      buyIn: 100,  purse: 1500,  distance: 1200, rivalPace: 0.92 },
+  { id: 'crosstown',    name: 'Cross-Town Dash',     unlockBank: 5000,   buyIn: 1000, purse: 15000, distance: 1800, rivalPace: 1.00 },
+  { id: 'championship', name: 'Island Championship', unlockBank: 100000, buyIn: 5000, purse: 75000, distance: 2600, rivalPace: 1.08 },
 ];
 
 export function tierById(id) { return RACE_TIERS.find(t => t.id === id) || null; }
@@ -29,12 +30,18 @@ export function canEnter(save, tier) {
 // Three rivals, each with a slightly different pace around the tier baseline so the
 // race is competitive but beatable with a clean line. `rng` varies them deterministically.
 export function makeRivals(tier, rng = Math.random) {
-  const names = ['Bus Driva', 'Taxi Man', 'Coaster'];
-  return names.map((name) => ({
-    name,
+  // Each rival rides a distinct lane and vehicle so they're visible on the road ahead.
+  const cast = [
+    { name: 'Bus Driva', lane: 0, sprite: 'bus' },
+    { name: 'Taxi Man',  lane: 1, sprite: 'taxi' },
+    { name: 'Coaster',   lane: 2, sprite: 'coaster' },
+  ];
+  return cast.map(({ name, lane, sprite }) => ({
+    name, lane, sprite,
     dist: 0,
     pace: tier.rivalPace * (0.90 + 0.20 * rng()),  // ±~10% around the tier baseline
     stumble: 0,                                     // seconds of pothole slow remaining
+    seed: rng(),                                    // stable sprite seed
   }));
 }
 

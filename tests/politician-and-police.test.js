@@ -15,12 +15,13 @@ function setup(charId) {
 
 // ---- police fine ----
 
-test('an ordinary driver hitting police takes damage AND a cash fine', () => {
+test('an ordinary driver hitting police takes damage AND a hefty cash fine', () => {
   const { cart, field, run } = setup('yute');
-  run.coins = 1000;
+  run.coins = 8000;
   spawn(field, 'police', 1, 0);
   resolveHits(run, cart, field);
-  assert.equal(run.coins, 1000 - POLICE.fine, 'fine skimmed off the fare');
+  assert.ok(POLICE.fine >= 5000, 'fine is at least $5000');
+  assert.equal(run.coins, 8000 - POLICE.fine, 'fine skimmed off the fare');
   assert.ok(cart.condition.value < 100, 'and a knock to the cart');
   assert.equal(cart.fined, true, 'flagged for the HUD toast');
 });
@@ -75,8 +76,8 @@ test('hitting a negative drains money and flags it for the toast', () => {
   run.coins = 1000;
   spawn(field, 'teensex', 1, 0);
   resolveHits(run, cart, field);
-  assert.ok(run.coins <= 100, 'teenage sex drains almost all the money');
-  assert.equal(cart.hitNegative, 'Teenage Sex', 'named for the HUD toast');
+  assert.ok(run.coins <= 100, 'the sweetheart drains almost all the money');
+  assert.equal(cart.hitNegative, 'Sweetheart', 'named for the HUD toast');
 });
 
 // ---- pickup labelling (clear notifications) ----

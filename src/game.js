@@ -1,4 +1,4 @@
-import { VIRTUAL, SHOULDER, SUPERCHARGE, IMPAIR, SPAWN_TUNE, POLICE, POLITICIAN } from './constants.js';
+import { VIRTUAL, SHOULDER, SUPERCHARGE, IMPAIR, SPAWN_TUNE, POLICE, POLITICIAN, RACE, TOPPLE, LANES } from './constants.js';
 import { setLetterboxColors } from './main.js';
 import { drinkWeightsFor } from './drinks.js';
 import { itemWeightsFor } from './charitems.js';
@@ -132,6 +132,8 @@ export function createGame(audio) {
         if (w.type === 'coin') return { type: 'coin', weight: w.weight * (ch.cashFind || 1) };
         // Politician's paved roads thin out potholes/manholes (still full damage on hit).
         if (w.type === 'pothole' || w.type === 'manhole') return { type: w.type, weight: w.weight * potholeMult };
+        // Babylon troubles the Rasta most — police spawn more often for him.
+        if (w.type === 'police') return { type: 'police', weight: w.weight * (ch.policeMult || 1) };
         return w;
       });
     // Faith upkeep resets each run — pray/read-bible become available again.
@@ -158,7 +160,8 @@ export function createGame(audio) {
     }
     writeSave(save);
     startRun(menuChoice.character, menuChoice.stage);
-    race = r;   // mark race mode (set AFTER startRun so it isn't cleared)
+    race = r;                         // mark race mode (set AFTER startRun so it isn't cleared)
+    cart.speedScale = RACE.speedMult; // races run MUCH faster than the normal game
   }
   // Conclude a race at the given placement: bank the road coins like a normal run, pay
   // the purse by placement, and drop back to the races screen with the result banner.
@@ -206,6 +209,12 @@ export function createGame(audio) {
 
   function update(dt) {
     if (goldToast > 0) goldToast--;
+    // Soft-shoulder topple: play the roll-over animation (world frozen), then game over.
+    if (state.mode === 'toppling') {
+      cart.toppleT = Math.min(1, (cart.toppleT || 0) + dt / TOPPLE.dur);
+      if (cart.toppleT >= 1) endRun();   // now show the game-over card
+      return;
+    }
     if (state.mode !== 'play') return;
     if (steerLock > 0) steerLock--;
     // Loose-rig wander: a slow, mean-reverting drift that pulls the cart off its line.
@@ -222,7 +231,8 @@ export function createGame(audio) {
     // Supercharge: water makes the cart invincible (handled in run.js) and surges
     // the speed up toward a higher cap so you cover more ground while collecting.
     if (effectActive(effects, 'super')) {
-      cart.speed = Math.min(cart.speed + SUPERCHARGE.accel * dt, SUPERCHARGE.maxSpeed);
+      // Scale the supercharge cap by speedScale so a race (fast) isn't slowed by water.
+      cart.speed = Math.min(cart.speed + SUPERCHARGE.accel * dt, SUPERCHARGE.maxSpeed * (cart.speedScale || 1));
     }
     // Steady: tools power-up raises effective stability
     if (effectActive(effects, 'steady')) {
@@ -246,10 +256,12 @@ export function createGame(audio) {
       const inCoffeeWindow = run.coffeeUntilDist && run.distance < run.coffeeUntilDist;
       // Supercharge (water) floods the road with extra money while you're invincible.
       const supercharged = effectActive(effects, 'super');
-      const spawnWeights = supercharged
-        ? activeWeights.concat([{ type: 'coin', weight: SUPERCHARGE.coinWeightBonus }])
-        : activeWeights;
-      let type = inCoffeeWindow ? 'coin' : pickHazard(spawnWeights, rng);
+      // No money on the road during a street race (the purse is the prize). Otherwise a
+      // supercharge floods extra coins.
+      let spawnWeights = activeWeights;
+      if (race) spawnWeights = activeWeights.filter(w => w.type !== 'coin');
+      else if (supercharged) spawnWeights = activeWeights.concat([{ type: 'coin', weight: SUPERCHARGE.coinWeightBonus }]);
+      let type = (inCoffeeWindow && !race) ? 'coin' : pickHazard(spawnWeights, rng);
       // Ultra-rare Blue Mountain coffee bag — not before 600m, ~1-in-500 spawn chance
       if (!inCoffeeWindow && run.distance >= 600 && rng() < 0.002) type = 'coffee';
       const lane = type === 'bus' ? 0 : laneFor(rng, 3); // JUTC buses overtake on the left
@@ -290,7 +302,15 @@ export function createGame(audio) {
     if (squeakAccum >= (shoulder ? 120 : 215)) { squeakAccum -= (shoulder ? 120 : 215); audio && audio.sfx('squeak'); }
     // Soft-shoulder tipping: lean grows while out there, recovers back on the road.
     // Tip too far for too long and the cart topples — an instant wreck.
-    if (tipShoulder(cart, shoulder, dt)) { cart.toppled = true; if (race) finishRace(race.rivals.length + 1); else endRun(); return; }
+    if (tipShoulder(cart, shoulder, dt)) {
+      cart.toppled = true;
+      // In a race a topple is just a DNF; in a normal run, play the visible roll-over
+      // death (vehicle turns over, driver falls out) before the game-over card.
+      if (race) { finishRace(race.rivals.length + 1); return; }
+      cart.toppleT = 0; state.mode = 'toppling';
+      audio && audio.sfx('creak');
+      return;
+    }
     if (shoulder) cart.condition = applyDamage(cart.condition, SHOULDER.drainPerSec * dt);
     // The reel lean deepens with the tilt so the player can see how close to over it is.
     const reelTarget = shoulder ? (cart.laneIndex === 0 ? -1 : 1) * (0.17 + 0.55 * (cart.tilt || 0) + Math.sin(camZ * 0.06) * 0.05) : 0;
@@ -328,6 +348,7 @@ export function createGame(audio) {
       const p = projectEntity(e.x, camZe, W, H);
       if (p.visible) drawEntity(ctx, e.type, p.x + curveOffsetAt(camZ, camZe), p.y, p.size, e.seed, e.value);
     }
+    if (race) renderRaceRivals(ctx);   // opponents visible on the road ahead
     const cp = projectEntity(cart.x, CART_Z, W, H);
     const cartCurve = curveOffsetAt(camZ, CART_Z);
     const condFrac = cart.condition.value / cart.condition.max;
@@ -343,6 +364,22 @@ export function createGame(audio) {
     renderHud(ctx, { stageName: stage.name, coins: run.coins, distance: run.distance, condition: cart.condition, effects }, W, H);
     renderPickupToast(ctx, pickupToast, W, H);
     if (race) renderRaceHud(ctx);
+  }
+
+  // Draw the race opponents on the road at their relative positions. A rival's lead in
+  // distance maps to world-z the same way the world scrolls (≈40/scoreMult per unit), so
+  // a rival ahead appears up the road; one level with you sits alongside; behind = unseen.
+  function renderRaceRivals(ctx) {
+    const K = 40 / (cart.character.scoreMult || 1);
+    const list = race.rivals
+      .map(rv => ({ rv, dz: (rv.dist - run.distance) * K }))
+      .filter(o => o.dz >= 0 && o.dz < 7000)
+      .sort((a, b) => b.dz - a.dz);   // far first (painter's order)
+    for (const { rv, dz } of list) {
+      const camZe = dz + CART_Z;
+      const p = projectEntity(LANES[rv.lane], camZe, W, H);
+      if (p.visible) drawEntity(ctx, rv.sprite, p.x + curveOffsetAt(camZ, camZe), p.y, p.size, rv.seed);
+    }
   }
 
   // In-race overlay: live placement ladder + distance to the finish line. The ladder is

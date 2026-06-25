@@ -8,7 +8,7 @@ function rects() { return { back: { x: 24, y: 18, w: 80, h: 36 } }; }
 
 export function render(ctx, { characterId, W, H }) {
   const ch = getCharacter(characterId);
-  const { good, bad, note } = legendFor(ch);
+  const { good, bad, people, note } = legendFor(ch);
   ctx.fillStyle = '#0e1a12'; ctx.fillRect(0, 0, W, H);
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
 
@@ -37,6 +37,15 @@ export function render(ctx, { characterId, W, H }) {
   } else {
     ctx.fillStyle = '#7a8a7e';
     ctx.fillText('(nothing — drive free)', W * 0.56, colY + 30);
+  }
+
+  // People / road characters to watch for (under the AVOID column)
+  if (people && people.length) {
+    const py = colY + 30 + (Math.max(bad.length, 1) + 0.6) * lineH;
+    ctx.fillStyle = '#e0a52a'; ctx.font = '700 14px "Courier New", monospace';
+    ctx.fillText('PEOPLE TO WATCH', W * 0.56, py);
+    ctx.fillStyle = '#e8d8b0'; ctx.font = '500 13px "Courier New", monospace';
+    people.forEach((p, i) => ctx.fillText('• ' + p, W * 0.56, py + 22 + i * 20));
   }
 
   // Back button

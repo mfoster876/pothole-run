@@ -15,8 +15,8 @@ export function drawEntity(ctx, type, sx, sy, size, seed = 0.137, value = 1) {
     case 'cattle': drawCattle(ctx, sx, sy, s * 0.85); break;
     // route taxi: a white Probox-shape car with the tell-tale RED PP plate
     case 'taxi': carRear(ctx, sx, sy, s, '#eef0f2', '#c0392b'); break;
-    case 'bus': vehicle(ctx, sx, sy, s * 1.35, '#e7c84a'); break;
-    case 'coaster': vehicle(ctx, sx, sy, s * 1.15, '#eef0f2'); break;
+    case 'bus': drawBus(ctx, sx, sy, s * 1.35); break;
+    case 'coaster': drawCoaster(ctx, sx, sy, s * 1.15); break;
     case 'hustler': person(ctx, sx, sy, s, '#d06a30'); break;
     case 'jaywalker': person(ctx, sx, sy, s, '#3a6ea5'); break;
     case 'police': drawPolice(ctx, sx, sy, s); break;
@@ -448,6 +448,173 @@ function vehicle(ctx, x, y, s, color) {
   ctx.fillStyle = color; ctx.fillRect(x - s * 0.55, y - s * 0.9, s * 1.1, s * 0.9);
   ctx.fillStyle = '#1c1c1c'; ctx.fillRect(x - s * 0.55, y - s * 0.2, s * 1.1, s * 0.2);
   ctx.fillStyle = '#bfe0ff'; ctx.fillRect(x - s * 0.4, y - s * 0.8, s * 0.8, s * 0.3);
+}
+
+// ---- JUTC bus: the big yellow vehicle() body, plus a Jamaican flag decal on the
+// rear panel. The flag = gold saltire (X) splitting the field into four triangles:
+// TOP & BOTTOM green, LEFT & RIGHT black, gold bands riding the diagonals.
+function drawBus(ctx, x, y, s) {
+  vehicle(ctx, x, y, s, '#e7c84a');
+  // rear panel sits between the blue window (ends ~y-0.5s) and the dark bumper
+  // (starts y-0.2s). Centre the flag on that band, on the lower-left of the panel.
+  const fw = s * 0.5, fh = s * 0.3;
+  const fx = x - fw * 0.5, fy = y - s * 0.46;
+  drawJamaicanFlag(ctx, fx, fy, fw, fh, s);
+}
+
+// Paint a Jamaican flag decal into the rect (fx,fy,fw,fh). `s` gates detail so it
+// degrades to a tiny green/gold/black emblem when very small.
+function drawJamaicanFlag(ctx, fx, fy, fw, fh, s) {
+  const green = '#1f9a44', black = '#101010', gold = '#f0c020';
+  const cx = fx + fw * 0.5, cy = fy + fh * 0.5;
+  // very small: a simple stacked emblem (green / gold / black) so it still "reads"
+  if (s < 18) {
+    ctx.fillStyle = green; ctx.fillRect(fx, fy, fw, fh);
+    ctx.fillStyle = gold;  ctx.fillRect(fx, cy - fh * 0.16, fw, fh * 0.32);
+    ctx.fillStyle = black; ctx.fillRect(fx, cy - fh * 0.05, fw, fh * 0.1);
+    return;
+  }
+  // four triangles meeting at the centre — top/bottom green, left/right black
+  ctx.fillStyle = green; // top
+  ctx.beginPath(); ctx.moveTo(fx, fy); ctx.lineTo(fx + fw, fy); ctx.lineTo(cx, cy); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(fx, fy + fh); ctx.lineTo(fx + fw, fy + fh); ctx.lineTo(cx, cy); ctx.closePath(); ctx.fill(); // bottom
+  ctx.fillStyle = black; // left
+  ctx.beginPath(); ctx.moveTo(fx, fy); ctx.lineTo(fx, fy + fh); ctx.lineTo(cx, cy); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(fx + fw, fy); ctx.lineTo(fx + fw, fy + fh); ctx.lineTo(cx, cy); ctx.closePath(); ctx.fill(); // right
+  // gold saltire bands riding the two diagonals
+  ctx.strokeStyle = gold; ctx.lineWidth = Math.max(1.5, fh * 0.18); ctx.lineCap = 'butt';
+  ctx.beginPath();
+  ctx.moveTo(fx, fy); ctx.lineTo(fx + fw, fy + fh);
+  ctx.moveTo(fx + fw, fy); ctx.lineTo(fx, fy + fh);
+  ctx.stroke();
+  // thin dark frame so the decal sits cleanly on the yellow body
+  ctx.strokeStyle = 'rgba(0,0,0,0.55)'; ctx.lineWidth = Math.max(1, fh * 0.05);
+  ctx.strokeRect(fx, fy, fw, fh);
+}
+
+// ---- Coaster bus: a chaotic, overloaded route minibus (white body), rear/3-quarter
+// view. Passengers hang out the side windows; an open sliding door shows a conductor
+// leaning out waving a fan of cash. Tilted slightly to read as in-a-hurry.
+function drawCoaster(ctx, x, y, s) {
+  // overall in-a-hurry lean — tip the whole bus a touch toward the viewer-right
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(0.06);
+
+  const body = '#eef0f2', shade = '#c4c9cf', dark = '#1c1c20', glass = '#16242e';
+  const bw = s * 1.15, bh = s * 0.95;      // body extents (rear panel)
+  const bx = -bw * 0.5, by = -bh;          // top-left of the rear panel
+
+  // ground shadow (under the leaned body)
+  ctx.fillStyle = 'rgba(0,0,0,0.22)';
+  ctx.beginPath(); ctx.ellipse(0, s * 0.06, bw * 0.5, s * 0.12, 0, 0, Math.PI * 2); ctx.fill();
+
+  // ---- main white body ----
+  rrectSprite(ctx, bx, by, bw, bh, s * 0.1); ctx.fillStyle = body; ctx.fill();
+  ctx.strokeStyle = shade; ctx.lineWidth = Math.max(1, s * 0.04); ctx.stroke();
+  // side wall in shadow (the 3-quarter "side" we see, on the viewer-left)
+  ctx.fillStyle = shade;
+  rrectSprite(ctx, bx, by + bh * 0.04, bw * 0.30, bh * 0.92, s * 0.08); ctx.fill();
+  // dark skirt / bumper along the bottom
+  ctx.fillStyle = dark; ctx.fillRect(bx, -s * 0.2, bw, s * 0.2);
+
+  // ---- rear window band (back of the bus) ----
+  ctx.fillStyle = glass;
+  rrectSprite(ctx, bx + bw * 0.36, by + bh * 0.12, bw * 0.56, bh * 0.30, s * 0.05); ctx.fill();
+  // rear destination/route board over the window
+  ctx.fillStyle = '#d8b43a'; ctx.fillRect(bx + bw * 0.40, by + bh * 0.04, bw * 0.46, bh * 0.07);
+
+  // ---- side window strip (viewer-left), with PASSENGERS hanging out ----
+  const winY = by + bh * 0.18, winH = bh * 0.26;
+  ctx.fillStyle = glass;
+  rrectSprite(ctx, bx + bw * 0.04, winY, bw * 0.28, winH, s * 0.04); ctx.fill();
+  // mullions splitting it into a couple of panes
+  ctx.strokeStyle = body; ctx.lineWidth = Math.max(1, s * 0.03);
+  ctx.beginPath();
+  ctx.moveTo(bx + bw * 0.14, winY); ctx.lineTo(bx + bw * 0.14, winY + winH);
+  ctx.moveTo(bx + bw * 0.23, winY); ctx.lineTo(bx + bw * 0.23, winY + winH); ctx.stroke();
+  // a couple of heads + an arm poking out of the windows
+  coasterPassenger(ctx, bx + bw * 0.09, winY + winH * 0.5, s, '#7a4a28', '#c0392b', true);
+  coasterPassenger(ctx, bx + bw * 0.19, winY + winH * 0.45, s, '#6a4424', '#2a7f7f', false);
+
+  // ---- OPEN sliding door on the side (dark gap) toward the rear of the strip ----
+  const dx0 = bx + bw * 0.30, dyTop = by + bh * 0.16, dw = bw * 0.16, dh = bh * 0.66;
+  ctx.fillStyle = '#0a0a0c'; // the dark open doorway
+  rrectSprite(ctx, dx0, dyTop, dw, dh, s * 0.03); ctx.fill();
+  // the slid-open door panel, parked just behind the opening (slight white edge)
+  ctx.fillStyle = shade; ctx.fillRect(dx0 - s * 0.04, dyTop, s * 0.04, dh);
+
+  // ---- CONDUCTOR leaning out of the doorway, waving a fan of cash ----
+  drawConductorInDoor(ctx, dx0 + dw * 0.5, dyTop + dh * 0.42, s);
+
+  // ---- wheels + a little tail-light to keep it a road vehicle ----
+  ctx.fillStyle = dark;
+  ctx.beginPath(); ctx.arc(bx + bw * 0.22, 0, s * 0.16, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(bx + bw * 0.80, 0, s * 0.16, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#d23a2a'; ctx.fillRect(bx + bw * 0.84, -s * 0.16, s * 0.12, s * 0.1);
+
+  ctx.restore();
+}
+
+// A passenger head (+ optional waving arm) leaning out of a coaster window.
+function coasterPassenger(ctx, hx, hy, s, skin, shirt, arm) {
+  // head
+  ctx.fillStyle = skin;
+  ctx.beginPath(); ctx.arc(hx, hy, s * 0.11, 0, Math.PI * 2); ctx.fill();
+  // hair cap
+  ctx.fillStyle = '#1c1208';
+  ctx.beginPath(); ctx.arc(hx, hy - s * 0.02, s * 0.11, Math.PI, 0); ctx.fill();
+  // shoulder / shirt below the sill
+  ctx.fillStyle = shirt;
+  rrectSprite(ctx, hx - s * 0.1, hy + s * 0.06, s * 0.2, s * 0.14, s * 0.04); ctx.fill();
+  // an arm flung out the window
+  if (arm) {
+    ctx.strokeStyle = skin; ctx.lineWidth = Math.max(1.5, s * 0.06); ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(hx + s * 0.06, hy + s * 0.06);
+    ctx.quadraticCurveTo(hx + s * 0.18, hy - s * 0.06, hx + s * 0.22, hy - s * 0.18);
+    ctx.stroke();
+    ctx.lineCap = 'butt';
+  }
+}
+
+// The conductor leaning out of the open door, one hand fanning a spread of banknotes.
+function drawConductorInDoor(ctx, cxk, cyk, s) {
+  const skin = '#5a3a20', shirt = '#d8a23a', shirtShade = '#a8771f';
+  // torso leaning out of the doorway (tilted toward the road)
+  ctx.save();
+  ctx.translate(cxk, cyk);
+  ctx.rotate(0.25);
+  ctx.fillStyle = shirt;
+  rrectSprite(ctx, -s * 0.12, -s * 0.18, s * 0.26, s * 0.4, s * 0.05); ctx.fill();
+  ctx.fillStyle = shirtShade;
+  rrectSprite(ctx, s * 0.02, -s * 0.16, s * 0.1, s * 0.36, s * 0.04); ctx.fill();
+  // head
+  ctx.fillStyle = skin;
+  ctx.beginPath(); ctx.arc(0, -s * 0.26, s * 0.12, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#15110a';
+  ctx.beginPath(); ctx.arc(0, -s * 0.28, s * 0.12, Math.PI, 0); ctx.fill();
+  // arm reaching out, fanning the cash
+  ctx.strokeStyle = skin; ctx.lineWidth = Math.max(2, s * 0.08); ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(-s * 0.06, -s * 0.06);
+  ctx.quadraticCurveTo(-s * 0.28, -s * 0.04, -s * 0.4, -s * 0.18);
+  ctx.stroke();
+  ctx.lineCap = 'butt';
+  // a spread fan of banknotes at the hand (small green/tan note shapes)
+  const handX = -s * 0.42, handY = -s * 0.2;
+  const notes = ['#2f8a4a', '#3f9a5a', '#c9b486', '#2f8a4a'];
+  for (let i = 0; i < notes.length; i++) {
+    ctx.save();
+    ctx.translate(handX, handY);
+    ctx.rotate(-0.9 + i * 0.32);     // fan them out
+    ctx.fillStyle = notes[i];
+    rrectSprite(ctx, 0, -s * 0.05, s * 0.26, s * 0.11, s * 0.02); ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.3)'; ctx.lineWidth = Math.max(0.6, s * 0.012);
+    rrectSprite(ctx, 0, -s * 0.05, s * 0.26, s * 0.11, s * 0.02); ctx.stroke();
+    ctx.restore();
+  }
+  ctx.restore();
 }
 // A rounded rear-view car for road traffic. `plate` tints the licence plate —
 // red marks a route taxi (PP plate). Drawn driving away from the player.

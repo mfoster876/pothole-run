@@ -13,7 +13,8 @@
 // (used by the privileged Politician). Categories live on the hazard types.
 export const CHARACTERS = [
   { id: 'yute', name: 'School Yute', topSpeed: 1.0, handling: 1.05, toughness: 1.0, coinDraw: 1.05, scoreMult: 1.0, sway: 1.0, cashFind: 1.0, billBias: 0, locked: false },
-  { id: 'rasta', name: 'Rasta Musician', topSpeed: 0.86, handling: 1.22, toughness: 1.3, coinDraw: 1.4, scoreMult: 1.0, sway: 0.6, cashFind: 1.35, billBias: 0, locked: false },
+  // `policeMult` — Babylon troubles the Rasta most: police spawn twice as often for him.
+  { id: 'rasta', name: 'Rasta Musician', topSpeed: 0.86, handling: 1.22, toughness: 1.3, coinDraw: 1.4, scoreMult: 1.0, sway: 0.6, cashFind: 1.35, billBias: 0, policeMult: 2, locked: false },
   { id: 'conductor', name: 'Bleachaz Conductor', topSpeed: 1.3, handling: 0.7, toughness: 0.66, coinDraw: 0.8, scoreMult: 1.35, sway: 1.7, cashFind: 0.5, billBias: 1, locked: true },
   // Unlocked only with loads of money. Privileged & 'untouchable': a money magnet
   // (corruption) who's hard to rough up, with a smooth motorcade ride. Immune to

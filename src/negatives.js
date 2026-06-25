@@ -21,8 +21,8 @@ export const NEGATIVES = {
   tightpants: { id: 'tightpants', label: 'Tight Pants', char: 'yute', damage: 10, impair: 0.5,    color: '#3a3a5a' },
   weed:       { id: 'weed',       label: 'Weed',        char: 'yute', impair: 0.7, drainPct: 0.05, color: '#3f7a3a' },
   molly:      { id: 'molly',      label: 'Molly',       char: 'yute', impair: 1.0, damage: 12,     color: '#e060c0' },
-  // Teenage sex drains ALMOST ALL of your money (the owner's spec) plus a small dent.
-  teensex:    { id: 'teensex',    label: 'Teenage Sex', char: 'yute', drainPct: 0.92, damage: 8,   color: '#c0285a' },
+  // A money-draining sweetheart (child-appropriate label) — blows almost all your cash.
+  teensex:    { id: 'teensex',    label: 'Sweetheart',  char: 'yute', drainPct: 0.92, damage: 8,   color: '#c0285a' },
 
   // ── Rasta — things to steer clear of ──
   obeah:      { id: 'obeah',      label: 'Obeah',           char: 'rasta', damage: 16, drainPct: 0.15, color: '#5a2a6a' },

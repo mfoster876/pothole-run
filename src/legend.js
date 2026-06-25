@@ -20,6 +20,14 @@ const NOTE = {
   politician: 'Untouchable. Notes are mostly $5000 — but dodge di bills.',
 };
 
+// People / road characters this driver should watch for (beyond the negatives above).
+const PEOPLE = {
+  yute:       ['Police — big fines', 'Reckless coaster bus'],
+  rasta:      ['Police / Babylon — dem trouble Rasta most', 'Reckless coaster bus'],
+  conductor:  ['Police — big fines', 'Reckless coaster bus'],
+  politician: ['Police — but dem wave yuh through (immune)', 'Reckless coaster bus'],
+};
+
 /**
  * { good: [{label}], bad: [{label}], note } for the given driver. `good` lists the
  * shared pick-ups plus this driver's own drinks and special items; `bad` lists the
@@ -30,5 +38,6 @@ export function legendFor(character) {
     .concat(eligibleDrinks(character))
     .concat(eligibleItems(character));
   const bad = eligibleNegatives(character);
-  return { good, bad, note: (character && NOTE[character.id]) || '' };
+  const people = (character && PEOPLE[character.id]) || [];
+  return { good, bad, people, note: (character && NOTE[character.id]) || '' };
 }

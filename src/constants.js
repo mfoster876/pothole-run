@@ -44,7 +44,14 @@ export const BLEACH = { maxLevel: 4 };
 // tilt) widens the gap to road hazards — easier to escape — but reach `toppleAt` and
 // the cart goes over (a wreck). `tipRate`/`tipRecover` = tilt gained per second on the
 // shoulder / shed per second back on the road.
-export const SHOULDER = { drainPerSec: 7, tipRate: 0.34, tipRecover: 1.3, tipReach: 0.22, toppleAt: 1 };
+// Forgiving enough to RIDE the shoulder a good while (slow tip, gentle drain) — the
+// dramatic end is the visible TOPPLE, not a quiet mash-up. tipRate reaches toppleAt in
+// ~7s of unbroken shoulder; pull back and it rights quickly.
+export const SHOULDER = { drainPerSec: 3, tipRate: 0.14, tipRecover: 1.3, tipReach: 0.26, toppleAt: 1 };
+
+// When the cart finally tips over, play a short death animation (ride rolls onto its
+// side, driver falls out) before the game-over card. `dur` = seconds of that beat.
+export const TOPPLE = { dur: 1.2 };
 
 // Hazard spacing: wide gaps at the start (less cluttered, learnable), tightening
 // HARD as `distance` climbs and the ride gets faster — the frustration grows the
@@ -88,9 +95,17 @@ export const GUST = { range: 0.95, push: 1.6, fromTaxi: 1.0, fromBus: 1.3, fromC
 export const TITHE = { mite: 2000, perGift: 0.5, maxResist: 0.40, maxExtend: 0.50, maxGrace: 3, decay: 0.15 };
 
 // Police are a spawnable road obstacle (urban-frequent — weighted by stage). Direct
-// contact costs condition (traffic-tier damage, via the hazard's category) AND a cash
-// fine skimmed off your fare. The Politician is immune (see characters.js).
-export const POLICE = { fine: 500 };
+// contact costs condition (traffic-tier damage, via the hazard's category) AND a hefty
+// cash fine skimmed off your fare. The Politician is immune (see characters.js).
+export const POLICE = { fine: 5000 };
+
+// Street races run MUCH faster than the normal game (speedMult on the cart's top speed
+// + accel) and pay far bigger — see races.js purses. Rivals are visible on the road.
+export const RACE = { speedMult: 1.7 };
+
+// Reckless coaster buses weave across the lanes as they bear down on you — e.x sweeps
+// side to side. `amp` = how far across the road they swing, `rate` = how fast they weave.
+export const SWERVE = { amp: 0.62, rate: 2.2 };
 
 // Negatives / detractors: a lifestyle temptation or a politician "responsibility" that
 // bites on contact. `impairSecs` = how long an impairing negative (weed, molly…) leaves

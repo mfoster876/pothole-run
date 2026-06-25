@@ -33,6 +33,8 @@ export function createCart(character, vehicle = getVehicle('handcart'), stabilit
     tilt: 0,          // soft-shoulder lean 0..1 (grows while on the shoulder; topples at 1)
     toppled: false,   // set true the frame the cart tips over (a shoulder wreck)
     bleachLevel: 0,   // Conductor bleach disfigurement 0..BLEACH.maxLevel (per-run; grows on bleach items)
+    speedScale: 1,    // top-speed multiplier (street races crank this up); 1 = normal
+    toppleT: 0,       // soft-shoulder topple death animation progress 0..1 (0 = upright)
     blessing: null    // { resist, invincExtend, startGrace } — set by game.js at run start
   };
 }
@@ -96,6 +98,8 @@ export function updateCart(cart, dt) {
   const t = 1 - Math.exp(-k * dt);
   cart.x += (targetX - cart.x) * t;
   cart.lean = (targetX - cart.x);
-  const max = CART.maxSpeed * effSpeed(cart);
-  cart.speed = Math.min(max, cart.speed + CART.accel * dt * effSpeed(cart));
+  // speedScale lets street races run MUCH faster than the normal game (default 1).
+  const scale = cart.speedScale || 1;
+  const max = CART.maxSpeed * effSpeed(cart) * scale;
+  cart.speed = Math.min(max, cart.speed + CART.accel * dt * effSpeed(cart) * scale);
 }
