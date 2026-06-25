@@ -88,6 +88,12 @@ export function createGame(audio) {
   function update(dt) {
     if (state.mode !== 'play') return;
     if (steerLock > 0) steerLock--;
+    // Loose-rig wander: a slow, mean-reverting drift that pulls the cart off its line.
+    // Scales with how un-steady the rig is (low stability / no upgrades = wobbly), so
+    // the bare handcart is genuinely hard to hold straight and upgrades calm it.
+    const looseness = Math.max(0, 1.15 - (cart.stability || 1));
+    cart.drift = (cart.drift || 0) * Math.exp(-1.6 * dt) + (Math.random() - 0.5) * looseness * 6 * dt;
+    cart.drift = Math.max(-0.15, Math.min(0.15, cart.drift));
     updateCart(cart, dt);
     const dz = cart.speed * dt * 4;
     camZ += dz;

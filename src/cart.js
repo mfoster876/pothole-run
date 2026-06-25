@@ -3,7 +3,6 @@ import { createCondition } from './wreck.js';
 import { getVehicle } from './vehicles.js';
 
 const CENTRE = 2;                 // CART_SLOTS index that sits dead-centre (x = 0)
-const WANDER = 0.5;               // how much a loose, low-stability rig drifts on its own
 
 // A slot is a soft shoulder if it's the outermost on either side.
 export function isShoulder(slotIndex) {
@@ -21,6 +20,7 @@ export function createCart(character, vehicle = getVehicle('handcart'), stabilit
     speed: CART.startSpeed,
     lean: 0,
     rattle: 0,        // permanent per-run looseness: every hit ratchets it up
+    drift: 0,         // slow off-line wander (game.update evolves it; low stability = more)
     stability: (vehicle.stability || 1) + stabilityBonus, // higher = steadier
     condition: createCondition(CART.maxCondition)
   };
@@ -37,13 +37,13 @@ function effHandling(cart) { return cart.character.handling * cart.vehicle.handl
 
 export function updateCart(cart, dt) {
   const stability = cart.stability || 1;
-  // gust push first, then a loose-rig wander, then the driver hauls back to the slot
+  // gust push first, then the driver hauls back toward the slot (offset by any drift)
   cart.x += (cart.vx || 0) * dt;
   cart.vx = (cart.vx || 0) * Math.exp(-6 * dt);
-  const looseness = Math.max(0, 1.15 - stability);          // 0 once the rig is steady
-  cart.x += (Math.random() - 0.5) * looseness * WANDER * dt;  // drifts; you must correct
   cart.x = Math.max(-1.1, Math.min(1.1, cart.x));
-  const targetX = CART_SLOTS[cart.laneIndex];
+  // A loose rig won't hold a clean line: drift pulls the settle point off-slot, so a
+  // wobbly handcart wanders and you must keep correcting. Steady rigs zero it out.
+  const targetX = CART_SLOTS[cart.laneIndex] + (cart.drift || 0);
   // Square the handling spread, then let stability tighten (or loosen) the settle.
   const k = CART.laneLerp * Math.pow(effHandling(cart), 1.6) * (0.7 + 0.3 * stability);
   const t = 1 - Math.exp(-k * dt);

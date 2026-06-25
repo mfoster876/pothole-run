@@ -23,7 +23,7 @@ test('updateCart eases x toward the target slot and ramps speed', () => {
   const before = cart.x;
   updateCart(cart, 0.5);
   assert.ok(cart.x > before);
-  assert.ok(cart.x < 0.95);          // still on the track (wander can't fling it past)
+  assert.ok(cart.x < 0.6);           // eases toward the target slot, not past it
   assert.ok(cart.speed > 72);        // climbing from the eased start speed
 });
 test('reckless conductor slides looser (less handling) than yute over one step', () => {
