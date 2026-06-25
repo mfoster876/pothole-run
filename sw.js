@@ -1,8 +1,8 @@
-const CACHE = 'pothole-run-v1';
+const CACHE = 'pothole-run-v2';
 const ASSETS = [
   './', './index.html', './styles.css', './manifest.webmanifest',
   './src/main.js', './src/constants.js', './src/game.js', './src/road.js',
-  './src/cart.js', './src/cartSprite.js', './src/sprites.js', './src/entities.js',
+  './src/scenery.js', './src/cart.js', './src/cartSprite.js', './src/sprites.js', './src/entities.js',
   './src/run.js', './src/collision.js', './src/wreck.js', './src/spawner.js',
   './src/hazardTypes.js', './src/input.js', './src/hud.js', './src/audio.js',
   './src/characters.js', './src/stages.js', './src/save.js',

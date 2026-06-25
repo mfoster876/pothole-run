@@ -8,7 +8,7 @@ const RUMBLE = 3;           // segments per colour stripe
 const ROAD_W = 1600;        // road half-width in world units
 const CAM_H = 1100;         // camera height above the road
 const CAM_DEPTH = 0.84;     // ~ 1 / tan(fov/2), fov ~100deg
-const DRAW = 160;           // segment bands drawn ahead
+const DRAW = 120;           // segment bands drawn ahead
 
 export function makeRoad() {
   return { segLen: SEG, total: 1e9, length: 1e9 * SEG };
@@ -37,6 +37,7 @@ export function renderRoad(ctx, road, palette, position, W, H) {
     const yFar = projY(camZfar, H);
     const wNear = projW(camZ, W);
     const wFar = projW(camZfar, W);
+    if (yNear - yFar < 0.75) continue; // skip sub-pixel far bands (perf)
     const light = Math.floor((baseIndex + n) / RUMBLE) % 2 === 0;
 
     ctx.fillStyle = light ? palette.ground : shade(palette.ground, -0.05);

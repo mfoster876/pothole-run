@@ -8,6 +8,7 @@ import { isWrecked } from './wreck.js';
 import { renderHud, renderTouchZones } from './hud.js';
 import { drawEntity } from './sprites.js';
 import { drawCart } from './cartSprite.js';
+import { renderScenery } from './scenery.js';
 import { getCharacter } from './characters.js';
 import { getStage } from './stages.js';
 import { loadSave, writeSave, recordBest, addCoins } from './save.js';
@@ -30,6 +31,7 @@ export function createGame(audio) {
   const state = { mode: 'menu', save, audio };
   const menuChoice = { character: 'yute', stage: 'fern-gully' };
   let road, stage, cart, field, run, camZ, spawnZ, steerLock = 0;
+  let squeakAccum = 0, jolt = 0; // jolt: impact kick (0..1), decays per frame
   const rng = Math.random;
 
   function startRun(characterId, stageId) {
@@ -38,7 +40,7 @@ export function createGame(audio) {
     cart = createCart(getCharacter(characterId));
     field = createField();
     run = createRun();
-    camZ = 0; spawnZ = 600; steerLock = 10; // ~10 frames: swallow the start-tap so it doesn't steer
+    camZ = 0; spawnZ = 600; steerLock = 10; squeakAccum = 0; jolt = 0; // ~10 frames: swallow the start-tap so it doesn't steer
     state.mode = 'play';
     audio && audio.unlock();
     audio && audio.playStage(stage.musicId);
@@ -76,7 +78,11 @@ export function createGame(audio) {
     resolveHits(run, cart, field);
     // independent: a coin and a hazard can both resolve in the same frame
     if (run.coins > coinsBefore) audio && audio.sfx('coin');
-    if (cart.condition.value < condBefore) audio && audio.sfx('hit');
+    if (cart.condition.value < condBefore) { audio && audio.sfx('hit'); jolt = 1; }
+    // rhythmic wheel squeak, paced by distance rolled (faster = squeakier)
+    squeakAccum += dz;
+    if (squeakAccum >= 200) { squeakAccum -= 200; audio && audio.sfx('squeak'); }
+    if (jolt > 0) jolt = Math.max(0, jolt - dt * 4);
     if (isWrecked(cart.condition)) endRun();
   }
 
@@ -84,18 +90,25 @@ export function createGame(audio) {
     if (state.mode === 'menu') return renderMenu(ctx);
     if (state.mode === 'gameover') return renderGameOver(ctx);
     renderRoad(ctx, road, stage.palette, camZ, W, H);
+    renderScenery(ctx, stage, camZ, W, H);
     for (const e of activeEntities(field).sort((a, b) => b.z - a.z)) {
       const p = projectEntity(e.x, e.z + CART_Z, W, H);
-      if (p.visible) drawEntity(ctx, e.type, p.x, p.y, p.size);
+      if (p.visible) drawEntity(ctx, e.type, p.x, p.y, p.size, e.seed);
     }
     const cp = projectEntity(cart.x, CART_Z, W, H);
-    drawCart(ctx, cart, cp.x, cp.y + 6, cp.size * 0.9);
+    // jerky ride: rolling wobble + per-frame jitter + an upward kick on impacts
+    const wob = Math.sin(camZ * 0.05) * 0.5 + Math.sin(camZ * 0.13 + 1) * 0.3;
+    const bobPx = (wob + (Math.random() - 0.5) * 0.6) * cp.size * 0.07 - jolt * cp.size * 0.22;
+    const jitX = (Math.random() - 0.5) * cp.size * 0.025;
+    drawCart(ctx, cart, cp.x + jitX, cp.y + 6 + bobPx, cp.size * 0.9);
     renderTouchZones(ctx, W, H);
     renderHud(ctx, { stageName: stage.name, coins: run.coins, distance: run.distance, condition: cart.condition }, W);
   }
 
   // --- input ---
-  function onSteer(dir) { if (state.mode === 'play' && steerLock === 0) steer(cart, dir); }
+  function onSteer(dir) {
+    if (state.mode === 'play' && steerLock === 0) { steer(cart, dir); audio && audio.sfx('creak'); }
+  }
   function cycleDriver(dir) {
     const list = save.unlocks.characters;
     menuChoice.character = list[(list.indexOf(menuChoice.character) + dir + list.length) % list.length];

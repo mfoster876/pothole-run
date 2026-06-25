@@ -15,6 +15,7 @@ export function spawn(field, type, laneIndex, z) {
   e.depth = info.depth;
   e.halfWidth = ENTITY_HALF_WIDTH;
   e.collected = false;
+  e.seed = Math.random();        // stable per-spawn shape seed (craters, slicks)
   return e;
 }
 export function advance(field, dz) {

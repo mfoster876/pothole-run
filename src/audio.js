@@ -64,12 +64,28 @@ export function createAudio() {
   }
   function stop() { if (loopTimer) { clearTimeout(loopTimer); loopTimer = null; } }
 
+  // A short band-passed glide — used for the dry wheel squeak and the wood creak.
+  function rub(t, f0, f1, peak, dur, bp, q) {
+    const o = ctx.createOscillator(), g = ctx.createGain(), filt = ctx.createBiquadFilter();
+    filt.type = 'bandpass'; filt.frequency.value = bp; filt.Q.value = q;
+    o.type = 'sawtooth';
+    o.frequency.setValueAtTime(f0, t);
+    o.frequency.linearRampToValueAtTime(f1, t + dur);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(peak, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(filt); filt.connect(g); g.connect(master); o.start(t); o.stop(t + dur + 0.02);
+  }
   function sfx(kind) {
     if (!ctx || muted) return;
     const t = ctx.currentTime;
     if (kind === 'coin') { note(880, t, 0.08, 'square', 0.2); note(1320, t + 0.05, 0.08, 'square', 0.18); }
     if (kind === 'hit') drum(t, false);
     if (kind === 'wreck') { drum(t, false); note(70, t, 0.5, 'sawtooth', 0.3); }
+    // dry, slightly random wheel squeak — high and thin
+    if (kind === 'squeak') { const b = 1700 + Math.random() * 1000; rub(t, b, b * 0.66, 0.05, 0.16, 2600, 7); }
+    // low wooden creak when the cart leans into a turn
+    if (kind === 'creak') { const b = 120 + Math.random() * 70; rub(t, b, b * 1.5, 0.08, 0.2, 380, 3); }
   }
   function setMuted(v) { muted = v; if (master) master.gain.value = v ? 0 : 0.5; }
 
