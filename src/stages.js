@@ -7,7 +7,8 @@ export const STAGES = [
       { type: 'pothole', weight: 5 }, { type: 'coin', weight: 4 },
       { type: 'slick', weight: 2 }, { type: 'stall', weight: 2 }, { type: 'manhole', weight: 1 },
       { type: 'taxi', weight: 3 }, { type: 'dog', weight: 2 },
-      { type: 'jaywalker', weight: 2 }, { type: 'goat', weight: 2 }
+      { type: 'jaywalker', weight: 2 }, { type: 'goat', weight: 2 },
+      { type: 'tools', weight: 3 }, { type: 'water', weight: 1 }
     ]
   },
   {
@@ -17,7 +18,8 @@ export const STAGES = [
       { type: 'pothole', weight: 4 }, { type: 'coin', weight: 4 },
       { type: 'goat', weight: 3 }, { type: 'bump', weight: 2 },
       { type: 'taxi', weight: 3 }, { type: 'coaster', weight: 2 }, { type: 'dog', weight: 2 },
-      { type: 'cat', weight: 1 }, { type: 'jaywalker', weight: 2 }
+      { type: 'cat', weight: 1 }, { type: 'jaywalker', weight: 2 },
+      { type: 'tools', weight: 3 }, { type: 'water', weight: 1 }
     ]
   },
   {
@@ -27,7 +29,8 @@ export const STAGES = [
       { type: 'pothole', weight: 4 }, { type: 'coin', weight: 4 },
       { type: 'taxi', weight: 4 }, { type: 'hustler', weight: 2 }, { type: 'manhole', weight: 1 },
       { type: 'coaster', weight: 3 }, { type: 'jaywalker', weight: 2 },
-      { type: 'dog', weight: 2 }, { type: 'cat', weight: 1 }
+      { type: 'dog', weight: 2 }, { type: 'cat', weight: 1 },
+      { type: 'tools', weight: 3 }, { type: 'water', weight: 1 }
     ]
   },
   {
@@ -38,7 +41,8 @@ export const STAGES = [
       { type: 'pothole', weight: 4 }, { type: 'coin', weight: 4 },
       { type: 'bus', weight: 4 }, { type: 'taxi', weight: 4 }, { type: 'coaster', weight: 2 },
       { type: 'manhole', weight: 1 }, { type: 'jaywalker', weight: 3 }, { type: 'stall', weight: 2 },
-      { type: 'dog', weight: 1 }
+      { type: 'dog', weight: 1 },
+      { type: 'tools', weight: 3 }, { type: 'water', weight: 1 }
     ]
   }
 ];

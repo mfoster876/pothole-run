@@ -133,7 +133,9 @@ export function createGame(audio) {
     if (spawnZ <= 0) {
       // Coffee power-up: suppress hazard spawns during the smooth window
       const inCoffeeWindow = run.coffeeUntilDist && run.distance < run.coffeeUntilDist;
-      const type = inCoffeeWindow ? 'coin' : pickHazard(activeWeights, rng);
+      let type = inCoffeeWindow ? 'coin' : pickHazard(activeWeights, rng);
+      // Ultra-rare Blue Mountain coffee bag — not before 600m, ~1-in-500 spawn chance
+      if (!inCoffeeWindow && run.distance >= 600 && rng() < 0.002) type = 'coffee';
       const lane = type === 'bus' ? 0 : laneFor(rng, 3); // JUTC buses overtake on the left
       const e = spawn(field, type, lane, 5200);
       if (type === 'coin') {
@@ -144,7 +146,7 @@ export function createGame(audio) {
     }
     const coinsBefore = run.coins, condBefore = cart.condition.value;
     cart.gusted = false; cart.washed = false; cart.pickupValue = 0; cart.nearMiss = false;
-    resolveHits(run, cart, field);
+    resolveHits(run, cart, field, effects);
     if (run.coins > coinsBefore) audio && audio.sfx(cart.pickupValue >= 100 ? 'cash' : 'coin');
     // any damage event ratchets the permanent rattle up
     if (cart.condition.value < condBefore) cart.rattle = Math.min(0.5, cart.rattle + 0.05);

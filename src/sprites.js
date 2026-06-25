@@ -21,6 +21,9 @@ export function drawEntity(ctx, type, sx, sy, size, seed = 0.137, value = 1) {
     case 'jaywalker': person(ctx, sx, sy, s, '#3a6ea5'); break;
     case 'wiper': wiperYouth(ctx, sx, sy, s, seed); break;
     case 'stall': roundedBar(ctx, sx, sy, s * 1.2, s * 0.8, '#7a4a22'); break;
+    case 'water':  waterBottle(ctx, sx, sy, s); break;
+    case 'tools':  hardwareTools(ctx, sx, sy, s, seed); break;
+    case 'coffee': coffeeBag(ctx, sx, sy, s); break;
     default: crater(ctx, sx, sy, s, seed);
   }
 }
@@ -207,4 +210,93 @@ function wiperYouth(ctx, x, y, s, seed) {
     const dx = (rnd() - 0.5) * s * 0.9, dy = -s * (1.3 + rnd() * 0.7);
     ctx.beginPath(); ctx.arc(x + s * 0.4 + dx, y + dy, Math.max(1, s * 0.05 * rnd() + s * 0.02), 0, Math.PI * 2); ctx.fill();
   }
+}
+
+// ---- water bottle: clear plastic bottle with blue label, a healing pick-up ----
+function waterBottle(ctx, x, y, s) {
+  const h = s * 1.1, w = s * 0.44, cy = y - h * 0.5;
+  // drop shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.2)'; ellipsePath(ctx, x + s * 0.04, cy + h * 0.5 + s * 0.06, w * 0.5, s * 0.1); ctx.fill();
+  // bottle body (translucent plastic)
+  ctx.fillStyle = 'rgba(200,230,255,0.75)';
+  rrectSprite(ctx, x - w * 0.5, cy - h * 0.5, w, h, w * 0.22); ctx.fill();
+  ctx.strokeStyle = 'rgba(130,190,230,0.9)'; ctx.lineWidth = Math.max(1, s * 0.05); ctx.stroke();
+  // blue label band in the middle
+  ctx.fillStyle = '#1a6fc4';
+  ctx.fillRect(x - w * 0.5, cy - s * 0.12, w, s * 0.28);
+  // white "W" on label (when big enough)
+  if (s >= 14) {
+    ctx.fillStyle = '#ffffff'; ctx.font = '700 ' + Math.round(s * 0.22) + 'px "Courier New", monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('W', x, cy + s * 0.02);
+  }
+  // bottle cap (white)
+  ctx.fillStyle = '#ffffff';
+  rrectSprite(ctx, x - w * 0.28, cy - h * 0.5 - s * 0.1, w * 0.56, s * 0.14, w * 0.1); ctx.fill();
+  // light sheen on bottle
+  ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fillRect(x - w * 0.3, cy - h * 0.5 + s * 0.04, w * 0.12, h * 0.42);
+}
+
+// ---- hardware tools: spanner (handcart) or socket set (cars) ----
+function hardwareTools(ctx, x, y, s, seed) {
+  // The seed is used here just for context; we always draw based on entity seed
+  // Since we don't have vehicle context in sprites.js, draw a generic spanner shape
+  // (toolSpriteFor is used in the HUD/cartSprite for per-ride switching)
+  const hy = y - s * 0.5;
+  // drop shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.22)'; ellipsePath(ctx, x + s * 0.04, y + s * 0.06, s * 0.55, s * 0.1); ctx.fill();
+  // spanner body (chrome silver)
+  ctx.strokeStyle = '#b0b8c0'; ctx.lineWidth = Math.max(2, s * 0.22); ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(x - s * 0.38, hy + s * 0.32); ctx.lineTo(x + s * 0.32, hy - s * 0.32); ctx.stroke();
+  // jaw ends (open-end spanner loops)
+  ctx.strokeStyle = '#c9cdd2'; ctx.lineWidth = Math.max(2, s * 0.13); ctx.lineJoin = 'round';
+  ctx.beginPath();
+  ctx.arc(x - s * 0.38, hy + s * 0.32, s * 0.18, 0.2, Math.PI * 1.8); ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(x + s * 0.32, hy - s * 0.32, s * 0.18, Math.PI + 0.2, Math.PI * 2.8); ctx.stroke();
+  // golden highlight on shaft
+  ctx.strokeStyle = 'rgba(255,230,120,0.5)'; ctx.lineWidth = Math.max(1, s * 0.07);
+  ctx.beginPath(); ctx.moveTo(x - s * 0.2, hy + s * 0.18); ctx.lineTo(x + s * 0.14, hy - s * 0.16); ctx.stroke();
+}
+
+// ---- Blue Mountain coffee bag: dark brown sack with "BM" label ----
+function coffeeBag(ctx, x, y, s) {
+  const bw = s * 0.82, bh = s * 1.05, bx = x - bw * 0.5, by = y - bh;
+  // drop shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.25)'; ellipsePath(ctx, x + s * 0.05, y + s * 0.06, bw * 0.5, s * 0.1); ctx.fill();
+  // bag body (coffee-brown burlap)
+  rrectSprite(ctx, bx, by, bw, bh, bw * 0.15);
+  ctx.fillStyle = '#5b3a1a'; ctx.fill();
+  ctx.strokeStyle = '#3d2510'; ctx.lineWidth = Math.max(1.5, s * 0.06); ctx.stroke();
+  // darker burlap texture lines
+  ctx.strokeStyle = 'rgba(40,20,5,0.4)'; ctx.lineWidth = Math.max(1, s * 0.04);
+  for (let i = 1; i < 4; i++) {
+    ctx.beginPath(); ctx.moveTo(bx + bw * 0.12, by + bh * (i / 4));
+    ctx.lineTo(bx + bw * 0.88, by + bh * (i / 4)); ctx.stroke();
+  }
+  // cream label panel
+  ctx.fillStyle = '#f7f0d8';
+  rrectSprite(ctx, bx + bw * 0.14, by + bh * 0.24, bw * 0.72, bh * 0.38, bw * 0.06); ctx.fill();
+  // "BM" text on label
+  if (s >= 12) {
+    ctx.fillStyle = '#5b3a1a'; ctx.font = '700 ' + Math.round(s * 0.24) + 'px "Courier New", monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('BM', x, by + bh * 0.43);
+  }
+  // tie at the top
+  ctx.strokeStyle = '#8b6030'; ctx.lineWidth = Math.max(1.5, s * 0.08); ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(x - bw * 0.22, by + bh * 0.06); ctx.lineTo(x + bw * 0.22, by + bh * 0.06); ctx.stroke();
+  // golden shimmer — signals rarity
+  ctx.strokeStyle = 'rgba(240,192,32,0.7)'; ctx.lineWidth = Math.max(1, s * 0.04);
+  ctx.beginPath(); ctx.moveTo(bx + bw * 0.08, by + bh * 0.08); ctx.lineTo(bx + bw * 0.2, by + bh * 0.08);
+  ctx.moveTo(bx + bw * 0.08, by + bh * 0.14); ctx.lineTo(bx + bw * 0.18, by + bh * 0.14); ctx.stroke();
+}
+
+// ---- shared rounded-rect helper for sprite functions ----
+function rrectSprite(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
 }

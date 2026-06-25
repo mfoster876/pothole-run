@@ -21,7 +21,11 @@ export const HAZARD_TYPES = {
   cattle:   { damage: DAMAGE.traffic, collectible: false, depth: 5, color: '#5a4636', label: 'stray cattle' },
   // soapy-can windscreen youth — only spawns when you're driving a car. Minor
   // scrape damage, but costs you coins (`coinLoss` handled in run.js).
-  wiper:    { damage: DAMAGE.wiper,   collectible: false, depth: 3, color: '#5aa0c0', label: 'windscreen youth', coinLoss: true }
+  wiper:    { damage: DAMAGE.wiper,   collectible: false, depth: 3, color: '#5aa0c0', label: 'windscreen youth', coinLoss: true },
+  // Power-up collectibles — fully heal, boost, or open a money window
+  water:    { damage: 0, collectible: true, powerup: 'water',  depth: 3, color: '#8fd3ff', label: 'water' },
+  tools:    { damage: 0, collectible: true, powerup: 'tools',  depth: 3, color: '#c9c9c9', label: 'hardware tools' },
+  coffee:   { damage: 0, collectible: true, powerup: 'coffee', depth: 3, color: '#5b3a1a', label: 'Blue Mountain coffee' }
 };
 export function hazardInfo(type) {
   return HAZARD_TYPES[type] ?? HAZARD_TYPES.pothole;

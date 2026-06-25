@@ -2,6 +2,7 @@ import { laneOverlap } from './collision.js';
 import { applyDamage, repair } from './wreck.js';
 import { hazardInfo } from './hazardTypes.js';
 import { DAMAGE, GUST, WIPER, HOP, COMBO } from './constants.js';
+import { applyPowerup } from './powerups.js';
 
 export function createRun() {
   return { distance: 0, coins: 0, combo: 0 };
@@ -11,7 +12,7 @@ export function createRun() {
 // shrinks each frame. The moment it reaches/passes the cart plane (z <= 0) it gets
 // exactly ONE chance to connect, then is consumed (`collected`) so it can never hit
 // twice or hit late after a dodge. This is immune to step-size tunnelling.
-export function resolveHits(run, cart, field) {
+export function resolveHits(run, cart, field, effects = cart._effects || {}) {
   for (const e of field.pool) {
     if (!e.active || e.collected) continue;
     if (e.z > 0) continue;                 // not yet at the cart plane
@@ -41,6 +42,7 @@ export function resolveHits(run, cart, field) {
       run.coins += value;
       cart.pickupValue = value;     // game.js picks the coin vs cash sound
       cart.condition = repair(cart.condition, DAMAGE.repairPerCoin);
+      if (info.powerup) { applyPowerup(effects, cart, run, info.powerup, run.distance); }
     } else if (e.type === 'bump') {
       cart.jumpT = HOP.air;          // launch — the bump itself never damages
       cart.bumped = true;
