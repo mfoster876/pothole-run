@@ -12,6 +12,15 @@ export function bankRun(save, runCoins) {
   save.wallet += earned;                        // wallet CAN go negative — that's debt
   return earned;
 }
+// Debit a run's spendable cash for a fine/vice/responsibility. A `debtProof` driver
+// (the Politician's bottomless reserves, the protected School Yute) floors at zero —
+// the charge still eats their take but never drives them into the red. Everyone else
+// can go negative mid-run, which banks as real debt at game over. Returns the new total.
+export function chargeRun(run, cart, amount) {
+  run.coins -= amount;
+  if (run.coins < 0 && cart && cart.character && cart.character.debtProof) run.coins = 0;
+  return run.coins;
+}
 export function canAfford(save, price) {
   return save.wallet >= price;
 }

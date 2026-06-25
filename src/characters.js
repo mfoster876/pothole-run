@@ -11,8 +11,12 @@
 //
 // `immune` / `damageScale` make hazard categories harmless or softer for a driver
 // (used by the privileged Politician). Categories live on the hazard types.
+// `debtProof` — this driver's spendable cash never drops below zero: a fine/vice/
+// responsibility still bites their TAKE down toward nothing, but can't plunge THEM into
+// the red. The Politician sits on bottomless reserves; the School Yute is protected.
+// Everyone else can genuinely go into debt (a run in the red drags the wallet negative).
 export const CHARACTERS = [
-  { id: 'yute', name: 'School Yute', topSpeed: 1.0, handling: 1.05, toughness: 1.0, coinDraw: 1.05, scoreMult: 1.0, sway: 1.0, cashFind: 1.0, billBias: 0, locked: false },
+  { id: 'yute', name: 'School Yute', topSpeed: 1.0, handling: 1.05, toughness: 1.0, coinDraw: 1.05, scoreMult: 1.0, sway: 1.0, cashFind: 1.0, billBias: 0, debtProof: true, locked: false },
   // `policeMult` — Babylon troubles the Rasta most: police spawn twice as often for him.
   { id: 'rasta', name: 'Rasta Musician', topSpeed: 0.86, handling: 1.22, toughness: 1.3, coinDraw: 1.4, scoreMult: 1.0, sway: 0.6, cashFind: 1.35, billBias: 0, policeMult: 2, locked: false },
   { id: 'conductor', name: 'Bleachaz Conductor', topSpeed: 1.3, handling: 0.7, toughness: 0.66, coinDraw: 0.8, scoreMult: 1.35, sway: 1.7, cashFind: 0.5, billBias: 1, locked: true },
@@ -22,7 +26,7 @@ export const CHARACTERS = [
   // potholes/manholes stay "equally devastating" (fullDamageCats ignores his toughness).
   // Money is almost all $5000 (handled in game.js).
   { id: 'politician', name: 'Di Politician', topSpeed: 1.15, handling: 1.1, toughness: 1.4, coinDraw: 1.6, scoreMult: 1.2, sway: 0.8, cashFind: 1.0, billBias: 0,
-    immune: ['pedestrian', 'animal'], fullDamageCats: ['road'], locked: true },
+    immune: ['pedestrian', 'animal'], fullDamageCats: ['road'], debtProof: true, locked: true },
   // The Taxi Man: the MOST reckless driver but the MOST dexterous swerver — twitchy and
   // fragile, yet whips through gaps like no one else (top handling). High reward ceiling,
   // hard-to-collect cash. Police trouble him more than most.

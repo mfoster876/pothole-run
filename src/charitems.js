@@ -7,6 +7,7 @@
 // hazards he must AVOID; they live in negatives.js now, burning his skin and cash.)
 import { repair } from './wreck.js';
 import { CART } from './constants.js';
+import { chargeRun } from './economy.js';
 
 export const ITEMS = {
   // ── School Yute — wholesome (no downside) ──
@@ -70,7 +71,7 @@ export function applyItem(effects, cart, id, run) {
   }
   if (run) {
     if (typeof it.cash === 'number')      run.coins += it.cash;       // a windfall
-    if (typeof it.cashDrain === 'number') run.coins -= it.cashDrain;  // a costly vice (debt-capable)
+    if (typeof it.cashDrain === 'number') chargeRun(run, cart, it.cashDrain);  // costly vice (floored for the debt-proof)
   }
 }
 

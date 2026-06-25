@@ -7,9 +7,9 @@ import {
 import { createCondition } from '../src/wreck.js';
 import { getCharacter } from '../src/characters.js';
 
-const fxCart = (coins = 1000, cond = 100) => ({
+const fxCart = (coins = 1000, cond = 100, character = null) => ({
   effects: {},
-  cart: { condition: createCondition(cond), tipsy: 0, blessing: { resist: 0.4 } },
+  cart: { character, condition: createCondition(cond), tipsy: 0, blessing: { resist: 0.4 } },
   run: { coins },
 });
 
@@ -58,10 +58,16 @@ test('a PERCENTAGE drain can never push coins negative', () => {
   assert.equal(run.coins, 0);
 });
 
-test("a politician's fixed-cost responsibility CAN plunge him into debt", () => {
-  const { effects, cart, run } = fxCart(1000);
+test("a politician's responsibility eats his take to zero but never into debt", () => {
+  const { effects, cart, run } = fxCart(1000, 100, getCharacter('politician'));
   applyNegative(effects, cart, run, 'roadfix');   // $500k road repairs
-  assert.ok(run.coins < 0, 'a road bill far beyond his cash leaves him in the red');
+  assert.equal(run.coins, 0, 'the bill floors at zero — his bottomless reserves never go red');
+});
+
+test('a debt-capable driver IS plunged into debt by a flat-cost negative', () => {
+  const { effects, cart, run } = fxCart(1000);   // no debt-proof character
+  applyNegative(effects, cart, run, 'roadfix');
+  assert.ok(run.coins < 0, 'a flat cost beyond his cash leaves an ordinary driver in the red');
 });
 
 test('an impairing negative makes the steering sloppy for a while', () => {
@@ -78,12 +84,13 @@ test('pork costs the Rasta his blessing resilience', () => {
   assert.ok(cart.condition.value < 100, 'and a condition hit');
 });
 
-test("the politician's responsibilities only drain money (no condition damage)", () => {
+test("the politician's responsibilities only drain money (no condition damage, never debt)", () => {
   for (const id of negativesFor(getCharacter('politician')).map(n => n.type)) {
-    const { effects, cart, run } = fxCart(10000);
+    const { effects, cart, run } = fxCart(10000, 100, getCharacter('politician'));
     applyNegative(effects, cart, run, id);
     assert.equal(cart.condition.value, 100, `${id} leaves condition untouched`);
     assert.ok(run.coins < 10000, `${id} drains some cash`);
+    assert.ok(run.coins >= 0, `${id} never plunges the politician into the red`);
   }
 });
 

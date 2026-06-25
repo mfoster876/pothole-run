@@ -4,6 +4,7 @@ import { hazardInfo } from './hazardTypes.js';
 import { DAMAGE, GUST, WIPER, HOP, COMBO, POLICE, POLITICIAN } from './constants.js';
 import { applyPowerup, effectActive } from './powerups.js';
 import { applyNegative } from './negatives.js';
+import { chargeRun } from './economy.js';
 
 export function createRun() {
   return { distance: 0, coins: 0, combo: 0 };
@@ -84,8 +85,9 @@ export function resolveHits(run, cart, field, effects = cart._effects || {}) {
       } else if (info.fine && ch.id === 'politician') {
         // The Politician is never STOPPED by police — he greases the palm (a bribe /
         // buys a lunch), and the bribed cop then CLEARS the road ahead of traffic for
-        // him for a while. The bribe is a flat cost that can push him into debt.
-        run.coins -= POLITICIAN.bribe;
+        // him for a while. The bribe bites his take — but he's debt-proof, so it floors
+        // at zero rather than driving his bottomless reserves into the red.
+        chargeRun(run, cart, POLITICIAN.bribe);
         cart.bribed = true;
         effects.clearRoads = POLITICIAN.clearRoadsDur;
         run.combo = 0;
@@ -101,14 +103,15 @@ export function resolveHits(run, cart, field, effects = cart._effects || {}) {
         cart.condition = applyDamage(cart.condition, dmg);
         run.combo = 0;
         // windscreen youth: forced "wash" skims coins off your fare — a greedier ask the
-        // deeper you are and the flashier the ride. No floor: it can put you in DEBT.
+        // deeper you are and the flashier the ride. Debt-capable (floored only for the
+        // debt-proof drivers — Politician / School Yute).
         if (info.coinLoss) {
           const charge = wiperCharge(run.distance, cart.vehicle);
-          run.coins -= charge;
+          chargeRun(run, cart, charge);
           cart.washed = true; cart.washCharge = charge;
         }
-        // police shakedown: a hefty fine on contact (no floor — can put you in debt)
-        if (info.fine) { run.coins -= POLICE.fine; cart.fined = true; }
+        // police shakedown: a hefty fine on contact (debt-capable, save for the debt-proof)
+        if (info.fine) { chargeRun(run, cart, POLICE.fine); cart.fined = true; }
       }
     }
   }

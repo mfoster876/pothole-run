@@ -14,6 +14,7 @@
 //   blessingLoss — wipes the run's tithe-blessing resilience.
 import { applyDamage } from './wreck.js';
 import { NEGATIVE, BLEACH } from './constants.js';
+import { chargeRun } from './economy.js';
 
 export const NEGATIVES = {
   // ── School Yute — temptations to AVOID ──
@@ -100,7 +101,9 @@ export function applyNegative(effects, cart, run, id) {
     run.coins = Math.round(run.coins);
   }
   if (typeof n.cashBurn === 'number') {
-    run.coins -= n.cashBurn;            // a flat cost — CAN push you into debt
+    // A flat cost — drives most drivers into debt, but floors at zero for the debt-proof
+    // (the Politician's responsibilities eat his take to nothing, never into the red).
+    chargeRun(run, cart, n.cashBurn);
   }
   if (typeof n.impair === 'number') {
     cart.tipsy   = Math.max(cart.tipsy || 0, n.impair);

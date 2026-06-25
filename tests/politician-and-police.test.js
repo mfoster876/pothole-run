@@ -26,13 +26,21 @@ test('an ordinary driver hitting police takes damage AND a hefty cash fine', () 
   assert.equal(cart.fined, true, 'flagged for the HUD toast');
 });
 
-test('a police fine CAN push you into debt (coins go negative)', () => {
-  const { cart, field, run } = setup('yute');
+test('a police fine CAN push an ordinary driver into debt (coins go negative)', () => {
+  const { cart, field, run } = setup('conductor');   // a debt-capable driver
   run.coins = 100;
   spawn(field, 'police', 1, 0);
   resolveHits(run, cart, field);
   assert.equal(run.coins, 100 - POLICE.fine, 'the fine drags you into the red');
   assert.ok(run.coins < 0, 'genuine debt');
+});
+
+test('the protected School Yute never goes into the red — a fine floors at zero', () => {
+  const { cart, field, run } = setup('yute');
+  run.coins = 100;
+  spawn(field, 'police', 1, 0);
+  resolveHits(run, cart, field);
+  assert.equal(run.coins, 0, 'the fine eats his take but stops at zero');
 });
 
 // ---- politician: bribes, never stopped ----
@@ -44,6 +52,7 @@ test('the Politician bribes police (never stopped) and the road clears', () => {
   spawn(field, 'police', 1, 0);
   resolveHits(run, cart, field, fx);
   assert.ok(run.coins < 10000, 'he greased the palm (a bribe)');
+  assert.equal(run.coins, 0, 'the bribe eats his take to zero — but his reserves never go red');
   assert.equal(cart.condition.value, 100, 'never stopped, never damaged by the cop');
   assert.ok(fx.clearRoads > 0, 'the bribed cop clears the road ahead for him');
   assert.equal(cart.bribed, true, 'flagged for the HUD toast');
