@@ -6,16 +6,24 @@ import { spend } from '../economy.js';
 import { upgradesForVehicle } from '../upgrades.js';
 import { ownedUpgrades } from '../save.js';
 import { getVehicle } from '../vehicles.js';
+import { UPKEEP } from '../constants.js';
 import { formatMoney } from '../money.js';
 
-export const REPAIR_PRICE = 50; // $ per condition point above current
+export const REPAIR_PRICE = 50; // base $ per condition point above current
 
-export function repairCost(from, to, price = REPAIR_PRICE) {
-  return Math.max(0, Math.round((to - from) * price));
+// Repairs are proportionally dearer on a pricier ride — fixing a Porsche costs many
+// times what patching a handcart does.
+export function repairFactor(vehicleId) {
+  const price = getVehicle(vehicleId).price || 0;
+  return 1 + Math.min(UPKEEP.maxRepairFactor - 1, price / UPKEEP.repairPerPrice);
+}
+
+export function repairCost(from, to, vehicleId = 'handcart', price = REPAIR_PRICE) {
+  return Math.max(0, Math.round((to - from) * price * repairFactor(vehicleId)));
 }
 
 export function applyRepair(save, to, price = REPAIR_PRICE) {
-  const cost = repairCost(save.condition, to, price);
+  const cost = repairCost(save.condition, to, save.vehicle, price);
   if (!spend(save, cost)) return false;
   save.condition = to;
   return true;
@@ -64,7 +72,7 @@ export function render(ctx, { save, W, H }) {
   btn(ctx, R.back, '‹ HUB', { font: '700 18px "Courier New", monospace', stroke: '#9fb8a3', text: '#9fb8a3' });
 
   // Repair to 100%
-  const cost = repairCost(save.condition, 100);
+  const cost = repairCost(save.condition, 100, save.vehicle);
   const canRepair = save.condition < 100;
   const afford = save.wallet >= cost;
   if (canRepair) {

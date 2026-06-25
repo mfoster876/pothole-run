@@ -13,8 +13,12 @@ export const HAZARD_TYPES = {
   taxi:     { damage: DAMAGE.traffic, collectible: false, depth: 5, color: '#c0382c', label: 'route taxi', vz: 420, gust: 'fromTaxi', category: 'traffic' },
   bus:      { damage: DAMAGE.traffic, collectible: false, depth: 7, color: '#e7c84a', label: 'JUTC bus', vz: 260, gust: 'fromBus', category: 'traffic' },
   coaster:  { damage: DAMAGE.traffic, collectible: false, depth: 6, color: '#eef0f2', label: 'coaster bus', vz: 320, gust: 'fromCoaster', category: 'traffic', swerve: true },
-  hustler:  { damage: DAMAGE.animal,  collectible: false, depth: 3, color: '#d06a30', label: 'hustler', category: 'pedestrian' },
-  jaywalker:{ damage: DAMAGE.animal,  collectible: false, depth: 3, color: '#3a6ea5', label: 'jaywalker', category: 'pedestrian' },
+  hustler:  { damage: DAMAGE.animal,  collectible: false, depth: 3, color: '#d06a30', label: 'hustler', category: 'pedestrian', walk: true },
+  jaywalker:{ damage: DAMAGE.animal,  collectible: false, depth: 3, color: '#3a6ea5', label: 'jaywalker', category: 'pedestrian', walk: true },
+  // New Kingston street life — all WALK across the road (harder to time than a static obstacle)
+  beggar:    { damage: DAMAGE.animal,  collectible: false, depth: 3, color: '#6a6356', label: 'wheelchair beggar', category: 'pedestrian', walk: true },
+  vendor:    { damage: DAMAGE.animal,  collectible: false, depth: 3, color: '#c0392b', label: 'flower & fruit vendor', category: 'pedestrian', walk: true },
+  peanutcart:{ damage: DAMAGE.traffic, collectible: false, depth: 4, color: '#b5651d', label: 'peanut cart', category: 'pedestrian', walk: true },
   stall:    { damage: DAMAGE.traffic, collectible: false, depth: 4, color: '#7a4a22', label: 'vendor stall' },
   slick:    { damage: DAMAGE.bump,    collectible: false, depth: 3, color: '#3a4a6a', label: 'wet slick' },
   bump:     { damage: DAMAGE.bump,    collectible: false, depth: 2, color: '#8a8a8a', label: 'sleeping policeman' },
@@ -39,10 +43,8 @@ export const HAZARD_TYPES = {
   whiterum:   { damage: 0, collectible: true, powerup: 'drink', drink: 'whiterum',   depth: 3, color: '#eef2f5', label: 'White Rum' },
   spirulina:  { damage: 0, collectible: true, powerup: 'drink', drink: 'spirulina',  depth: 3, color: '#1f8a4c', label: 'Spirulina' },
   rootstonic: { damage: 0, collectible: true, powerup: 'drink', drink: 'rootstonic', depth: 3, color: '#7a4a22', label: 'Roots Tonic' },
-  // Conductor-only bleach vanity items — boost then backfire (routed via charitems)
-  cakesoap:    { damage: 0, collectible: true, powerup: 'charitem', item: 'cakesoap',    depth: 3, color: '#3a6ad0', label: 'Cake Soap' },
-  currypowder: { damage: 0, collectible: true, powerup: 'charitem', item: 'currypowder', depth: 3, color: '#d9a01f', label: 'Curry Powder' },
-  toothpaste:  { damage: 0, collectible: true, powerup: 'charitem', item: 'toothpaste',  depth: 3, color: '#e8f2f5', label: 'Toothpaste' },
+  // (Conductor's cake soap / curry powder / toothpaste / sunlight are AVOID-hazards now —
+  // generated below from negatives.js, not pickups.)
   // School-Yute-only wholesome items — steadiness / heal / refreshment dash
   books:      { damage: 0, collectible: true, powerup: 'charitem', item: 'books',      depth: 3, color: '#c0451f', label: 'Books' },
   stationery: { damage: 0, collectible: true, powerup: 'charitem', item: 'stationery', depth: 3, color: '#1f9ad9', label: 'Stationery' },

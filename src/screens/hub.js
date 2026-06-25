@@ -57,6 +57,15 @@ export function render(ctx, { save, W, H }) {
   btn(ctx, R.aspirations, 'ASPIRATIONS',  { stroke: '#9fb8a3', text: '#9fb8a3' });
   btn(ctx, R.help, '?', { stroke: '#f0c020', text: '#f0c020', font: '700 28px "Courier New", monospace' });
 
+  // Repair reminder — every ride needs upkeep between plays; nudge it for best driving.
+  if ((save.condition || 0) < 100) {
+    const crit = save.condition < 50;
+    ctx.fillStyle = crit ? '#e0584a' : '#e0a52a';
+    ctx.font = '700 14px "Courier New", monospace'; ctx.textAlign = 'center';
+    ctx.fillText('⚠ ride at ' + Math.round(save.condition) + '% — repair at di MECH SHOP fi best driving',
+      W / 2, H * 0.90);
+  }
+
   ctx.fillStyle = '#9fb8a3'; ctx.font = '500 13px "Courier New", monospace';
   ctx.textAlign = 'center';
   ctx.fillText('♪ press M to mute   ·   ? = how to play', W / 2, H * 0.96);

@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import { wiperCharge } from '../src/run.js';
 import { getVehicle } from '../src/vehicles.js';
 import { WIPER, BLEACH } from '../src/constants.js';
+import { applyNegative } from '../src/negatives.js';
 import { applyItem } from '../src/charitems.js';
 import { createCart } from '../src/cart.js';
 import { getCharacter } from '../src/characters.js';
@@ -39,15 +40,16 @@ test('a fresh Conductor starts black (bleachLevel 0)', () => {
   assert.equal(cart.bleachLevel, 0);
 });
 
-test('each bleach item disfigures one stage worse, capped at the skull', () => {
+test('each bleach hazard hit disfigures one stage worse, capped at the skull, and burns cash', () => {
   const cart = createCart(getCharacter('conductor'));
-  const fx = {};
+  const run = { coins: 100000 };
   for (let i = 1; i <= 3; i++) {
-    applyItem(fx, cart, 'cakesoap');
+    applyNegative({}, cart, run, 'cakesoap');
     assert.equal(cart.bleachLevel, Math.min(BLEACH.maxLevel, i));
   }
-  // keep grabbing — never exceeds the max (skull) stage
-  for (let i = 0; i < 5; i++) applyItem(fx, cart, 'toothpaste');
+  assert.ok(run.coins < 100000, 'bleaching products burn through his cash');
+  // keep hitting them — never exceeds the max (skull) stage
+  for (let i = 0; i < 5; i++) applyNegative({}, cart, run, 'sunlight');
   assert.equal(cart.bleachLevel, BLEACH.maxLevel);
 });
 

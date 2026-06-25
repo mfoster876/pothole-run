@@ -16,14 +16,17 @@ export const CHARACTERS = [
   // `policeMult` — Babylon troubles the Rasta most: police spawn twice as often for him.
   { id: 'rasta', name: 'Rasta Musician', topSpeed: 0.86, handling: 1.22, toughness: 1.3, coinDraw: 1.4, scoreMult: 1.0, sway: 0.6, cashFind: 1.35, billBias: 0, policeMult: 2, locked: false },
   { id: 'conductor', name: 'Bleachaz Conductor', topSpeed: 1.3, handling: 0.7, toughness: 0.66, coinDraw: 0.8, scoreMult: 1.35, sway: 1.7, cashFind: 0.5, billBias: 1, locked: true },
-  // Unlocked only with loads of money. Privileged & 'untouchable': a money magnet
-  // (corruption) who's hard to rough up, with a smooth motorcade ride. Immune to
-  // police, pedestrians and roadkill; takes half damage from other cars; potholes and
-  // manholes still wreck him. Money is almost all $5000 (handled in game.js).
-  // `fullDamageCats` — hazard classes that ignore his toughness/privilege entirely:
-  // potholes & manholes stay "equally devastating" for him (his one real weakness).
+  // Unlocked only with loads of money. A money magnet (corruption) who's waved through
+  // by police (he just bribes them — never stopped) and shrugs off pedestrians/roadkill,
+  // but his RIDE now takes the SAME battering as anyone's: full traffic damage, and
+  // potholes/manholes stay "equally devastating" (fullDamageCats ignores his toughness).
+  // Money is almost all $5000 (handled in game.js).
   { id: 'politician', name: 'Di Politician', topSpeed: 1.15, handling: 1.1, toughness: 1.4, coinDraw: 1.6, scoreMult: 1.2, sway: 0.8, cashFind: 1.0, billBias: 0,
-    immune: ['police', 'pedestrian', 'animal'], damageScale: { traffic: 0.5 }, fullDamageCats: ['road'], locked: true }
+    immune: ['pedestrian', 'animal'], fullDamageCats: ['road'], locked: true },
+  // The Taxi Man: the MOST reckless driver but the MOST dexterous swerver — twitchy and
+  // fragile, yet whips through gaps like no one else (top handling). High reward ceiling,
+  // hard-to-collect cash. Police trouble him more than most.
+  { id: 'taximan', name: 'Taxi Man', topSpeed: 1.28, handling: 1.45, toughness: 0.6, coinDraw: 0.85, scoreMult: 1.3, sway: 1.8, cashFind: 0.6, billBias: 1, policeMult: 1.4, locked: true }
 ];
 export function getCharacter(id) {
   return CHARACTERS.find(c => c.id === id) ?? CHARACTERS[0];

@@ -47,6 +47,8 @@ export const STAGES = [
       { type: 'manhole', weight: 1 }, { type: 'jaywalker', weight: 3 }, { type: 'stall', weight: 2 },
       { type: 'dog', weight: 1 },
       { type: 'police', weight: 3 },                            // urban — police out in force
+      // New Kingston street life (all walk across the road)
+      { type: 'beggar', weight: 1 }, { type: 'vendor', weight: 2 }, { type: 'peanutcart', weight: 1 },
       { type: 'tools', weight: 3 }, { type: 'water', weight: 1 }
     ]
   }

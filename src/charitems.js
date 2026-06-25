@@ -1,23 +1,14 @@
-// src/charitems.js — character-specific pickups (beyond the shared drinks).
+// src/charitems.js — character-specific GOOD pickups (beyond the shared drinks).
 //
-// Two flavours, both gated to one driver:
-//   • Conductor "bleach vanity" items (cake soap, curry powder, toothpaste):
-//     a short flashy boost that then BACKFIRES into sloppy "burn" steering — the
-//     mechanic itself says vanity has consequences (it isn't a free reward).
-//   • School Yute wholesome items (books, stationery, bag juice, Lasco shake):
-//     steadiness, a small heal, and a brief refreshment dash — pure benefit.
+// School Yute wholesome items (books, stationery, bag juice, Lasco shake): steadiness,
+// a small heal, and a brief refreshment dash — pure benefit.
+//
+// (The Conductor's cake soap / curry powder / toothpaste are NOT pickups — they're
+// hazards he must AVOID; they live in negatives.js now, burning his skin and cash.)
 import { repair } from './wreck.js';
-import { CART, BLEACH } from './constants.js';
+import { CART } from './constants.js';
 
 export const ITEMS = {
-  // ── Conductor — bleach vanity (boost → backfire) ──
-  // boost  = seconds of invincible speed surge (reuses the `super` effect)
-  // burn   = magnitude of the after-effect sloppy steering (0..1, reuses cart.tipsy)
-  // tail   = extra seconds the burn lingers after the boost ends
-  cakesoap:    { id: 'cakesoap',    label: 'Cake Soap',    char: 'conductor', boost: 2.6, burn: 1.0, tail: 3.5, color: '#3a6ad0' },
-  currypowder: { id: 'currypowder', label: 'Curry Powder', char: 'conductor', boost: 2.2, burn: 0.8, tail: 3.0, color: '#d9a01f' },
-  toothpaste:  { id: 'toothpaste',  label: 'Toothpaste',   char: 'conductor', boost: 1.8, burn: 0.6, tail: 2.5, color: '#e8f2f5' },
-
   // ── School Yute — wholesome (no downside) ──
   // steady = seconds of steadier hands; heal = condition restored; boost = brief dash
   books:      { id: 'books',      label: 'Books',      char: 'yute', steady: 3.5, heal: 8,  color: '#c0451f' },
@@ -28,15 +19,14 @@ export const ITEMS = {
 
 // Eligibility list per character id.
 const ELIGIBLE = {
-  conductor: ['cakesoap', 'currypowder', 'toothpaste'],
   yute:      ['books', 'stationery', 'bagjuice', 'lasco'],
-  // The Rasta keeps his unique edge in the drinks pool (spirulina / roots tonic).
+  // Rasta keeps his edge in the drinks pool; Conductor's "items" are now avoid-hazards.
+  conductor: [],
   rasta:     [],
 };
 
 // Spawn rarity weights. Kept modest so these stay a treat, not a constant crutch.
 const WEIGHTS = {
-  cakesoap: 0.5, currypowder: 0.6, toothpaste: 0.7,
   books: 0.8, stationery: 0.8, bagjuice: 0.7, lasco: 0.5,
 };
 

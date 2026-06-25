@@ -115,4 +115,15 @@ export const NEGATIVE = { impairSecs: 4 };
 // Politician road tuning: his motorcade rolls on freshly-paved roads, so potholes and
 // manholes SPAWN far less (×potholeMult). They still hit at full damage when they do.
 // `cashBillChance` = odds each of his notes is the coveted $5000 (else a big note).
-export const POLITICIAN = { potholeMult: 0.4, cashBillChance: 0.85 };
+// `bribe` — what the politician slips a cop on contact (never stopped). `clearRoadsDur`
+// — seconds the bribed cop then clears the road ahead of all traffic/obstacles for him.
+export const POLITICIAN = { potholeMult: 0.4, cashBillChance: 0.85, bribe: 2000, clearRoadsDur: 5 };
+
+// Pedestrians (jaywalkers, vendors, the wheelchair beggar) actually WALK across the
+// road — a slow lateral drift that bounces within the road edges, so they're harder to
+// time than a static obstacle. `speed` = lateral units/sec, `bound` = how far out they roam.
+export const WALK = { speed: 0.22, bound: 0.7 };
+
+// Upkeep: every ride takes baseline wear-and-tear each run (on top of hits), so it ALWAYS
+// needs some repair between plays. Repairs get proportionally dearer the pricier the ride.
+export const UPKEEP = { perRunWear: 8, repairPerPrice: 2500000, maxRepairFactor: 10 };

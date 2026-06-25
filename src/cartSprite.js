@@ -356,7 +356,10 @@ function drawHead(ctx, ch, s, x, y, bleach = 0) {
   //   0 natural dark · 2 fully bleached pale · 4 the bone of the skull.
   let faceSkin = skin;
   if (id === 'conductor') {
-    faceSkin = bleach <= 1 ? '#2a1810'        // dark (patches added at stage 1)
+    // Stage 0 starts the FACE a notch lighter than the dark neck/body — the bleach
+    // has only just begun on the face. Stage 1 is still dark (patches added).
+    faceSkin = bleach === 0 ? '#3e2818'       // fresh: face lifted above dark body
+             : bleach === 1 ? '#2a1810'       // dark (patches added at stage 1)
              : bleach === 2 ? '#f0e6d8'       // fully bleached pale
              : bleach === 3 ? '#e2c2ac'       // raw, blotchy pale
              : '#e8e4d8';                       // exposed skull bone
@@ -417,8 +420,13 @@ function drawHead(ctx, ch, s, x, y, bleach = 0) {
     // ── lips/mouth on the (slightly visible) face — staged ──
     const lipY = y + s * 0.07;
     const lipW = s * 0.09;
-    if (bleach <= 1) {
-      // NATURAL / PATCHY: ordinary dark mouth line
+    if (bleach === 0) {
+      // FRESH START: CLEAR BLACK LIPS from the very beginning (the characteristic
+      // look) — distinct solid-black lips, no pink centre yet (that arrives at 2).
+      ctx.fillStyle = '#1a1010';
+      ctx.beginPath(); ctx.ellipse(x, lipY, lipW * 0.9, s * 0.030, 0, 0, Math.PI * 2); ctx.fill();
+    } else if (bleach === 1) {
+      // PATCHY: ordinary dark mouth line (not yet the black-pink bleach mouth)
       ctx.strokeStyle = '#3a1e10'; ctx.lineWidth = Math.max(1, s * 0.022); ctx.lineCap = 'round';
       ctx.beginPath(); ctx.moveTo(x - lipW * 0.7, lipY); ctx.lineTo(x + lipW * 0.7, lipY); ctx.stroke();
       ctx.lineCap = 'butt';
@@ -470,6 +478,17 @@ function drawHead(ctx, ch, s, x, y, bleach = 0) {
     ctx.fillStyle = skin; ctx.beginPath(); ctx.arc(x, y - s * 0.02, s * 0.15, Math.PI, 0); ctx.fill();
     ctx.fillStyle = 'rgba(255,255,255,0.16)';            // top-of-head sheen
     ctx.beginPath(); ctx.ellipse(x - s * 0.03, y - s * 0.10, s * 0.07, s * 0.03, 0, 0, Math.PI * 2); ctx.fill();
+  } else if (id === 'taximan') {
+    // Taxi Man — fitted cap (RED band) over short hair, recognisable from behind.
+    // short dark hair peeking below the cap
+    ctx.fillStyle = '#1c1208'; ctx.beginPath(); ctx.arc(x, y - s * 0.01, s * 0.16, Math.PI, 0); ctx.fill();
+    // cap crown dome (dark slate)
+    ctx.fillStyle = '#263040'; ctx.beginPath(); ctx.arc(x, y - s * 0.04, s * 0.185, Math.PI, 0); ctx.fill();
+    // RED band around the base of the crown (route-taxi accent)
+    ctx.fillStyle = '#b5342a'; ctx.fillRect(x - s * 0.185, y - s * 0.05, s * 0.37, s * 0.05);
+    ctx.fillStyle = '#7e1f16'; ctx.fillRect(x - s * 0.185, y - s * 0.01, s * 0.37, s * 0.018);
+    // adjuster strap notch at the back centre of the cap
+    ctx.fillStyle = '#1a222e'; ctx.fillRect(x - s * 0.03, y - s * 0.10, s * 0.06, s * 0.04);
   } else {
     ctx.fillStyle = '#1c1208'; ctx.beginPath(); ctx.arc(x, y, s * 0.18, Math.PI, 0); ctx.fill();
   }
@@ -478,7 +497,7 @@ function drawHead(ctx, ch, s, x, y, bleach = 0) {
 function shirtColor(ch) {
   const id = ch && ch.id;
   return { yute: '#9a7a45', rasta: '#3f7a3a', conductor: '#d8a23a', police: '#27407a',
-    politician: '#1e2a44', taxi: '#9a3b2c', business: '#b04a78', jonkonnu: '#c0392b' }[id] || '#cfae6a';
+    politician: '#1e2a44', taxi: '#9a3b2c', taximan: '#b5342a', business: '#b04a78', jonkonnu: '#c0392b' }[id] || '#cfae6a';
 }
 function wheel(ctx, x, y, r, hubColor = '#8a8a8a') {
   ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fillStyle = '#1c1c1c'; ctx.fill();

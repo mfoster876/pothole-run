@@ -1,4 +1,4 @@
-import { VIRTUAL, SHOULDER, SUPERCHARGE, IMPAIR, SPAWN_TUNE, POLICE, POLITICIAN, RACE, TOPPLE, LANES } from './constants.js';
+import { VIRTUAL, SHOULDER, SUPERCHARGE, IMPAIR, SPAWN_TUNE, POLICE, POLITICIAN, RACE, TOPPLE, LANES, UPKEEP } from './constants.js';
 import { setLetterboxColors } from './main.js';
 import { drinkWeightsFor } from './drinks.js';
 import { itemWeightsFor } from './charitems.js';
@@ -166,14 +166,14 @@ export function createGame(audio) {
   // Conclude a race at the given placement: bank the road coins like a normal run, pay
   // the purse by placement, and drop back to the races screen with the result banner.
   function finishRace(place) {
-    save.condition = Math.max(0, cart.condition.value);
+    save.condition = Math.max(0, cart.condition.value - UPKEEP.perRunWear);
     decayBlessing(save);
-    // Bank the EXACT road coins collected — no MIN_EARN floor here, or losing the
-    // cheapest tier would still pay out the floor and make losing profitable. (Races
-    // have no road money now, so this is usually 0 — the purse is the prize.)
+    // Bank the EXACT road coins (no MIN_EARN floor — a floor would make losing the
+    // cheapest tier profitable). Races have no road money, so this is usually ≤0; any
+    // fines push the WALLET into the red (debt) while rank/coins never drop.
     save.wallet += run.coins;
-    save.lifetimeEarned += run.coins;
-    addCoins(save, run.coins);
+    save.lifetimeEarned += Math.max(0, run.coins);
+    addCoins(save, Math.max(0, run.coins));
     raceResult = settleRace(save, race.tier, place);
     // Winnings also count toward save.coins (the unlock currency) so racing for money
     // still progresses the coins-gated unlocks (now that there's no road money to bank).
@@ -188,13 +188,14 @@ export function createGame(audio) {
   function endRun() {
     state.mode = 'gameover';
     audio && audio.sfx('wreck');
-    // Persist the ending condition (40% floor applied at next run start by createCart)
-    save.condition = Math.max(0, cart.condition.value);
+    // Persist the ending condition MINUS baseline wear-and-tear, so every ride always
+    // needs at least some repair between plays (40% floor applied next run by createCart).
+    save.condition = Math.max(0, cart.condition.value - UPKEEP.perRunWear);
     // Blessing fades a little each run — keeps faithful giving a recurring choice.
     decayBlessing(save);
-    // Bank earnings via economy module (ensures MIN_EARN floor)
+    // Bank earnings (debt-aware: a heavily-fined run can leave the wallet in the red).
     bankRun(save, run.coins);
-    addCoins(save, run.coins);
+    addCoins(save, Math.max(0, run.coins));   // progress currency never drops on a bad run
     recordBest(save, stage.id, Math.floor(run.distance));
     maybeUnlock();
     writeSave(save);
@@ -207,6 +208,8 @@ export function createGame(audio) {
     // New Kingston (where the JUTC buses run) opens once you've banked a little
     if (save.coins >= 500 && !u.stages.includes('new-kingston')) u.stages.push('new-kingston');
     if (save.coins >= 2500 && !u.characters.includes('conductor')) u.characters.push('conductor');
+    // The Taxi Man — a mid-tier unlock between the Conductor and the Politician.
+    if (save.coins >= 50000 && !u.characters.includes('taximan')) u.characters.push('taximan');
     // Di Politician — unlocked only with loads of money (tunable threshold).
     if (save.coins >= 250000 && !u.characters.includes('politician')) u.characters.push('politician');
   }
@@ -265,9 +268,13 @@ export function createGame(audio) {
       let spawnWeights = activeWeights;
       if (race) spawnWeights = activeWeights.filter(w => w.type !== 'coin');
       else if (supercharged) spawnWeights = activeWeights.concat([{ type: 'coin', weight: SUPERCHARGE.coinWeightBonus }]);
-      let type = (inCoffeeWindow && !race) ? 'coin' : pickHazard(spawnWeights, rng);
+      // A bribed cop CLEARS the politician's road of traffic/obstacles for a while —
+      // like coffee's smooth window, only safe coins spawn (never during a race).
+      const roadsClear = effectActive(effects, 'clearRoads');
+      const safeWindow = (inCoffeeWindow || roadsClear) && !race;
+      let type = safeWindow ? 'coin' : pickHazard(spawnWeights, rng);
       // Ultra-rare Blue Mountain coffee bag — not before 600m, ~1-in-500 spawn chance
-      if (!inCoffeeWindow && run.distance >= 600 && rng() < 0.002) type = 'coffee';
+      if (!safeWindow && run.distance >= 600 && rng() < 0.002) type = 'coffee';
       const lane = type === 'bus' ? 0 : laneFor(rng, 3); // JUTC buses overtake on the left
       const e = spawn(field, type, lane, 5200);
       if (type === 'coin') {
@@ -286,7 +293,7 @@ export function createGame(audio) {
     }
     const coinsBefore = run.coins, condBefore = cart.condition.value;
     cart.gusted = false; cart.washed = false; cart.pickupValue = 0; cart.nearMiss = false;
-    cart.pickupLabel = null; cart.hitNegative = null; cart.fined = false; cart.washCharge = 0;
+    cart.pickupLabel = null; cart.hitNegative = null; cart.fined = false; cart.washCharge = 0; cart.bribed = false;
     resolveHits(run, cart, field, effects);
     if (run.coins > coinsBefore) audio && audio.sfx(cart.pickupValue >= 100 ? 'cash' : 'coin');
     // any damage event ratchets the permanent rattle up
@@ -300,6 +307,7 @@ export function createGame(audio) {
     if (cart.pickupLabel) pickupToast = { label: cart.pickupLabel, good: true, t: 1.4 };
     else if (cart.hitNegative) pickupToast = { label: cart.hitNegative, good: false, t: 1.8 };
     else if (cart.fined) pickupToast = { label: 'Police Fine −' + formatMoney(POLICE.fine), good: false, t: 1.6 };
+    else if (cart.bribed) pickupToast = { label: 'Bribe di Police −' + formatMoney(POLITICIAN.bribe) + ' · roads clear!', good: false, t: 1.8 };
     else if (cart.washed) pickupToast = { label: 'Windscreen Wash −' + formatMoney(cart.washCharge || 0), good: false, t: 1.4 };
     squeakAccum += dz;
     const shoulder = onShoulder(cart);
@@ -444,7 +452,7 @@ export function createGame(audio) {
   // Mech shop: repair and rig upgrade handlers
   function doRepair() {
     if (mechshop.applyRepair(save, 100)) { audio && audio.sfx('cash'); writeSave(save); }
-    else state.popup = { title: 'NUH RICH YET', lines: ['Repair costs ' + formatMoney(mechshop.repairCost(save.condition, 100)) + '.', 'Bank more coins on di road first.'] };
+    else state.popup = { title: 'NUH RICH YET', lines: ['Repair costs ' + formatMoney(mechshop.repairCost(save.condition, 100, save.vehicle)) + '.', 'Bank more coins on di road first.'] };
   }
   function doBuyUpgrade(upgradeId) {
     const upgrade = upgradesForVehicle(save.vehicle).find(u => u.id === upgradeId);

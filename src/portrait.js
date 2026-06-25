@@ -16,7 +16,7 @@
 // The portrait (frame + bust) is drawn fully within the size×size box centred on
 // (cx, cy).  Unknown ids fall back to a neutral silhouette.
 
-export const PORTRAITS = new Set(['yute', 'rasta', 'conductor', 'politician']);
+export const PORTRAITS = new Set(['yute', 'rasta', 'conductor', 'politician', 'taximan']);
 
 // ─── public entry point ──────────────────────────────────────────────────────
 export function renderPortrait(ctx, characterId, cx, cy, size, opts) {
@@ -32,6 +32,7 @@ export function renderPortrait(ctx, characterId, cx, cy, size, opts) {
     case 'rasta':     _drawRasta(ctx, size);     break;
     case 'conductor': _drawConductor(ctx, size, bleachLevel); break;
     case 'politician':_drawPolitician(ctx, size); break;
+    case 'taximan':   _drawTaxi(ctx, size);       break;
     default:          _drawSilhouette(ctx, size); break;
   }
 
@@ -52,6 +53,7 @@ const P = {
 
   // skin
   skinDark:    '#3a1e0a',   // deep natural brown
+  skinDarkLift:'#552c12',   // a notch lighter than skinDark — conductor stage-0 face
   skinMid:     '#7a3e18',   // warm brown mid
   skinLight:   '#c87a3a',   // lighter brown highlight
   skinPale:    '#e8c8a8',   // bleached/very light
@@ -96,6 +98,13 @@ const P = {
   skullBone:   '#e8e4d8',   // exposed cream-white skull / bone
   skullShadow: '#bcb6a4',   // skull contour shadow
   socketDark:  '#140f0c',   // hollow eye-socket / nasal cavity
+
+  // taxi man — route-taxi red accent + tan vest/collar
+  taxiRed:       '#b5342a',   // PPV route-taxi red (cap band / shirt accent)
+  taxiRedDk:     '#7e1f16',   // deeper red shadow
+  taxiVest:      '#caa86a',   // tan open vest body
+  taxiVestDk:    '#9a7e44',   // vest shadow band
+  taxiShade:     '#0f1418',   // sunglasses lens / dark accents
 
   // politician — half-orange / half-green suit + British court wig
   poliOrange:    '#e8821e',
@@ -586,8 +595,11 @@ function _drawConductor(ctx, size, bleachLevel = 0) {
   const s = size;
   const cx = s * 0.50;
   const lvl = Math.max(0, Math.min(4, Math.round(bleachLevel))); // clamp 0..4
-  // face-skin base tone per stage: dark until bleach takes hold at stage 2.
-  const faceBase = lvl >= 2 ? P.skinPale : P.skinDark;
+  // skin base tones per stage: dark until bleach takes hold at stage 2.
+  // Stage 0 is special: the bleaching has only just BEGUN on the face, so the
+  // face starts a notch LIGHTER than the still-dark neck/chest.
+  const neckBase = lvl >= 2 ? P.skinPale : P.skinDark;
+  const faceBase = lvl >= 2 ? P.skinPale : (lvl === 0 ? P.skinDarkLift : P.skinDark);
 
   // frame: slate/urban dark, bright gold swagger
   _frame(ctx, s, P.frameSlateDim, P.frameGold, '#4a3808');
@@ -665,7 +677,8 @@ function _drawConductor(ctx, size, bleachLevel = 0) {
   ctx.lineCap = 'butt';
 
   // ── Neck — base tone per stage, then stage-specific damage on top ──
-  ctx.fillStyle = faceBase;
+  // (uses neckBase: at stage 0 the neck stays dark while the face is lifted)
+  ctx.fillStyle = neckBase;
   ctx.fillRect(cx - neckW * 0.5, neckTopY, neckW, neckBotY - neckTopY);
   ctx.strokeStyle = P.outline; ctx.lineWidth = Math.max(1, s * 0.016);
   ctx.strokeRect(cx - neckW * 0.5, neckTopY, neckW, neckBotY - neckTopY);
@@ -697,8 +710,9 @@ function _drawConductor(ctx, size, bleachLevel = 0) {
   ctx.strokeStyle = P.outline; ctx.lineWidth = Math.max(1.5, s * 0.022); ctx.stroke();
 
   if (lvl === 0) {
-    // NATURAL: honest dark skin, just a forehead-plane highlight (like the Rasta)
-    ctx.fillStyle = '#4a2810';
+    // FRESH START: face only just beginning to bleach — a notch lighter than the
+    // dark neck/chest (faceBase = skinDarkLift), with a soft forehead-plane sheen.
+    ctx.fillStyle = '#6a3a18';                       // gentle lift over the lifted base
     ellipse(ctx, cx, headCY - headRY * 0.24, headRX * 0.60, headRY * 0.34); ctx.fill();
   } else if (lvl === 1) {
     // PATCHY: pale bleach blotches breaking across the still-dark face
@@ -804,8 +818,18 @@ function _drawConductor(ctx, size, bleachLevel = 0) {
     _eyes(ctx, cx, eyeY, eyeSpan, eyeR, '#2a1608');
     _nose(ctx, cx, eyeY + eyeR * 2.2, s);
 
-    if (lvl <= 1) {
-      // NATURAL / PATCHY: ordinary dark lips (not the black-pink bleach mouth)
+    if (lvl === 0) {
+      // FRESH START: CLEAR BLACK LIPS from the very beginning (the characteristic
+      // look), distinct solid-black lips — no pink centre yet (that arrives at 2).
+      ctx.fillStyle = P.blackLip;
+      ellipse(ctx, cx, lipY + s * 0.006, s * 0.074, s * 0.026); ctx.fill();
+      ctx.strokeStyle = P.blackLip; ctx.lineWidth = Math.max(1, s * 0.014);
+      ctx.beginPath();
+      ctx.moveTo(cx - s * 0.062, lipY);
+      ctx.quadraticCurveTo(cx, lipY + s * 0.010, cx + s * 0.062, lipY);
+      ctx.stroke();
+    } else if (lvl === 1) {
+      // PATCHY: ordinary dark lips (not yet the black-pink bleach mouth)
       _mouth(ctx, cx, lipY, s * 0.18, '#5a2a10', s * 0.012);
     } else if (lvl === 2) {
       // FULLY BLEACHED: black lips with a pink centre (characteristic)
@@ -1023,6 +1047,193 @@ function _drawPolitician(ctx, size) {
   ctx.fillStyle = '#cbe7cf';
   ctx.font = `500 ${Math.round(s * 0.066)}px "Courier New", monospace`;
   ctx.fillText('POLITICIAN', s * 0.50, s * 0.146);
+}
+
+// ─── TAXI MAN — "Taxi Man" ────────────────────────────────────────────────────
+// Cocky route-taxi driver, the most reckless / most dexterous swerver. Fitted cap
+// tilted with a route-taxi RED band, sunglasses pushed up onto the brim, open tan
+// vest over a collared shirt, a gold chain, a toothpick and a cocky half-grin.
+// Laid out to sit INSIDE the frame, front-facing bust.
+function _drawTaxi(ctx, size) {
+  const s = size;
+  const cx = s * 0.50;
+
+  // frame: warm urban dark, route-taxi RED border
+  _frame(ctx, s, '#1a1110', P.taxiRed, P.taxiRedDk);
+  _clipPanel(ctx, s);
+
+  // ── vertical layout anchors (all inside the frame) ──
+  const headCY   = s * 0.49;
+  const headRX   = s * 0.176;
+  const headRY   = s * 0.200;
+  const chinY    = headCY + headRY * 0.92;
+  const neckW    = s * 0.130;
+  const neckTopY = chinY - headRY * 0.05;
+  const neckBotY = chinY + s * 0.072;
+  const shTopY   = neckBotY - s * 0.004;
+  const shBotY   = s * 0.955;            // just inside the frame bottom
+  const shHalf   = s * 0.35;
+
+  // ── Open tan vest over a collared shirt — shoulders/chest ──
+  ctx.fillStyle = P.taxiVest;
+  ctx.beginPath();
+  ctx.moveTo(cx - neckW * 0.5, neckBotY);
+  ctx.lineTo(cx + neckW * 0.5, neckBotY);
+  ctx.lineTo(cx + shHalf, shBotY);
+  ctx.lineTo(cx - shHalf, shBotY);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = P.outline; ctx.lineWidth = Math.max(1, s * 0.016); ctx.stroke();
+  // vest shadow band across the lower chest
+  ctx.fillStyle = P.taxiVestDk;
+  ctx.beginPath();
+  ctx.moveTo(cx - shHalf * 0.86, shBotY);
+  ctx.quadraticCurveTo(cx, shTopY + (shBotY - shTopY) * 0.18, cx + shHalf * 0.86, shBotY);
+  ctx.closePath(); ctx.fill();
+
+  // ── Inner collared shirt — a deep V of red shirt showing under the open vest ──
+  ctx.fillStyle = P.taxiRed;
+  ctx.beginPath();
+  ctx.moveTo(cx - neckW * 0.56, neckBotY);
+  ctx.lineTo(cx + neckW * 0.56, neckBotY);
+  ctx.lineTo(cx, shBotY);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = P.taxiRedDk; ctx.lineWidth = Math.max(1, s * 0.012); ctx.stroke();
+  // open collar points (tan vest lapels flaring off the neck)
+  for (const sign of [-1, 1]) {
+    ctx.fillStyle = P.taxiVest;
+    ctx.beginPath();
+    ctx.moveTo(cx + sign * neckW * 0.5, neckBotY - s * 0.004);
+    ctx.lineTo(cx + sign * neckW * 1.5, neckBotY + s * 0.060);
+    ctx.lineTo(cx + sign * neckW * 0.2, neckBotY + s * 0.070);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = P.outline; ctx.lineWidth = Math.max(1, s * 0.014); ctx.stroke();
+  }
+
+  // ── Gold chain over the open shirt (swagger) ──
+  ctx.strokeStyle = P.frameGold; ctx.lineWidth = Math.max(1.5, s * 0.012);
+  ctx.beginPath();
+  ctx.moveTo(cx - neckW * 0.40, neckBotY + s * 0.010);
+  ctx.quadraticCurveTo(cx, neckBotY + s * 0.055, cx + neckW * 0.40, neckBotY + s * 0.010);
+  ctx.stroke();
+  ctx.fillStyle = P.frameGold;
+  ellipse(ctx, cx, neckBotY + s * 0.048, s * 0.011, s * 0.013); ctx.fill();
+
+  // ── Neck ──
+  ctx.fillStyle = P.skinMid;
+  ctx.fillRect(cx - neckW * 0.5, neckTopY, neckW, neckBotY - neckTopY);
+  ctx.strokeStyle = P.outline; ctx.lineWidth = Math.max(1, s * 0.016);
+  ctx.strokeRect(cx - neckW * 0.5, neckTopY, neckW, neckBotY - neckTopY);
+
+  // ── Head ──
+  ctx.fillStyle = 'rgba(0,0,0,0.30)';
+  ellipse(ctx, cx + s * 0.012, headCY + s * 0.012, headRX, headRY); ctx.fill();
+  ctx.fillStyle = P.skinMid;
+  ellipse(ctx, cx, headCY, headRX, headRY); ctx.fill();
+  ctx.strokeStyle = P.outline; ctx.lineWidth = Math.max(1.5, s * 0.022); ctx.stroke();
+  // cheek highlights
+  ctx.fillStyle = P.skinLight;
+  ellipse(ctx, cx - headRX * 0.46, headCY + headRY * 0.16, headRX * 0.24, headRY * 0.18); ctx.fill();
+  ellipse(ctx, cx + headRX * 0.46, headCY + headRY * 0.16, headRX * 0.24, headRY * 0.18); ctx.fill();
+
+  // ears
+  for (const sign of [-1, 1]) {
+    ctx.fillStyle = P.skinMid;
+    ellipse(ctx, cx + sign * headRX * 0.96, headCY + headRY * 0.08, headRX * 0.10, headRY * 0.13); ctx.fill();
+    ctx.strokeStyle = P.outline; ctx.lineWidth = Math.max(1, s * 0.014); ctx.stroke();
+  }
+
+  // ── Short hair sideburns peeking below the cap ──
+  ctx.fillStyle = P.hairBlack;
+  for (const sign of [-1, 1]) {
+    ellipse(ctx, cx + sign * headRX * 0.84, headCY - headRY * 0.12, headRX * 0.16, headRY * 0.24); ctx.fill();
+  }
+
+  // ── Fitted cap, TILTED jaunty (rotated about the crown) with a RED band ──
+  // Draw the whole cap in a rotated frame so the swagger tilt reads clearly.
+  ctx.save();
+  ctx.translate(cx, headCY - headRY * 0.52);
+  ctx.rotate(-0.14);                                 // cocky tilt to the wearer's right
+  const capW = headRX * 1.16;
+  // crown dome
+  ctx.fillStyle = P.frameSlate;
+  ctx.beginPath();
+  ctx.ellipse(0, headRY * 0.06, capW, headRY * 0.62, 0, Math.PI, 2 * Math.PI);
+  ctx.fill();
+  ctx.strokeStyle = P.outline; ctx.lineWidth = Math.max(1.5, s * 0.018); ctx.stroke();
+  // crown sheen
+  ctx.fillStyle = P.frameSlateDim;
+  ctx.beginPath();
+  ctx.ellipse(headRX * 0.18, -headRY * 0.18, capW * 0.50, headRY * 0.30, 0, Math.PI, 2 * Math.PI);
+  ctx.fill();
+  // RED band around the base of the crown (route-taxi accent)
+  ctx.fillStyle = P.taxiRed;
+  ctx.fillRect(-capW, headRY * 0.00, capW * 2, headRY * 0.16);
+  ctx.fillStyle = P.taxiRedDk;
+  ctx.fillRect(-capW, headRY * 0.10, capW * 2, headRY * 0.06);
+  ctx.strokeStyle = P.outline; ctx.lineWidth = Math.max(1, s * 0.012);
+  ctx.strokeRect(-capW, headRY * 0.00, capW * 2, headRY * 0.16);
+  // peak/brim jutting toward the viewer-right
+  ctx.fillStyle = P.frameSlateDim;
+  ctx.beginPath();
+  ctx.moveTo(-capW * 0.10, headRY * 0.16);
+  ctx.quadraticCurveTo(capW * 0.95, headRY * 0.10, capW * 1.05, headRY * 0.32);
+  ctx.quadraticCurveTo(capW * 0.55, headRY * 0.30, -capW * 0.10, headRY * 0.24);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = P.outline; ctx.lineWidth = Math.max(1, s * 0.012); ctx.stroke();
+  ctx.restore();
+
+  // ── Sunglasses pushed UP onto the cap brim (not over the eyes) ──
+  const shadeY = headCY - headRY * 0.42;
+  ctx.fillStyle = P.taxiShade;
+  for (const sign of [-1, 1]) {
+    rrect(ctx, cx + sign * headRX * 0.34 - headRX * 0.26, shadeY, headRX * 0.52, headRY * 0.18, s * 0.010);
+    ctx.fill();
+  }
+  // bridge + lens glints
+  ctx.strokeStyle = P.taxiShade; ctx.lineWidth = Math.max(1.5, s * 0.012);
+  ctx.beginPath(); ctx.moveTo(cx - headRX * 0.08, shadeY + headRY * 0.08); ctx.lineTo(cx + headRX * 0.08, shadeY + headRY * 0.08); ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,0.30)';
+  ellipse(ctx, cx - headRX * 0.40, shadeY + headRY * 0.05, headRX * 0.10, headRY * 0.04); ctx.fill();
+  ellipse(ctx, cx + headRX * 0.30, shadeY + headRY * 0.05, headRX * 0.10, headRY * 0.04); ctx.fill();
+
+  // ── Face features — cocky, "ready to cut you off" swagger ──
+  const eyeY    = headCY + headRY * 0.02;
+  const eyeSpan = headRX * 0.84;
+  const eyeR    = s * 0.040;
+  // one brow cocked higher than the other (sizing up the gap ahead)
+  _eyebrows(ctx, cx, eyeY - eyeR * 1.5, eyeSpan, eyeR, P.hairBlack, 0.55);
+  _eyes(ctx, cx, eyeY, eyeSpan, eyeR, '#3a1e0c');
+  _nose(ctx, cx, eyeY + eyeR * 2.2, s);
+
+  // cocky asymmetric half-grin (one corner hitched up)
+  const grinY = eyeY + eyeR * 3.9;
+  ctx.fillStyle = P.skinMid;
+  ctx.beginPath();
+  ctx.ellipse(cx, grinY + s * 0.006, s * 0.060, s * 0.014, 0, 0, Math.PI); ctx.fill();
+  ctx.strokeStyle = P.outline; ctx.lineWidth = Math.max(1.5, s * 0.016); ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(cx - s * 0.058, grinY + s * 0.004);
+  ctx.quadraticCurveTo(cx, grinY + s * 0.014, cx + s * 0.068, grinY - s * 0.010);
+  ctx.stroke();
+  ctx.lineCap = 'butt';
+
+  // ── Toothpick jutting from the corner of the grin ──
+  ctx.strokeStyle = '#e8d8a8'; ctx.lineWidth = Math.max(1, s * 0.010); ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(cx + s * 0.060, grinY - s * 0.006);
+  ctx.lineTo(cx + s * 0.110, grinY - s * 0.020);
+  ctx.stroke();
+  ctx.lineCap = 'butt';
+
+  // ── name label ──
+  ctx.fillStyle = P.taxiRed;
+  ctx.font = `700 ${Math.round(s * 0.092)}px "Courier New", monospace`;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText('TAXI', s * 0.50, s * 0.090);
+  ctx.fillStyle = '#e8d8a8';
+  ctx.font = `500 ${Math.round(s * 0.078)}px "Courier New", monospace`;
+  ctx.fillText('MAN', s * 0.50, s * 0.150);
 }
 
 // ─── FALLBACK — neutral silhouette ───────────────────────────────────────────

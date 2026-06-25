@@ -1,4 +1,5 @@
-// tests/charitems.test.js — character-specific bleach / wholesome pickups
+// tests/charitems.test.js — School-Yute wholesome pickups (bleach items are now
+// AVOID-hazards in negatives.js, not pickups).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { ITEMS, canUseItem, applyItem, itemWeightsFor } from '../src/charitems.js';
@@ -12,13 +13,13 @@ const rasta     = { id: 'rasta' };
 
 // ---- eligibility (each item gated to one driver) ----
 
-test('conductor can use bleach items; yute cannot', () => {
-  assert.ok(canUseItem(conductor, 'cakesoap'));
-  assert.equal(canUseItem(yute, 'cakesoap'), false);
-});
-test('yute can use wholesome items; conductor cannot', () => {
-  assert.ok(canUseItem(yute, 'books'));
+test('the Conductor has NO pickups now (his bleach items became avoid-hazards)', () => {
+  assert.deepEqual(itemWeightsFor(conductor), []);
+  assert.equal(canUseItem(conductor, 'cakesoap'), false);
   assert.equal(canUseItem(conductor, 'books'), false);
+});
+test('yute can use wholesome items', () => {
+  assert.ok(canUseItem(yute, 'books'));
 });
 test('rasta gets no character items (keeps his drink edge)', () => {
   assert.deepEqual(itemWeightsFor(rasta), []);
@@ -27,32 +28,6 @@ test('rasta gets no character items (keeps his drink edge)', () => {
 test('unknown character / item → false', () => {
   assert.equal(canUseItem(null, 'books'), false);
   assert.equal(canUseItem(yute, 'nope'), false);
-});
-
-// ---- bleach items: boost THEN backfire ----
-
-test('a bleach item grants a boost (super) and an impairing burn tail', () => {
-  const fx = createEffects();
-  const cart = createCart(getCharacter('conductor'));
-  applyItem(fx, cart, 'cakesoap');
-  assert.ok(effectActive(fx, 'super'), 'boost is active immediately');
-  assert.ok(effectActive(fx, 'burn'), 'burn timer is set');
-  assert.ok(cart.tipsy > 0, 'steering impairment magnitude is set');
-  // the burn outlasts the boost (it lingers after invincibility ends)
-  assert.ok((fx.burn) > (fx.super), 'burn lasts longer than the boost');
-});
-
-test('the burn lingers after the boost ends, then clears', () => {
-  const fx = createEffects();
-  const cart = createCart(getCharacter('conductor'));
-  applyItem(fx, cart, 'toothpaste');     // boost 1.8 + tail 2.5 = burn 4.3
-  // advance past the boost but not the burn
-  for (let i = 0; i < 120; i++) tickEffects(fx, 1 / 60);  // 2.0s
-  assert.equal(effectActive(fx, 'super'), false, 'boost has ended');
-  assert.ok(effectActive(fx, 'burn'), 'burn still lingering (the backfire)');
-  // advance well past the burn
-  for (let i = 0; i < 200; i++) tickEffects(fx, 1 / 60);  // +3.3s
-  assert.equal(effectActive(fx, 'burn'), false, 'burn cleared');
 });
 
 // ---- wholesome items: pure benefit ----

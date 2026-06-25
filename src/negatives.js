@@ -13,7 +13,7 @@
 //   impair       — magnitude of sloppy steering (reuses the booze `tipsy` machinery).
 //   blessingLoss — wipes the run's tithe-blessing resilience.
 import { applyDamage } from './wreck.js';
-import { NEGATIVE } from './constants.js';
+import { NEGATIVE, BLEACH } from './constants.js';
 
 export const NEGATIVES = {
   // ── School Yute — temptations to AVOID ──
@@ -29,6 +29,14 @@ export const NEGATIVES = {
   pork:       { id: 'pork',       label: 'Pork',            char: 'rasta', damage: 12, blessingLoss: true, color: '#e0a0a0' },
   jw:         { id: 'jw',         label: "Jehovah Witness", char: 'rasta', impair: 0.4, drainPct: 0.08, color: '#cfc8b0' },
 
+  // ── Bleachaz Conductor — must AVOID these (they were once his vanity boost) ──
+  // Bleaching products burn his skin (damage), burn through his CASH (cashBurn), and
+  // disfigure him one stage worse (bleach). Sunlight just scorches the bleached skin.
+  cakesoap:    { id: 'cakesoap',    label: 'Cake Soap',    char: 'conductor', damage: 10, cashBurn: 1500, bleach: true, color: '#3a6ad0' },
+  currypowder: { id: 'currypowder', label: 'Curry Powder', char: 'conductor', damage: 8,  cashBurn: 1000, bleach: true, color: '#d9a01f' },
+  toothpaste:  { id: 'toothpaste',  label: 'Toothpaste',   char: 'conductor', damage: 6,  cashBurn: 800,  bleach: true, color: '#e8f2f5' },
+  sunlight:    { id: 'sunlight',    label: 'Sunlight',     char: 'conductor', damage: 12, bleach: true, color: '#f0c020' },
+
   // ── Politician — "responsibilities" that cost him money (drain only) ──
   roadfix:      { id: 'roadfix',      label: 'Road Repairs',   char: 'politician', drainPct: 0.25, color: '#e8821e' },
   constituent:  { id: 'constituent',  label: 'Constituent',    char: 'politician', drainPct: 0.15, color: '#b04a3c' },
@@ -43,7 +51,7 @@ const ELIGIBLE = {
   yute:       ['bleaching', 'tightpants', 'weed', 'molly', 'teensex'],
   rasta:      ['obeah', 'pork', 'jw'],
   politician: ['roadfix', 'constituent', 'lightpole', 'hustlerlunch', 'voter', 'contractor'],
-  conductor:  [],   // the Conductor's "risk" is his bleach-vanity boost-then-backfire items
+  conductor:  ['cakesoap', 'currypowder', 'toothpaste', 'sunlight'],   // vanity + sun he must dodge
 };
 
 // Spawn rarity weights. Yute/Rasta temptations stay an occasional risk; the
@@ -51,6 +59,7 @@ const ELIGIBLE = {
 const WEIGHTS = {
   bleaching: 0.5, tightpants: 0.4, weed: 0.5, molly: 0.35, teensex: 0.3,
   obeah: 0.4, pork: 0.5, jw: 0.4,
+  cakesoap: 0.6, currypowder: 0.6, toothpaste: 0.6, sunlight: 0.8,
   roadfix: 1.2, constituent: 1.4, lightpole: 0.9, hustlerlunch: 1.0, voter: 1.2, contractor: 0.8,
 };
 
@@ -85,11 +94,20 @@ export function applyNegative(effects, cart, run, id) {
     cart.condition = applyDamage(cart.condition, n.damage);
   }
   if (typeof n.drainPct === 'number') {
-    run.coins = Math.max(0, Math.round(run.coins * (1 - n.drainPct)));
+    // Drains a % of what you HAVE — never deepens an existing debt.
+    run.coins -= Math.max(0, run.coins) * n.drainPct;
+    run.coins = Math.round(run.coins);
+  }
+  if (typeof n.cashBurn === 'number') {
+    run.coins -= n.cashBurn;            // a flat cost — CAN push you into debt
   }
   if (typeof n.impair === 'number') {
     cart.tipsy   = Math.max(cart.tipsy || 0, n.impair);
     effects.tipsy = Math.max(effects.tipsy || 0, NEGATIVE.impairSecs);
+  }
+  if (n.bleach) {
+    // Bleaching products / sun disfigure the Conductor one stage worse.
+    cart.bleachLevel = Math.min(BLEACH.maxLevel, (cart.bleachLevel || 0) + 1);
   }
   if (n.blessingLoss && cart.blessing) {
     cart.blessing.resist = 0;

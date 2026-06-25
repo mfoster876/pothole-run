@@ -29,11 +29,12 @@ test('eligibility is gated to the right driver', () => {
     ['obeah', 'pork', 'jw']);
   assert.deepEqual(negativesFor(getCharacter('politician')).map(n => n.type),
     ['roadfix', 'constituent', 'lightpole', 'hustlerlunch', 'voter', 'contractor']);
-  assert.deepEqual(negativesFor(getCharacter('conductor')).map(n => n.type), []);
+  assert.deepEqual(negativesFor(getCharacter('conductor')).map(n => n.type),
+    ['cakesoap', 'currypowder', 'toothpaste', 'sunlight']);
 });
 
 test('every negative belongs to exactly one eligible driver', () => {
-  const drivers = ['yute', 'rasta', 'politician'];
+  const drivers = ['yute', 'rasta', 'politician', 'conductor'];
   for (const id of Object.keys(NEGATIVES)) {
     const owners = drivers.filter(d => negativesFor(getCharacter(d)).some(n => n.type === id));
     assert.equal(owners.length, 1, `${id} owned by exactly one driver`);

@@ -21,10 +21,11 @@ export const VEHICLES = [
   { id: 'swift',     name: 'Suzuki Swift',    price: 900000,    speed: 1.26, handling: 1.12, toughness: 1.00, stability: 1.10, isCar: true,  sprite: 'swift',     body: '#5a7d9a' },
   { id: 'x6',        name: 'BMW X6 (White)',  price: 6500000,   speed: 1.46, handling: 1.04, toughness: 1.32, stability: 1.20, isCar: true,  sprite: 'x6',        body: '#f4f4f6' },
   { id: 'audi',      name: 'Audi',            price: 5500000,   speed: 1.56, handling: 1.16, toughness: 1.16, stability: 1.20, isCar: true,  sprite: 'audi',      body: '#2c2f34' },
-  { id: 'porsche',   name: 'Porsche',         price: 12000000,  speed: 1.82, handling: 1.32, toughness: 0.96, stability: 1.25, isCar: true,  sprite: 'porsche',   body: '#d8b020' },
-  { id: 'pickup',    name: 'Pickup Truck',    price: 2200000,   speed: 1.32, handling: 0.90, toughness: 1.62, stability: 1.15, isCar: true,  sprite: 'pickup',    body: '#3a5a3a' },
+  { id: 'porsche',   name: 'Porsche',         price: 12000000,  speed: 1.82, handling: 1.44, toughness: 0.96, stability: 1.25, isCar: true,  sprite: 'porsche',   body: '#d8b020' },
+  { id: 'pickup',    name: 'Pickup Truck',    price: 2200000,   speed: 1.32, handling: 0.80, toughness: 1.62, stability: 1.15, isCar: true,  sprite: 'pickup',    body: '#3a5a3a' },
   { id: 'jetour',    name: 'Jetour EV',       price: 9000000,   speed: 1.72, handling: 1.22, toughness: 1.34, stability: 1.30, isCar: true,  sprite: 'jetour',    body: '#1f6f6f' },
-  { id: 'cybertruck',name: 'Cybertruck',      price: 22000000,  speed: 1.94, handling: 1.00, toughness: 2.05, stability: 1.40, isCar: true,  sprite: 'cybertruck',body: '#9aa0a6' }
+  // Heavy stainless wedge: brick-fast & tanky, but the clumsiest thing to thread a gap with.
+  { id: 'cybertruck',name: 'Cybertruck',      price: 22000000,  speed: 1.94, handling: 0.84, toughness: 2.05, stability: 1.40, isCar: true,  sprite: 'cybertruck',body: '#9aa0a6' }
 ];
 
 export function getVehicle(id) {

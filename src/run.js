@@ -1,7 +1,7 @@
 import { laneOverlap } from './collision.js';
 import { applyDamage, repair } from './wreck.js';
 import { hazardInfo } from './hazardTypes.js';
-import { DAMAGE, GUST, WIPER, HOP, COMBO, POLICE } from './constants.js';
+import { DAMAGE, GUST, WIPER, HOP, COMBO, POLICE, POLITICIAN } from './constants.js';
 import { applyPowerup, effectActive } from './powerups.js';
 import { applyNegative } from './negatives.js';
 
@@ -80,28 +80,35 @@ export function resolveHits(run, cart, field, effects = cart._effects || {}) {
       // Privileged drivers (the Politician) shrug off whole hazard classes:
       // immune categories plow straight through (no damage, no fine, combo kept).
       if (ch.immune && cat && ch.immune.includes(cat)) {
-        // untouchable — nothing happens
+        // untouchable — nothing happens (pedestrians / roadkill for the Politician)
+      } else if (info.fine && ch.id === 'politician') {
+        // The Politician is never STOPPED by police — he greases the palm (a bribe /
+        // buys a lunch), and the bribed cop then CLEARS the road ahead of traffic for
+        // him for a while. The bribe is a flat cost that can push him into debt.
+        run.coins -= POLITICIAN.bribe;
+        cart.bribed = true;
+        effects.clearRoads = POLITICIAN.clearRoadsDur;
+        run.combo = 0;
       } else {
         const tough = ch.toughness * (cart.vehicle ? cart.vehicle.toughness : 1);
         const resist = (cart.blessing && cart.blessing.resist) || 0;
-        // Some classes ignore a driver's toughness/privilege break entirely — potholes
-        // & manholes stay "equally devastating" for the otherwise-untouchable Politician.
+        // Some classes ignore a driver's toughness break entirely — potholes & manholes
+        // stay "equally devastating" for the Politician (his ride takes a real beating).
         const fullForce = ch.fullDamageCats && cat && ch.fullDamageCats.includes(cat);
         let dmg = fullForce ? info.damage : info.damage / tough;
-        // soften a class of hits (e.g. politician takes half from other cars)
         if (!fullForce && ch.damageScale && cat && ch.damageScale[cat] != null) dmg *= ch.damageScale[cat];
         dmg *= (1 - Math.min(0.9, resist));      // blessing makes the cart more resilient
         cart.condition = applyDamage(cart.condition, dmg);
         run.combo = 0;
-        // windscreen youth: forced "wash" skims coins off your fare — a greedier ask
-        // the deeper you are and the flashier the ride
+        // windscreen youth: forced "wash" skims coins off your fare — a greedier ask the
+        // deeper you are and the flashier the ride. No floor: it can put you in DEBT.
         if (info.coinLoss) {
           const charge = wiperCharge(run.distance, cart.vehicle);
-          run.coins = Math.max(0, run.coins - charge);
+          run.coins -= charge;
           cart.washed = true; cart.washCharge = charge;
         }
-        // police shakedown: a fine skimmed off your fare on contact
-        if (info.fine) { run.coins = Math.max(0, run.coins - POLICE.fine); cart.fined = true; }
+        // police shakedown: a hefty fine on contact (no floor — can put you in debt)
+        if (info.fine) { run.coins -= POLICE.fine; cart.fined = true; }
       }
     }
   }

@@ -34,11 +34,12 @@ test('every driver carries the full dial (no undefined knobs)', () => {
   }
 });
 
-test('only the Politician is privileged with immunities', () => {
+test('the Politician shrugs off people/roadkill but his ride takes full damage', () => {
   const pol = getCharacter('politician');
-  assert.deepEqual(pol.immune, ['police', 'pedestrian', 'animal']);
-  assert.equal(pol.damageScale.traffic, 0.5);
-  for (const id of ['yute', 'rasta', 'conductor']) {
+  assert.deepEqual(pol.immune, ['pedestrian', 'animal'], 'immune to people & roadkill, NOT police');
+  assert.equal(pol.damageScale, undefined, 'no more half-damage break — his ride gets battered');
+  assert.deepEqual(pol.fullDamageCats, ['road'], 'potholes/manholes still devastating');
+  for (const id of ['yute', 'rasta', 'conductor', 'taximan']) {
     assert.equal(getCharacter(id).immune, undefined, `${id} has no immunities`);
   }
 });

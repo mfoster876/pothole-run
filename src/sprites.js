@@ -18,7 +18,11 @@ export function drawEntity(ctx, type, sx, sy, size, seed = 0.137, value = 1) {
     case 'bus': drawBus(ctx, sx, sy, s * 1.35); break;
     case 'coaster': drawCoaster(ctx, sx, sy, s * 1.15); break;
     case 'hustler': person(ctx, sx, sy, s, '#d06a30'); break;
-    case 'jaywalker': person(ctx, sx, sy, s, '#3a6ea5'); break;
+    case 'jaywalker': drawJaywalker(ctx, sx, sy, s, seed); break;
+    case 'beggar': drawBeggar(ctx, sx, sy, s); break;
+    case 'vendor': drawVendor(ctx, sx, sy, s); break;
+    case 'peanutcart': drawPeanutCart(ctx, sx, sy, s); break;
+    case 'sunlight': drawSunlight(ctx, sx, sy, s, seed); break;
     case 'police': drawPolice(ctx, sx, sy, s); break;
     case 'wiper': wiperYouth(ctx, sx, sy, s, seed); break;
     case 'stall': roundedBar(ctx, sx, sy, s * 1.2, s * 0.8, '#7a4a22'); break;
@@ -1395,4 +1399,380 @@ function hardHatContractor(ctx, x, y, s) {
   rrectSprite(ctx, x + s * 0.17, y - s * 0.63, s * 0.24, s * 0.3, s * 0.02); ctx.fill();
   ctx.strokeStyle = '#9a9484'; ctx.lineWidth = Math.max(1, s * 0.02);
   for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.moveTo(x + s * 0.2, y - s * (0.56 - i * 0.08)); ctx.lineTo(x + s * 0.38, y - s * (0.56 - i * 0.08)); ctx.stroke(); }
+}
+
+// ============================================================================
+// New Kingston street characters + a sun-glare hazard (New Kingston set)
+// ============================================================================
+
+// ---- jaywalker: a pedestrian caught MID-STRIDE crossing the road. Same 12-bit
+// person build, but the legs are split into a walking gait (one forward, one
+// back), the arms swing in opposition, and the whole figure leans forward so it
+// clearly reads as someone walking across — not standing. Seed nudges the pose.
+function drawJaywalker(ctx, x, y, s, seed) {
+  const rnd = mulberry32(Math.floor((seed || 0.137) * 2147483647) ^ 0x4a17);
+  const color = '#3a6ea5';
+  const shade = shadeColor(color, -0.35), hi = shadeColor(color, 0.3);
+  const skin = '#7a5030', skinHi = '#a87050', skinShadow = '#4a2e14';
+  // seed-driven stride: how far the front foot reaches, plus a small lean
+  const stride = s * (0.16 + rnd() * 0.08);
+  const lean = (0.06 + rnd() * 0.05);  // forward tilt in radians (toward viewer-right)
+
+  ctx.save();
+  ctx.translate(x, y - s * 0.36);  // pivot near the hips so the lean swings the upper body
+  ctx.rotate(lean);
+  ctx.translate(-x, -(y - s * 0.36));
+
+  // walking legs — front leg swung forward, back leg trailing behind (thigh + shin)
+  ctx.strokeStyle = shade; ctx.lineWidth = Math.max(2, s * 0.12); ctx.lineCap = 'round';
+  const hipY = y - s * 0.38;
+  // back (trailing) leg — knee bent, foot lifted behind
+  ctx.beginPath();
+  ctx.moveTo(x - s * 0.04, hipY);
+  ctx.quadraticCurveTo(x - stride * 0.7, hipY + s * 0.18, x - stride, y - s * 0.02);
+  ctx.stroke();
+  // front (leading) leg — reaching ahead, foot planted forward
+  ctx.beginPath();
+  ctx.moveTo(x + s * 0.02, hipY);
+  ctx.quadraticCurveTo(x + stride * 0.6, hipY + s * 0.16, x + stride, y);
+  ctx.stroke();
+
+  // torso — base, tucked just above the hips
+  ctx.fillStyle = color;
+  ctx.beginPath(); ctx.roundRect(x - s * 0.2, y - s * 0.88, s * 0.4, s * 0.52, s * 0.06); ctx.fill();
+  ctx.fillStyle = shade;
+  ctx.beginPath(); ctx.roundRect(x + s * 0.04, y - s * 0.86, s * 0.14, s * 0.48, s * 0.04); ctx.fill();
+  ctx.fillStyle = hi;
+  ctx.beginPath(); ctx.roundRect(x - s * 0.18, y - s * 0.86, s * 0.08, s * 0.44, s * 0.04); ctx.fill();
+
+  // swinging arms in OPPOSITION to the legs — front arm back, back arm forward
+  ctx.strokeStyle = skin; ctx.lineWidth = Math.max(2, s * 0.1); ctx.lineCap = 'round';
+  // leading-side arm swings BACK
+  ctx.beginPath();
+  ctx.moveTo(x + s * 0.16, y - s * 0.82);
+  ctx.quadraticCurveTo(x + s * 0.34, y - s * 0.66, x + s * 0.30, y - s * 0.44);
+  ctx.stroke();
+  // trailing-side arm swings FORWARD (across the front)
+  ctx.beginPath();
+  ctx.moveTo(x - s * 0.16, y - s * 0.82);
+  ctx.quadraticCurveTo(x - s * 0.30, y - s * 0.62, x - s * 0.18, y - s * 0.46);
+  ctx.stroke();
+
+  // neck + head (round)
+  ctx.fillStyle = skin;
+  ctx.fillRect(x - s * 0.07, y - s * 1.02, s * 0.14, s * 0.18);
+  ctx.beginPath(); ctx.arc(x, y - s * 1.08, s * 0.22, 0, Math.PI * 2);
+  ctx.fillStyle = skin; ctx.fill();
+  ctx.beginPath(); ctx.arc(x - s * 0.07, y - s * 1.14, s * 0.1, 0, Math.PI * 2);
+  ctx.fillStyle = skinHi; ctx.fill();
+  ctx.beginPath(); ctx.arc(x + s * 0.07, y - s * 1.04, s * 0.1, 0, Math.PI * 2);
+  ctx.fillStyle = skinShadow; ctx.fill();
+  if (s >= 14) {
+    ctx.fillStyle = '#1a0a04';
+    ctx.beginPath(); ctx.arc(x - s * 0.08, y - s * 1.1, Math.max(1, s * 0.04), 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x + s * 0.04, y - s * 1.1, Math.max(1, s * 0.04), 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.restore();
+}
+
+// ---- beggar: a crippled man in a manual WHEELCHAIR — two big spoked side wheels,
+// a small front caster, a seated figure with a blanket over the legs and one hand
+// out asking. Muted clothing. A New Kingston street fixture.
+function drawBeggar(ctx, x, y, s) {
+  const cloth = '#6a6356', clothShade = shadeColor('#6a6356', -0.3);
+  const blanket = '#7d4a2e', blanketShade = '#5a3320';
+  const skin = '#7a5030', skinHi = '#a87050', skinShadow = '#4a2e14';
+  const metal = '#5a5e63', metalHi = '#9aa0a6', tyre = '#1c1c1e', spoke = '#b8bcc0';
+  const wheelR = s * 0.42, wheelCY = y - wheelR;     // big drive wheel sits on the ground
+  const wheelCX = x + s * 0.06;                       // wheel centred slightly behind seat
+
+  // ground shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.22)';
+  ellipsePath(ctx, x, y + s * 0.04, s * 0.7, s * 0.11); ctx.fill();
+
+  // small front caster wheel (ahead/left of the figure)
+  ctx.fillStyle = '#3a3d41';
+  ctx.beginPath(); ctx.arc(x - s * 0.46, y - s * 0.16, s * 0.14, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = metalHi;
+  ctx.beginPath(); ctx.arc(x - s * 0.46, y - s * 0.16, s * 0.05, 0, Math.PI * 2); ctx.fill();
+  // caster fork up to the frame
+  ctx.strokeStyle = metal; ctx.lineWidth = Math.max(1.5, s * 0.05); ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(x - s * 0.46, y - s * 0.3); ctx.lineTo(x - s * 0.3, y - s * 0.52); ctx.stroke();
+
+  // seated figure: lower body under a blanket (rounded lap mound)
+  ctx.fillStyle = blanket;
+  rrectSprite(ctx, x - s * 0.36, y - s * 0.7, s * 0.6, s * 0.34, s * 0.1); ctx.fill();
+  ctx.fillStyle = blanketShade;
+  rrectSprite(ctx, x - s * 0.36, y - s * 0.46, s * 0.6, s * 0.1, s * 0.06); ctx.fill();
+  // blanket fold lines
+  if (s >= 14) {
+    ctx.strokeStyle = blanketShade; ctx.lineWidth = Math.max(1, s * 0.03);
+    ctx.beginPath(); ctx.moveTo(x - s * 0.22, y - s * 0.68); ctx.lineTo(x - s * 0.16, y - s * 0.4);
+    ctx.moveTo(x + s * 0.02, y - s * 0.68); ctx.lineTo(x + s * 0.06, y - s * 0.4); ctx.stroke();
+  }
+
+  // torso (muted shirt) rising from the seat
+  ctx.fillStyle = cloth;
+  ctx.beginPath(); ctx.roundRect(x - s * 0.22, y - s * 1.04, s * 0.42, s * 0.4, s * 0.06); ctx.fill();
+  ctx.fillStyle = clothShade;
+  ctx.beginPath(); ctx.roundRect(x + s * 0.02, y - s * 1.02, s * 0.16, s * 0.36, s * 0.04); ctx.fill();
+
+  // outstretched begging arm reaching forward/out (palm up, toward viewer-left)
+  ctx.strokeStyle = skin; ctx.lineWidth = Math.max(2, s * 0.1); ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(x - s * 0.18, y - s * 0.96);
+  ctx.quadraticCurveTo(x - s * 0.48, y - s * 0.86, x - s * 0.6, y - s * 0.72);
+  ctx.stroke();
+  // open hand / cupped palm at the end
+  ctx.fillStyle = skinHi;
+  ctx.beginPath(); ctx.arc(x - s * 0.62, y - s * 0.7, s * 0.08, 0, Math.PI * 2); ctx.fill();
+
+  // neck + head
+  ctx.fillStyle = skin;
+  ctx.fillRect(x - s * 0.06, y - s * 1.14, s * 0.12, s * 0.14);
+  ctx.beginPath(); ctx.arc(x, y - s * 1.2, s * 0.2, 0, Math.PI * 2);
+  ctx.fillStyle = skin; ctx.fill();
+  ctx.beginPath(); ctx.arc(x - s * 0.06, y - s * 1.25, s * 0.09, 0, Math.PI * 2);
+  ctx.fillStyle = skinHi; ctx.fill();
+  ctx.beginPath(); ctx.arc(x + s * 0.06, y - s * 1.16, s * 0.09, 0, Math.PI * 2);
+  ctx.fillStyle = skinShadow; ctx.fill();
+  if (s >= 14) {
+    ctx.fillStyle = '#1a0a04';
+    ctx.beginPath(); ctx.arc(x - s * 0.07, y - s * 1.22, Math.max(1, s * 0.035), 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x + s * 0.03, y - s * 1.22, Math.max(1, s * 0.035), 0, Math.PI * 2); ctx.fill();
+  }
+
+  // chair back-post + push handle behind the figure
+  ctx.strokeStyle = metal; ctx.lineWidth = Math.max(2, s * 0.07); ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(x + s * 0.2, y - s * 0.5); ctx.lineTo(x + s * 0.24, y - s * 1.1); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x + s * 0.24, y - s * 1.1); ctx.lineTo(x + s * 0.34, y - s * 1.1); ctx.stroke();
+
+  // BIG drive wheel (drawn over the body so it reads as the near-side wheel)
+  ctx.fillStyle = tyre;
+  ctx.beginPath(); ctx.arc(wheelCX, wheelCY, wheelR, 0, Math.PI * 2); ctx.fill();
+  // inner hub face
+  ctx.fillStyle = '#2a2c2e';
+  ctx.beginPath(); ctx.arc(wheelCX, wheelCY, wheelR * 0.82, 0, Math.PI * 2); ctx.fill();
+  // spokes radiating from the hub
+  ctx.strokeStyle = spoke; ctx.lineWidth = Math.max(1, s * 0.03);
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.moveTo(wheelCX, wheelCY);
+    ctx.lineTo(wheelCX + Math.cos(a) * wheelR * 0.78, wheelCY + Math.sin(a) * wheelR * 0.78);
+    ctx.stroke();
+  }
+  // chrome hub
+  ctx.fillStyle = metalHi;
+  ctx.beginPath(); ctx.arc(wheelCX, wheelCY, wheelR * 0.16, 0, Math.PI * 2); ctx.fill();
+  // outer hand-rim (the smaller push ring beside the tyre)
+  ctx.strokeStyle = metal; ctx.lineWidth = Math.max(1.5, s * 0.04);
+  ctx.beginPath(); ctx.arc(wheelCX, wheelCY, wheelR * 0.92, 0, Math.PI * 2); ctx.stroke();
+}
+
+// ---- vendor: a man selling flowers & fruit — standing figure holding a tray of
+// produce: red ROSES, little round green GUINEP clusters, and pinkish-red
+// pear-shaped OTAHEITE APPLES. Bright and lively. New Kingston street seller.
+function drawVendor(ctx, x, y, s) {
+  // the man himself (warm casual shirt)
+  person(ctx, x, y, s, '#1f7a5a');
+
+  // a shallow woven tray held out in front, at waist height
+  const tw = s * 0.86, th = s * 0.22, tx = x - tw * 0.5, ty = y - s * 0.6;
+  ctx.fillStyle = '#9a6b34';            // straw/wood tray
+  rrectSprite(ctx, tx, ty, tw, th, th * 0.4); ctx.fill();
+  ctx.fillStyle = shadeColor('#9a6b34', -0.25);
+  rrectSprite(ctx, tx, ty + th * 0.55, tw, th * 0.5, th * 0.3); ctx.fill();
+  ctx.strokeStyle = '#6a4720'; ctx.lineWidth = Math.max(1, s * 0.03);
+  rrectSprite(ctx, tx, ty, tw, th, th * 0.4); ctx.stroke();
+  // woven texture hint
+  if (s >= 14) {
+    ctx.strokeStyle = 'rgba(60,40,16,0.4)'; ctx.lineWidth = Math.max(1, s * 0.02);
+    for (const t of [0.25, 0.5, 0.75]) {
+      ctx.beginPath(); ctx.moveTo(tx + tw * t, ty + th * 0.1); ctx.lineTo(tx + tw * t, ty + th * 0.9); ctx.stroke();
+    }
+  }
+
+  // hands cupping the tray so it reads as "held"
+  ctx.fillStyle = '#a87050';
+  ctx.beginPath(); ctx.arc(tx + s * 0.02, ty + th * 0.5, s * 0.06, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(tx + tw - s * 0.02, ty + th * 0.5, s * 0.06, 0, Math.PI * 2); ctx.fill();
+
+  // ---- produce heaped on the tray (drawn above the tray lip) ----
+  const topY = ty - s * 0.02;
+  // red ROSES (left) — a couple of layered red blooms on short green stems
+  for (const rx of [tx + tw * 0.12, tx + tw * 0.26]) {
+    ctx.strokeStyle = '#2f7a3a'; ctx.lineWidth = Math.max(1, s * 0.035); ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(rx, ty + th * 0.4); ctx.lineTo(rx, topY - s * 0.1); ctx.stroke();
+    ctx.fillStyle = '#c0392b';
+    ctx.beginPath(); ctx.arc(rx, topY - s * 0.16, s * 0.1, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = shadeColor('#c0392b', 0.2);
+    ctx.beginPath(); ctx.arc(rx - s * 0.02, topY - s * 0.18, s * 0.05, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = shadeColor('#c0392b', -0.3);
+    ctx.beginPath(); ctx.arc(rx + s * 0.03, topY - s * 0.12, s * 0.03, 0, Math.PI * 2); ctx.fill();
+  }
+
+  // green GUINEP clusters (centre) — little knots of round green berries
+  const gx = tx + tw * 0.5;
+  for (const [ox, oy] of [[-0.05, -0.04], [0.05, -0.06], [0, -0.12], [-0.02, -0.16], [0.06, -0.14]]) {
+    ctx.fillStyle = '#4f8f2a';
+    ctx.beginPath(); ctx.arc(gx + s * ox, topY + s * oy, s * 0.055, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = shadeColor('#4f8f2a', 0.22);
+    ctx.beginPath(); ctx.arc(gx + s * ox - s * 0.015, topY + s * oy - s * 0.015, s * 0.022, 0, Math.PI * 2); ctx.fill();
+  }
+
+  // pinkish-red OTAHEITE APPLES (right) — pear-shaped, fat bottom narrowing up
+  for (const ax of [tx + tw * 0.74, tx + tw * 0.88]) {
+    ctx.fillStyle = '#d23a5a';
+    ctx.beginPath();
+    ctx.moveTo(ax, topY - s * 0.26);                       // narrow stem top
+    ctx.bezierCurveTo(ax - s * 0.12, topY - s * 0.18, ax - s * 0.11, topY + s * 0.02, ax, topY + s * 0.02);
+    ctx.bezierCurveTo(ax + s * 0.11, topY + s * 0.02, ax + s * 0.12, topY - s * 0.18, ax, topY - s * 0.26);
+    ctx.closePath(); ctx.fill();
+    // glossy highlight + a tiny stem
+    ctx.fillStyle = 'rgba(255,255,255,0.4)';
+    ctx.beginPath(); ctx.arc(ax - s * 0.03, topY - s * 0.12, s * 0.03, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#5a3a1a'; ctx.lineWidth = Math.max(1, s * 0.025);
+    ctx.beginPath(); ctx.moveTo(ax, topY - s * 0.26); ctx.lineTo(ax + s * 0.02, topY - s * 0.32); ctx.stroke();
+  }
+}
+
+// ---- peanutcart: a man pushing a little WHISTLING peanut cart — a two-wheeled
+// push-cart with a domed lid, a small chimney/whistle puffing steam, the side
+// labelled "PEANUTS", and a man pushing from behind.
+function drawPeanutCart(ctx, x, y, s) {
+  const cart = '#b5651d', cartShade = shadeColor('#b5651d', -0.3), cartHi = shadeColor('#b5651d', 0.25);
+  const dome = '#cf7a2a', metal = '#8a8f96';
+  const skin = '#7a5030', skinHi = '#a87050', skinShadow = '#4a2e14';
+  const shirt = '#d8d2c4', shirtShade = shadeColor('#d8d2c4', -0.25);
+
+  // ground shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.22)';
+  ellipsePath(ctx, x - s * 0.1, y + s * 0.04, s * 0.78, s * 0.11); ctx.fill();
+
+  // ---- the pushing man (behind, toward viewer-right) ----
+  const mx = x + s * 0.62;
+  // legs
+  ctx.fillStyle = '#3a3a44';
+  ctx.fillRect(mx - s * 0.1, y - s * 0.38, s * 0.09, s * 0.38);
+  ctx.fillRect(mx + s * 0.04, y - s * 0.38, s * 0.09, s * 0.38);
+  // torso leaning forward into the push
+  ctx.save();
+  ctx.translate(mx, y - s * 0.5);
+  ctx.rotate(-0.22);
+  ctx.fillStyle = shirt;
+  ctx.beginPath(); ctx.roundRect(-s * 0.18, -s * 0.4, s * 0.36, s * 0.48, s * 0.06); ctx.fill();
+  ctx.fillStyle = shirtShade;
+  ctx.beginPath(); ctx.roundRect(-s * 0.02, -s * 0.38, s * 0.14, s * 0.44, s * 0.04); ctx.fill();
+  ctx.restore();
+  // pushing arm reaching to the cart handle
+  ctx.strokeStyle = skin; ctx.lineWidth = Math.max(2, s * 0.1); ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(mx - s * 0.1, y - s * 0.78);
+  ctx.quadraticCurveTo(mx - s * 0.34, y - s * 0.66, mx - s * 0.5, y - s * 0.58);
+  ctx.stroke();
+  // head
+  ctx.fillStyle = skin;
+  ctx.beginPath(); ctx.arc(mx + s * 0.04, y - s * 1.02, s * 0.2, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = skinHi;
+  ctx.beginPath(); ctx.arc(mx - s * 0.02, y - s * 1.07, s * 0.09, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = skinShadow;
+  ctx.beginPath(); ctx.arc(mx + s * 0.1, y - s * 0.98, s * 0.09, 0, Math.PI * 2); ctx.fill();
+
+  // ---- the cart body (in front of the man) ----
+  const cw = s * 0.92, ch = s * 0.5, cbx = x - cw * 0.55, cby = y - s * 0.66;
+  // cart handle running back to the man
+  ctx.strokeStyle = metal; ctx.lineWidth = Math.max(2, s * 0.06); ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(cbx + cw, cby + ch * 0.3); ctx.lineTo(mx - s * 0.46, y - s * 0.56); ctx.stroke();
+  // box body
+  rrectSprite(ctx, cbx, cby, cw, ch, s * 0.06); ctx.fillStyle = cart; ctx.fill();
+  ctx.strokeStyle = cartShade; ctx.lineWidth = Math.max(1, s * 0.04); ctx.stroke();
+  // lighter top edge + darker base band
+  ctx.fillStyle = cartHi; ctx.fillRect(cbx + cw * 0.04, cby + ch * 0.06, cw * 0.92, ch * 0.12);
+  ctx.fillStyle = cartShade; ctx.fillRect(cbx, cby + ch * 0.74, cw, ch * 0.26);
+  // "PEANUTS" labelled on the side
+  if (s >= 14) {
+    ctx.fillStyle = '#f4ead0'; ctx.font = '700 ' + Math.round(s * 0.16) + 'px "Courier New", monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('PEANUTS', x - cw * 0.05, cby + ch * 0.46);
+  }
+
+  // domed lid on top of the cart
+  ctx.fillStyle = dome;
+  ctx.beginPath(); ctx.ellipse(x - cw * 0.05, cby, cw * 0.34, ch * 0.34, 0, Math.PI, 0); ctx.fill();
+  ctx.strokeStyle = cartShade; ctx.lineWidth = Math.max(1, s * 0.035);
+  ctx.beginPath(); ctx.ellipse(x - cw * 0.05, cby, cw * 0.34, ch * 0.34, 0, Math.PI, 0); ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,0.25)';
+  ctx.beginPath(); ctx.ellipse(x - cw * 0.12, cby - ch * 0.06, cw * 0.12, ch * 0.1, 0, Math.PI, 0); ctx.fill();
+
+  // little chimney / whistle on the dome
+  const chx = x - cw * 0.05, chTop = cby - ch * 0.34;
+  ctx.fillStyle = metal;
+  rrectSprite(ctx, chx - s * 0.05, chTop - s * 0.18, s * 0.1, s * 0.2, s * 0.02); ctx.fill();
+  ctx.fillStyle = '#c0c4c8';
+  rrectSprite(ctx, chx - s * 0.07, chTop - s * 0.2, s * 0.14, s * 0.05, s * 0.02); ctx.fill();
+  // a wisp of steam curling up from the whistle
+  ctx.strokeStyle = 'rgba(235,235,228,0.7)'; ctx.lineWidth = Math.max(1, s * 0.035); ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(chx, chTop - s * 0.2);
+  ctx.quadraticCurveTo(chx - s * 0.12, chTop - s * 0.34, chx + s * 0.02, chTop - s * 0.46);
+  ctx.quadraticCurveTo(chx + s * 0.14, chTop - s * 0.58, chx - s * 0.02, chTop - s * 0.7);
+  ctx.stroke();
+  ctx.lineCap = 'butt';
+
+  // two cart wheels (near side shown)
+  ctx.fillStyle = '#1c1c1e';
+  ctx.beginPath(); ctx.arc(cbx + cw * 0.26, y - s * 0.02, s * 0.16, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(cbx + cw * 0.74, y - s * 0.02, s * 0.16, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = metal;
+  ctx.beginPath(); ctx.arc(cbx + cw * 0.26, y - s * 0.02, s * 0.05, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(cbx + cw * 0.74, y - s * 0.02, s * 0.05, 0, Math.PI * 2); ctx.fill();
+}
+
+// ---- sunlight: a fierce patch of blazing sun-glare lying on the road. A hot
+// white-gold core with radiating gold rays and a shimmer — a HAZARD (it burns
+// the Bleachaz Conductor), not a pickup. Seed jitters the ray lengths.
+function drawSunlight(ctx, x, y, s, seed) {
+  const rnd = mulberry32(Math.floor((seed || 0.2) * 2147483647) ^ 0x5a07);
+  const core = '#fff3c0', ray = '#f0c020', hot = '#ffd84a';
+  const cy = y - s * 0.34;             // sit the glare just off the road surface
+  const R = s * 0.62;
+
+  // a hot wash on the asphalt under the glare (warm radial bloom)
+  ctx.fillStyle = 'rgba(255,210,80,0.22)';
+  ellipsePath(ctx, x, y - s * 0.04, s * 0.95, s * 0.32); ctx.fill();
+
+  // radiating gold rays (alternating long/short, seed-jittered) behind the core
+  ctx.strokeStyle = ray; ctx.lineWidth = Math.max(1.5, s * 0.06); ctx.lineCap = 'round';
+  const rays = 12;
+  for (let i = 0; i < rays; i++) {
+    const a = (i / rays) * Math.PI * 2;
+    const len = R * ((i % 2 ? 1.5 : 1.18) + (rnd() - 0.5) * 0.3);
+    ctx.beginPath();
+    ctx.moveTo(x + Math.cos(a) * R * 0.6, cy + Math.sin(a) * R * 0.6 * 0.5);   // squash vertically (road plane)
+    ctx.lineTo(x + Math.cos(a) * len, cy + Math.sin(a) * len * 0.5);
+    ctx.stroke();
+  }
+
+  // hot outer glow ring
+  ctx.fillStyle = 'rgba(255,200,40,0.5)';
+  ctx.beginPath(); ctx.ellipse(x, cy, R * 0.7, R * 0.7 * 0.62, 0, 0, Math.PI * 2); ctx.fill();
+  // blazing core
+  ctx.fillStyle = hot;
+  ctx.beginPath(); ctx.ellipse(x, cy, R * 0.5, R * 0.5 * 0.62, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = core;
+  ctx.beginPath(); ctx.ellipse(x, cy, R * 0.34, R * 0.34 * 0.62, 0, 0, Math.PI * 2); ctx.fill();
+  // white-hot centre point
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath(); ctx.ellipse(x - s * 0.04, cy - s * 0.03, R * 0.16, R * 0.12, 0, 0, Math.PI * 2); ctx.fill();
+
+  // a couple of sharp shimmer glints (heat-haze sparkle), only when big enough
+  if (s >= 14) {
+    ctx.strokeStyle = 'rgba(255,255,255,0.85)'; ctx.lineWidth = Math.max(1, s * 0.04);
+    for (const [gx, gy, gl] of [[0.34, -0.18, 0.18], [-0.4, 0.1, 0.14]]) {
+      const px = x + s * gx, py = cy + s * gy;
+      ctx.beginPath(); ctx.moveTo(px - s * gl, py); ctx.lineTo(px + s * gl, py);
+      ctx.moveTo(px, py - s * gl); ctx.lineTo(px, py + s * gl); ctx.stroke();
+    }
+  }
 }
