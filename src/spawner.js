@@ -1,7 +1,9 @@
-import { SPAWN } from './constants.js';
+import { SPAWN, CART } from './constants.js';
+import { reachabilityFloorZ } from './solvability.js';
 
-export function spawnInterval(distance, base = SPAWN.baseInterval, min = SPAWN.minInterval) {
-  return Math.max(min, base - distance / SPAWN.ramp);
+export function spawnInterval(distance, base = SPAWN.baseInterval, min = SPAWN.minInterval, speed = CART.maxSpeed) {
+  const floor = Math.max(min, reachabilityFloorZ(speed));
+  return Math.max(floor, base - distance / SPAWN.ramp);
 }
 export function pickHazard(weights, rng) {
   if (!weights.length) return null;
