@@ -1,71 +1,59 @@
 import { VIRTUAL } from './constants.js';
 
-const SEG_LEN = 200;
-const RUMBLE = 3;
-const DRAW_SEGS = 220;
-const CAM_HEIGHT = 1500;
-const CAM_DEPTH = 0.84;
+// Pseudo-3D road (OutRun-style segment projection). The road is straight and
+// centred; the cart and entities move across it (camera x is fixed at 0). Horizon
+// sits at the vertical middle; nearer segments project lower and wider.
+const SEG = 200;            // world length of one segment band
+const RUMBLE = 3;           // segments per colour stripe
+const ROAD_W = 1600;        // road half-width in world units
+const CAM_H = 1100;         // camera height above the road
+const CAM_DEPTH = 0.84;     // ~ 1 / tan(fov/2), fov ~100deg
+const DRAW = 160;           // segment bands drawn ahead
 
 export function makeRoad() {
-  const segments = [];
-  const total = 600;
-  for (let i = 0; i < total; i++) {
-    const light = Math.floor(i / RUMBLE) % 2 === 0;
-    segments.push({ index: i, z: i * SEG_LEN, light });
-  }
-  return { segments, total, segLen: SEG_LEN, length: total * SEG_LEN };
+  return { segLen: SEG, total: 1e9, length: 1e9 * SEG };
 }
 
-function project(camX, camZ, worldX, worldZ, width, height, roadWidth) {
-  const dz = Math.max(0.1, worldZ - camZ);
-  const scale = CAM_DEPTH / dz;
-  return {
-    x: width / 2 + scale * (worldX - camX) * width / 2,
-    y: height / 2 - scale * CAM_HEIGHT * height / 2 / 1000,
-    w: scale * roadWidth * width / 2,
-    scale
-  };
-}
+function projY(camZ, H) { return H / 2 + (CAM_DEPTH / camZ) * CAM_H * (H / 2); }
+function projW(camZ, W) { return (CAM_DEPTH / camZ) * ROAD_W * (W / 2); }
 
-export function renderRoad(ctx, road, palette, cameraZ, playerX, W, H) {
+export function renderRoad(ctx, road, palette, position, W, H) {
   ctx.fillStyle = palette.sky;
-  ctx.fillRect(0, 0, W, H);
+  ctx.fillRect(0, 0, W, H / 2);
   ctx.fillStyle = palette.hill;
-  ctx.fillRect(0, H * 0.42, W, H * 0.06);
+  ctx.fillRect(0, H / 2 - H * 0.06, W, H * 0.06);
   ctx.fillStyle = palette.ground;
-  ctx.fillRect(0, H * 0.48, W, H * 0.52);
+  ctx.fillRect(0, H / 2, W, H / 2);
 
-  const roadWidth = W * 0.9;
-  const baseSeg = Math.floor(cameraZ / road.segLen);
-  let prev = null;
+  const baseIndex = Math.floor(position / SEG);
+  const offset = position - baseIndex * SEG; // [0, SEG)
+  const cx = W / 2;
 
-  for (let n = DRAW_SEGS; n >= 0; n--) {
-    const seg = road.segments[(baseSeg + n) % road.total];
-    const worldZ = (baseSeg + n) * road.segLen;
-    const p = project(playerX * (roadWidth / W), cameraZ, 0, worldZ, W, H, roadWidth / (W / 2));
-    if (prev && p.scale > 0 && p.y < prev.y) {
-      drawSegment(ctx, palette, seg, p, prev, W);
+  for (let n = DRAW; n >= 1; n--) {
+    const camZ = n * SEG - offset;       // distance to the NEAR edge of this band
+    if (camZ <= 1) continue;
+    const camZfar = camZ + SEG;
+    const yNear = projY(camZ, H);
+    const yFar = projY(camZfar, H);
+    const wNear = projW(camZ, W);
+    const wFar = projW(camZfar, W);
+    const light = Math.floor((baseIndex + n) / RUMBLE) % 2 === 0;
+
+    ctx.fillStyle = light ? palette.ground : shade(palette.ground, -0.05);
+    ctx.fillRect(0, yFar, W, yNear - yFar);
+
+    poly(ctx, cx - wNear * 1.18, yNear, cx + wNear * 1.18, yNear,
+              cx + wFar * 1.18, yFar, cx - wFar * 1.18, yFar,
+              light ? palette.rumble : shade(palette.rumble, -0.08));
+    poly(ctx, cx - wNear, yNear, cx + wNear, yNear,
+              cx + wFar, yFar, cx - wFar, yFar,
+              light ? palette.road : shade(palette.road, -0.06));
+    if (light) {
+      for (const lane of [-0.33, 0.33]) {
+        poly(ctx, cx + lane * wNear - wNear * 0.018, yNear, cx + lane * wNear + wNear * 0.018, yNear,
+                  cx + lane * wFar + wFar * 0.018, yFar, cx + lane * wFar - wFar * 0.018, yFar, '#e7d24a');
+      }
     }
-    prev = p;
-  }
-}
-
-function drawSegment(ctx, palette, seg, near, far, W) {
-  const grass = seg.light ? palette.ground : shade(palette.ground, -0.06);
-  const road = seg.light ? palette.road : shade(palette.road, -0.08);
-  const rumble = seg.light ? palette.rumble : shade(palette.rumble, -0.1);
-
-  ctx.fillStyle = grass;
-  ctx.fillRect(0, far.y, W, near.y - far.y);
-
-  poly(ctx, near.x - near.w * 1.12, near.y, near.x + near.w * 1.12, near.y,
-            far.x + far.w * 1.12, far.y, far.x - far.w * 1.12, far.y, rumble);
-  poly(ctx, near.x - near.w, near.y, near.x + near.w, near.y,
-            far.x + far.w, far.y, far.x - far.w, far.y, road);
-  if (seg.light) {
-    const ml = 0.04;
-    poly(ctx, near.x - near.w * ml, near.y, near.x + near.w * ml, near.y,
-              far.x + far.w * ml, far.y, far.x - far.w * ml, far.y, '#e7d24a');
   }
 }
 
@@ -83,14 +71,19 @@ function shade(hex, amt) {
   return `rgb(${r | 0},${g | 0},${b | 0})`;
 }
 
-export function projectEntity(cameraZ, normX, zAhead, W, H) {
-  const worldZ = cameraZ + Math.max(0.1, zAhead);
-  const dz = Math.max(0.1, worldZ - cameraZ);
-  const scale = CAM_DEPTH / dz;
-  const roadWidth = W * 0.9;
+// Project an entity/cart at normalized lane x (-1..1) and camera-space distance
+// camZ (world units ahead of the camera). Returns screen x/y, a draw size in px,
+// and a visible flag.
+export function projectEntity(normX, camZ, W = VIRTUAL.width, H = VIRTUAL.height) {
+  if (camZ <= 1) return { x: W / 2, y: H, size: 0, visible: false };
+  const s = CAM_DEPTH / camZ;
   return {
-    x: W / 2 + scale * normX * (roadWidth / 2),
-    y: H / 2 - scale * CAM_HEIGHT * H / 2 / 1000,
-    scale
+    x: W / 2 + s * (normX * ROAD_W) * (W / 2),
+    y: H / 2 + s * CAM_H * (H / 2),
+    size: s * ROAD_W * (W / 2) * 0.34,
+    visible: true
   };
 }
+
+// Fixed camera-space distance at which the player's cart is drawn.
+export const CART_Z = 1250;

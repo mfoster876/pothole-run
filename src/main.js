@@ -39,7 +39,7 @@ function frame(now) {
 }
 requestAnimationFrame(frame);
 
-import { makeRoad, renderRoad } from './road.js';
+import { makeRoad, renderRoad, projectEntity, CART_Z } from './road.js';
 import { createCart, steer, updateCart } from './cart.js';
 import { createInput } from './input.js';
 import { getCharacter } from './characters.js';
@@ -58,5 +58,9 @@ setUpdate((dt) => {
 });
 setRender((c) => {
   c.setTransform(viewport.scale, 0, 0, viewport.scale, 0, 0);
-  renderRoad(c, road, stage.palette, camZ, cart.x, VIRTUAL.width, VIRTUAL.height);
+  renderRoad(c, road, stage.palette, camZ, VIRTUAL.width, VIRTUAL.height);
+  // temporary cart marker (replaced by the real cart sprite in Milestone 3)
+  const p = projectEntity(cart.x, CART_Z, VIRTUAL.width, VIRTUAL.height);
+  c.fillStyle = '#c0382c';
+  c.fillRect(p.x - p.size * 0.5, p.y - p.size, p.size, p.size);
 });
