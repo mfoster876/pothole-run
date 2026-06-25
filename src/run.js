@@ -9,6 +9,16 @@ export function createRun() {
   return { distance: 0, coins: 0, combo: 0 };
 }
 
+// What a windscreen youth shakes you down for on contact. Starts at WIPER.baseCharge
+// early, grows with distance (every WIPER.distRamp metres ~doubles it), and scales by
+// how flashy your ride is (greed rises with the vehicle's price). Capped at maxCharge.
+export function wiperCharge(distance, vehicle) {
+  const price = (vehicle && vehicle.price) || 0;
+  const greed = Math.min(WIPER.maxGreed, 1 + price / WIPER.greedPerPrice);
+  const deep  = 1 + Math.max(0, distance) / WIPER.distRamp;
+  return Math.min(WIPER.maxCharge, Math.round(WIPER.baseCharge * greed * deep));
+}
+
 // Crossing-based resolution: an entity's z is its distance ahead of the cart and
 // shrinks each frame. The moment it reaches/passes the cart plane (z <= 0) it gets
 // exactly ONE chance to connect, then is consumed (`collected`) so it can never hit
@@ -83,8 +93,13 @@ export function resolveHits(run, cart, field, effects = cart._effects || {}) {
         dmg *= (1 - Math.min(0.9, resist));      // blessing makes the cart more resilient
         cart.condition = applyDamage(cart.condition, dmg);
         run.combo = 0;
-        // windscreen youth: forced "wash" skims coins off your fare
-        if (info.coinLoss) { run.coins = Math.max(0, run.coins - WIPER.coinLoss); cart.washed = true; }
+        // windscreen youth: forced "wash" skims coins off your fare — a greedier ask
+        // the deeper you are and the flashier the ride
+        if (info.coinLoss) {
+          const charge = wiperCharge(run.distance, cart.vehicle);
+          run.coins = Math.max(0, run.coins - charge);
+          cart.washed = true; cart.washCharge = charge;
+        }
         // police shakedown: a fine skimmed off your fare on contact
         if (info.fine) { run.coins = Math.max(0, run.coins - POLICE.fine); cart.fined = true; }
       }

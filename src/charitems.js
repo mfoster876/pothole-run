@@ -7,7 +7,7 @@
 //   • School Yute wholesome items (books, stationery, bag juice, Lasco shake):
 //     steadiness, a small heal, and a brief refreshment dash — pure benefit.
 import { repair } from './wreck.js';
-import { CART } from './constants.js';
+import { CART, BLEACH } from './constants.js';
 
 export const ITEMS = {
   // ── Conductor — bleach vanity (boost → backfire) ──
@@ -74,6 +74,8 @@ export function applyItem(effects, cart, id) {
     // The boost first (invincible + fast), then the bleach "burn": sloppy steering.
     cart.tipsy   = it.burn;
     effects.burn = it.boost * ext + it.tail;
+    // Each bleach item disfigures him one stage worse — black → … → peeling → skull.
+    cart.bleachLevel = Math.min(BLEACH.maxLevel, (cart.bleachLevel || 0) + 1);
   }
 }
 

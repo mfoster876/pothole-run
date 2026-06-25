@@ -62,7 +62,8 @@ test('a v1 save migrates without wiping garage/upgrades/bests', () => {
   assert.equal(s.lifetimeEarned, 12000);
   assert.equal(s.condition, 100);
   assert.deepEqual(s.garage, ['handcart', 'probox']);
-  assert.deepEqual(s.upgrades, ['weighted-base']);
+  // legacy flat upgrades migrate onto the handcart bucket (per-vehicle model)
+  assert.deepEqual(s.upgrades, { handcart: ['weighted-base'] });
   assert.equal(s.bests['fern-gully'], 880);
   assert.equal(s.settings.genre, 'ska');
 });

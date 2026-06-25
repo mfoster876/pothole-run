@@ -32,6 +32,7 @@ export function createCart(character, vehicle = getVehicle('handcart'), stabilit
     tipsy: 0,         // alcohol impairment magnitude 0..1 (set by applyDrink)
     tilt: 0,          // soft-shoulder lean 0..1 (grows while on the shoulder; topples at 1)
     toppled: false,   // set true the frame the cart tips over (a shoulder wreck)
+    bleachLevel: 0,   // Conductor bleach disfigurement 0..BLEACH.maxLevel (per-run; grows on bleach items)
     blessing: null    // { resist, invincExtend, startGrace } — set by game.js at run start
   };
 }

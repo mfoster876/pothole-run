@@ -3,6 +3,23 @@ const KEY_V1 = 'pothole-run-save:v1';
 
 export const GENRES = ['reggae', 'ska', 'dancehall', 'hiphop', 'mymusic'];
 
+// Upgrades are now a per-vehicle map. Migrate a legacy flat array (the old global rig
+// upgrades) onto the handcart, and sanitise any object form to arrays.
+function migrateUpgrades(u) {
+  if (Array.isArray(u)) return { handcart: u.slice() };
+  if (u && typeof u === 'object') {
+    const out = {};
+    for (const k of Object.keys(u)) if (Array.isArray(u[k])) out[k] = u[k].slice();
+    return out;
+  }
+  return {};
+}
+
+/** The upgrade ids owned for a given vehicle (always an array). */
+export function ownedUpgrades(state, vehicleId) {
+  return (state.upgrades && state.upgrades[vehicleId]) || [];
+}
+
 export function defaultSave() {
   return {
     coins: 0,
@@ -10,7 +27,7 @@ export function defaultSave() {
     // vehicle: which rides you own and which is selected; handcart is the free icon.
     garage: ['handcart'],
     vehicle: 'handcart',
-    upgrades: [],                 // owned rig stability upgrades (see upgrades.js)
+    upgrades: {},                 // per-vehicle owned upgrades: { [vehicleId]: [ids] } (see upgrades.js)
     seenCarTip: false,            // has the windscreen-youth pop-up been shown?
     unlocks: { characters: ['yute', 'rasta'], stages: ['fern-gully'] },
     settings: { muted: false, genre: 'reggae' },
@@ -40,7 +57,7 @@ export function loadSave(storage = globalThis.localStorage) {
       bounties: Array.isArray(parsed.bounties) ? parsed.bounties : [],
       aspirations: { achieved: Array.isArray(parsed.aspirations?.achieved) ? parsed.aspirations.achieved : [] },
       garage: Array.isArray(parsed.garage) && parsed.garage.length ? parsed.garage : base.garage,
-      upgrades: Array.isArray(parsed.upgrades) ? parsed.upgrades : base.upgrades,
+      upgrades: migrateUpgrades(parsed.upgrades),
       unlocks: { ...base.unlocks, ...(parsed.unlocks || {}) },
       settings: { ...base.settings, ...(parsed.settings || {}) },
       blessing: Number.isFinite(parsed.blessing) ? Math.max(0, Math.min(1, parsed.blessing)) : 0,
@@ -81,11 +98,14 @@ export function selectVehicle(state, id) {
   if (state.garage.includes(id)) state.vehicle = id;
   return state;
 }
-// Buy a rig stability upgrade if affordable and not already owned.
-export function buyUpgrade(state, upgrade) {
-  if (state.upgrades.includes(upgrade.id)) return false;
+// Buy an upgrade for a specific vehicle if affordable and not already owned (each
+// vehicle keeps its OWN upgrade list).
+export function buyUpgrade(state, upgrade, vehicleId) {
+  if (!state.upgrades || Array.isArray(state.upgrades)) state.upgrades = migrateUpgrades(state.upgrades);
+  const owned = state.upgrades[vehicleId] || (state.upgrades[vehicleId] = []);
+  if (owned.includes(upgrade.id)) return false;
   if (state.wallet < upgrade.price) return false;
   state.wallet -= upgrade.price;
-  state.upgrades.push(upgrade.id);
+  owned.push(upgrade.id);
   return true;
 }

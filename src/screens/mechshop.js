@@ -3,7 +3,9 @@
 // Repair cost = $REPAIR_PRICE per condition point to restore.
 // RIG upgrades moved here from the start menu.
 import { spend } from '../economy.js';
-import { STABILITY_UPGRADES, nextUpgrade } from '../upgrades.js';
+import { upgradesForVehicle } from '../upgrades.js';
+import { ownedUpgrades } from '../save.js';
+import { getVehicle } from '../vehicles.js';
 import { formatMoney } from '../money.js';
 
 export const REPAIR_PRICE = 50; // $ per condition point above current
@@ -22,10 +24,10 @@ export function applyRepair(save, to, price = REPAIR_PRICE) {
 // --- Canvas rendering ---
 function inRect(r, x, y) { return x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h; }
 
-function shopRects(W, H) {
+function shopRects(W, H, vehicleId) {
   const bw = Math.round(W * 0.65), bh = 50;
   const bx = (W - bw) / 2;
-  const upgrades = STABILITY_UPGRADES.map((u, i) => ({
+  const upgrades = upgradesForVehicle(vehicleId).map((u, i) => ({
     id: u.id,
     rect: { x: bx, y: H * 0.52 + i * 62 - bh / 2, w: bw, h: bh }
   }));
@@ -56,7 +58,7 @@ export function render(ctx, { save, W, H }) {
   ctx.fillStyle = '#9fb8a3'; ctx.font = '500 16px "Courier New", monospace';
   ctx.fillText('condition: ' + Math.round(save.condition) + '%   wallet: ' + formatMoney(save.wallet), W / 2, H * 0.17);
 
-  const R = shopRects(W, H);
+  const R = shopRects(W, H, save.vehicle);
 
   // Back
   btn(ctx, R.back, '‹ HUB', { font: '700 18px "Courier New", monospace', stroke: '#9fb8a3', text: '#9fb8a3' });
@@ -85,15 +87,16 @@ export function render(ctx, { save, W, H }) {
   ctx.fillStyle = condFrac > 0.5 ? '#3fae54' : condFrac > 0.25 ? '#f0c020' : '#c0382c';
   ctx.fillRect(bx, by, R.repair.w * condFrac, 12);
 
-  // RIG upgrades section
+  // Upgrades section — tailored to the ride you're driving
+  const set = upgradesForVehicle(save.vehicle);
   ctx.fillStyle = '#cbe7cf'; ctx.font = '700 18px "Courier New", monospace';
   ctx.textAlign = 'center';
-  ctx.fillText('RIG STABILITY UPGRADES', W / 2, H * 0.46);
+  ctx.fillText('UPGRADES — ' + getVehicle(save.vehicle).name.toUpperCase(), W / 2, H * 0.46);
 
-  const owned = save.upgrades || [];
-  const total = STABILITY_UPGRADES.length;
+  const owned = ownedUpgrades(save, save.vehicle);
+  const total = set.length;
   for (let i = 0; i < total; i++) {
-    const u = STABILITY_UPGRADES[i];
+    const u = set[i];
     const isOwned = owned.includes(u.id);
     const { rect } = R.upgrades[i];
     if (isOwned) {
@@ -110,11 +113,12 @@ export function render(ctx, { save, W, H }) {
 }
 
 export function hit(x, y, { W, H, save }) {
-  const R = shopRects(W, H);
+  const R = shopRects(W, H, save.vehicle);
   if (inRect(R.back, x, y)) return 'back';
   if (inRect(R.repair, x, y) && save.condition < 100) return 'repair100';
+  const owned = ownedUpgrades(save, save.vehicle);
   for (const { id, rect } of R.upgrades) {
-    if (inRect(rect, x, y) && !(save.upgrades || []).includes(id)) return 'buy:' + id;
+    if (inRect(rect, x, y) && !owned.includes(id)) return 'buy:' + id;
   }
   return null;
 }

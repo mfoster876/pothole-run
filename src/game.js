@@ -16,9 +16,9 @@ import { renderScenery } from './scenery.js';
 import { getCharacter } from './characters.js';
 import { getStage } from './stages.js';
 import { VEHICLES, getVehicle } from './vehicles.js';
-import { STABILITY_UPGRADES, stabilityBonus, nextUpgrade } from './upgrades.js';
+import { upgradesForVehicle, stabilityBonus } from './upgrades.js';
 import { pickMoney, nextBill, biasBill, formatMoney } from './money.js';
-import { loadSave, writeSave, recordBest, addCoins, buyVehicle, selectVehicle, buyUpgrade, GENRES } from './save.js';
+import { loadSave, writeSave, recordBest, addCoins, buyVehicle, selectVehicle, buyUpgrade, ownedUpgrades, GENRES } from './save.js';
 import { emptyState as tapcodeEmpty, feedTap } from './tapcode.js';
 import { bankRun } from './economy.js';
 import { createEffects, tickEffects, effectActive, applyPowerup } from './powerups.js';
@@ -97,7 +97,7 @@ export function createGame(audio) {
     stage = getStage(stageId);
     // Match the letterbox bars to this stage so wide phones read full, not black-barred.
     setLetterboxColors(stage.palette.sky, stage.palette.ground);
-    cart = createCart(getCharacter(characterId), getVehicle(save.vehicle), stabilityBonus(save.upgrades), save.condition);
+    cart = createCart(getCharacter(characterId), getVehicle(save.vehicle), stabilityBonus(ownedUpgrades(save, save.vehicle), save.vehicle), save.condition);
     cart.goldHandcart = !!(save.goldHandcart && save.vehicle === 'handcart');
     field = createField();
     run = createRun();
@@ -270,7 +270,7 @@ export function createGame(audio) {
     }
     const coinsBefore = run.coins, condBefore = cart.condition.value;
     cart.gusted = false; cart.washed = false; cart.pickupValue = 0; cart.nearMiss = false;
-    cart.pickupLabel = null; cart.hitNegative = null; cart.fined = false;
+    cart.pickupLabel = null; cart.hitNegative = null; cart.fined = false; cart.washCharge = 0;
     resolveHits(run, cart, field, effects);
     if (run.coins > coinsBefore) audio && audio.sfx(cart.pickupValue >= 100 ? 'cash' : 'coin');
     // any damage event ratchets the permanent rattle up
@@ -284,6 +284,7 @@ export function createGame(audio) {
     if (cart.pickupLabel) pickupToast = { label: cart.pickupLabel, good: true, t: 1.4 };
     else if (cart.hitNegative) pickupToast = { label: cart.hitNegative, good: false, t: 1.8 };
     else if (cart.fined) pickupToast = { label: 'Police Fine −' + formatMoney(POLICE.fine), good: false, t: 1.6 };
+    else if (cart.washed) pickupToast = { label: 'Windscreen Wash −' + formatMoney(cart.washCharge || 0), good: false, t: 1.4 };
     squeakAccum += dz;
     const shoulder = onShoulder(cart);
     if (squeakAccum >= (shoulder ? 120 : 215)) { squeakAccum -= (shoulder ? 120 : 215); audio && audio.sfx('squeak'); }
@@ -405,9 +406,9 @@ export function createGame(audio) {
     else state.popup = { title: 'NUH RICH YET', lines: ['Repair costs ' + formatMoney(mechshop.repairCost(save.condition, 100)) + '.', 'Bank more coins on di road first.'] };
   }
   function doBuyUpgrade(upgradeId) {
-    const upgrade = STABILITY_UPGRADES.find(u => u.id === upgradeId);
+    const upgrade = upgradesForVehicle(save.vehicle).find(u => u.id === upgradeId);
     if (!upgrade) return;
-    if (buyUpgrade(save, upgrade)) { audio && audio.sfx('cash'); writeSave(save); }
+    if (buyUpgrade(save, upgrade, save.vehicle)) { audio && audio.sfx('cash'); writeSave(save); }
     else state.popup = { title: 'NUH RICH YET', lines: [upgrade.name + ' cost ' + formatMoney(upgrade.price) + '.', 'Grind some more money pon di road first.'] };
   }
 
@@ -744,8 +745,9 @@ export function createGame(audio) {
   function renderGameOver(ctx) {
     ctx.fillStyle = '#0e1a12'; ctx.fillRect(0, 0, W, H);
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    // Front-facing portrait of the driver who just ran
-    renderPortrait(ctx, cart.character.id, W / 2, H * 0.15, 104);
+    // Front-facing portrait of the driver who just ran — the Conductor's bleach stage
+    // reached this run shows here (the grim payoff of all that vanity).
+    renderPortrait(ctx, cart.character.id, W / 2, H * 0.15, 104, { bleachLevel: cart.bleachLevel });
     ctx.fillStyle = '#c0382c'; ctx.font = '700 60px "Courier New", monospace';
     ctx.fillText('CART MASH UP!', W / 2, H * 0.32);
     ctx.fillStyle = '#cbe7cf'; ctx.font = '500 30px "Courier New", monospace';

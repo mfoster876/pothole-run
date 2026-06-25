@@ -3,12 +3,15 @@
 // game-over card. Pure Canvas 2D — no images, no build step.
 //
 // API:
-//   renderPortrait(ctx, characterId, cx, cy, size)
+//   renderPortrait(ctx, characterId, cx, cy, size, opts)
 //     ctx          — CanvasRenderingContext2D
 //     characterId  — 'yute' | 'rasta' | 'conductor'
 //     cx, cy       — CENTRE of the portrait box in virtual px
 //     size         — width AND height of the portrait box in virtual px (~140 on
 //                    select screen, ~100 on game-over card)
+//     opts         — optional { bleachLevel } : conductor only, 0..4 (default 0).
+//                    Drives the conductor's progressive bleaching (0 = natural
+//                    black, 4 = exposed skull). All other characters ignore it.
 //
 // The portrait (frame + bust) is drawn fully within the size×size box centred on
 // (cx, cy).  Unknown ids fall back to a neutral silhouette.
@@ -16,7 +19,9 @@
 export const PORTRAITS = new Set(['yute', 'rasta', 'conductor', 'politician']);
 
 // ─── public entry point ──────────────────────────────────────────────────────
-export function renderPortrait(ctx, characterId, cx, cy, size) {
+export function renderPortrait(ctx, characterId, cx, cy, size, opts) {
+  // conductor-only bleach stage; 5-arg callers (no opts) default to 0 = natural.
+  const bleachLevel = (opts && opts.bleachLevel) || 0;
   ctx.save();
   // Translate so internal helpers can work in a coordinate space where (0,0) is
   // the top-left corner of the portrait box.
@@ -25,7 +30,7 @@ export function renderPortrait(ctx, characterId, cx, cy, size) {
   switch (characterId) {
     case 'yute':      _drawYute(ctx, size);      break;
     case 'rasta':     _drawRasta(ctx, size);     break;
-    case 'conductor': _drawConductor(ctx, size); break;
+    case 'conductor': _drawConductor(ctx, size, bleachLevel); break;
     case 'politician':_drawPolitician(ctx, size); break;
     default:          _drawSilhouette(ctx, size); break;
   }
@@ -70,7 +75,13 @@ const P = {
   shirtShadow: '#c8c4b0',
   tieGold:     '#c8960a',
   tieGoldShad: '#8a6206',
-  khakiCol:    '#c8ac6a',
+  khakiCol:    '#c8ac6a',   // light khaki highlight
+  khakiMain:   '#9a7a45',   // brown khaki uniform body
+  khakiShadow: '#6e5630',   // darker khaki shadow band
+  // bright school-tie stripe colours
+  tieStripeR:  '#d0241a',   // red band
+  tieStripeY:  '#f0c020',   // yellow band
+  tieStripeG:  '#1f9a44',   // green band
 
   // conductor
   capNavy:     '#182238',
@@ -79,6 +90,12 @@ const P = {
   blackLip:    '#1a1010',
   pinkLipCtr:  '#e87888',
   tattooInk:   '#2a2040',
+  // conductor bleaching damage (stages 3–4)
+  rawFlesh:    '#b5453a',   // raw pink-red under-layer of peeling/torn skin
+  rawFleshDk:  '#7e2a22',   // deeper raw wound shadow
+  skullBone:   '#e8e4d8',   // exposed cream-white skull / bone
+  skullShadow: '#bcb6a4',   // skull contour shadow
+  socketDark:  '#140f0c',   // hollow eye-socket / nasal cavity
 
   // politician — half-orange / half-green suit + British court wig
   poliOrange:    '#e8821e',
@@ -286,11 +303,11 @@ function _drawYute(ctx, size) {
   const neckW     = s * 0.148;
   const neckH     = s * 0.085;
 
-  // Shirt — white with a shadow band
-  _shoulders(ctx, cx, neckBaseY, neckW, neckH, s * 0.70, P.shirtWhite, P.shirtShadow, s);
+  // Shirt — brown KHAKI uniform with a darker shadow band
+  _shoulders(ctx, cx, neckBaseY, neckW, neckH, s * 0.70, P.khakiMain, P.khakiShadow, s);
 
-  // Collar points (white shirt collar)
-  ctx.fillStyle = P.shirtWhite;
+  // Collar points (khaki shirt collar, khaki highlight catches the top edge)
+  ctx.fillStyle = P.khakiMain;
   ctx.beginPath();
   ctx.moveTo(cx - neckW * 0.5, neckBaseY - neckH);
   ctx.lineTo(cx - neckW * 1.3, neckBaseY + neckH * 0.2);
@@ -298,7 +315,7 @@ function _drawYute(ctx, size) {
   ctx.closePath(); ctx.fill();
   ctx.strokeStyle = P.outline; ctx.lineWidth = Math.max(1, s * 0.016); ctx.stroke();
 
-  ctx.fillStyle = P.shirtWhite;
+  ctx.fillStyle = P.khakiMain;
   ctx.beginPath();
   ctx.moveTo(cx + neckW * 0.5, neckBaseY - neckH);
   ctx.lineTo(cx + neckW * 1.3, neckBaseY + neckH * 0.2);
@@ -306,19 +323,42 @@ function _drawYute(ctx, size) {
   ctx.closePath(); ctx.fill();
   ctx.strokeStyle = P.outline; ctx.lineWidth = Math.max(1, s * 0.016); ctx.stroke();
 
-  // Tie — gold/school-colour, hanging down from collar
-  ctx.fillStyle = P.tieGold;
-  ctx.beginPath();
-  ctx.moveTo(cx - s * 0.040, neckBaseY + neckH * 0.08);
-  ctx.lineTo(cx + s * 0.040, neckBaseY + neckH * 0.08);
-  ctx.lineTo(cx + s * 0.025, neckBaseY + neckH * 0.60);
-  ctx.lineTo(cx,             neckBaseY + neckH * 0.78);
-  ctx.lineTo(cx - s * 0.025, neckBaseY + neckH * 0.60);
-  ctx.closePath(); ctx.fill();
-  ctx.strokeStyle = P.tieGoldShad; ctx.lineWidth = Math.max(1, s * 0.014); ctx.stroke();
-  // Knot shadow
-  ctx.fillStyle = P.tieGoldShad;
-  ctx.fillRect(cx - s * 0.022, neckBaseY + neckH * 0.06, s * 0.044, neckH * 0.16);
+  // Tie — bright DIAGONAL multi-stripe school tie (red/yellow/green), hanging from
+  // the collar.  Build the tapering tie shape, clip to it, then paint slanted bands.
+  const tieTopY = neckBaseY + neckH * 0.08;
+  const tieBotY = neckBaseY + neckH * 0.78;
+  const tiePath = () => {
+    ctx.beginPath();
+    ctx.moveTo(cx - s * 0.040, tieTopY);
+    ctx.lineTo(cx + s * 0.040, tieTopY);
+    ctx.lineTo(cx + s * 0.025, neckBaseY + neckH * 0.60);
+    ctx.lineTo(cx,             tieBotY);
+    ctx.lineTo(cx - s * 0.025, neckBaseY + neckH * 0.60);
+    ctx.closePath();
+  };
+  ctx.save();
+  tiePath(); ctx.clip();
+  // diagonal bands sweep top-left → bottom-right across the clipped tie
+  const stripeCols = [P.tieStripeR, P.tieStripeY, P.tieStripeG];
+  const bandW = s * 0.030;                       // band thickness along the slant
+  ctx.lineWidth = bandW; ctx.lineCap = 'butt';
+  let bi = 0;
+  for (let d = -s * 0.10; d < s * 0.20; d += bandW) {
+    ctx.strokeStyle = stripeCols[bi % stripeCols.length];
+    ctx.beginPath();
+    ctx.moveTo(cx - s * 0.08 + d, tieTopY - s * 0.02);
+    ctx.lineTo(cx - s * 0.08 + d + s * 0.10, tieBotY + s * 0.04);
+    ctx.stroke();
+    bi++;
+  }
+  ctx.restore();
+  // tie outline over the stripes
+  tiePath(); ctx.strokeStyle = P.outline; ctx.lineWidth = Math.max(1, s * 0.014); ctx.stroke();
+  // Knot — a solid red block at the top of the tie
+  ctx.fillStyle = P.tieStripeR;
+  ctx.fillRect(cx - s * 0.022, neckBaseY + neckH * 0.06, s * 0.044, neckH * 0.18);
+  ctx.strokeStyle = P.outline; ctx.lineWidth = Math.max(1, s * 0.012);
+  ctx.strokeRect(cx - s * 0.022, neckBaseY + neckH * 0.06, s * 0.044, neckH * 0.18);
 
   // Neck skin
   ctx.fillStyle = P.skinMid;
@@ -349,13 +389,12 @@ function _drawYute(ctx, size) {
   ellipse(ctx, cx + headRX * 0.48, headCY + headRY * 0.12, headRX * 0.28, headRY * 0.22);
   ctx.fill();
 
-  // ── short neat hair / close fade ──
-  // Dark cap of hair sitting close to the skull
-  ctx.fillStyle = P.hairBlack;
-  ctx.beginPath();
-  ctx.ellipse(cx, headCY - headRY * 0.18, headRX * 0.94, headRY * 0.58, 0, Math.PI, 2 * Math.PI);
-  ctx.fill();
-  ctx.strokeStyle = P.outline; ctx.lineWidth = Math.max(1.5, s * 0.018); ctx.stroke();
+  // ── BALD head — no hair at all ──
+  // Bare scalp in the skin tone with a soft top sheen/highlight catching the crown.
+  ctx.fillStyle = P.skinLight;
+  ellipse(ctx, cx, headCY - headRY * 0.46, headRX * 0.50, headRY * 0.22); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.20)';
+  ellipse(ctx, cx - headRX * 0.10, headCY - headRY * 0.50, headRX * 0.30, headRY * 0.12); ctx.fill();
 
   // Ear pair
   for (const sign of [-1, 1]) {
@@ -535,12 +574,20 @@ function _drawRasta(ctx, size) {
 }
 
 // ─── CONDUCTOR — Bleachaz Conductor ───────────────────────────────────────────
-// Bleach reaches only the FACE & NECK; both arms / the bare chest stay natural dark
-// skin, the chest dusted with baby powder, hair styled in bantu knots. The whole
-// bust is laid out to sit INSIDE the frame (no spill off the bottom edge).
-function _drawConductor(ctx, size) {
+// PROGRESSIVE bleaching, vanity → horror, driven by bleachLevel 0..4:
+//   0 NATURAL  — honest dark/black skin, normal lips. No bleach.
+//   1 PATCHY   — uneven pale blotches start over the dark face/neck.
+//   2 BLEACHED — fully pale face/neck, black-pink lips (the original look).
+//   3 RAW      — over-bleached skin breaking down: raw red patches, peeling flaps.
+//   4 SKULL    — strips of flesh hanging, exposed white skull & teeth showing through.
+// The bare chest stays natural dark skin with baby powder, the gold chain, the
+// bantu knots and ears persist across every stage. Laid out to sit INSIDE the frame.
+function _drawConductor(ctx, size, bleachLevel = 0) {
   const s = size;
   const cx = s * 0.50;
+  const lvl = Math.max(0, Math.min(4, Math.round(bleachLevel))); // clamp 0..4
+  // face-skin base tone per stage: dark until bleach takes hold at stage 2.
+  const faceBase = lvl >= 2 ? P.skinPale : P.skinDark;
 
   // frame: slate/urban dark, bright gold swagger
   _frame(ctx, s, P.frameSlateDim, P.frameGold, '#4a3808');
@@ -617,28 +664,101 @@ function _drawConductor(ctx, size) {
   ctx.stroke();
   ctx.lineCap = 'butt';
 
-  // ── Bleached neck ──
-  ctx.fillStyle = P.skinPale;
+  // ── Neck — base tone per stage, then stage-specific damage on top ──
+  ctx.fillStyle = faceBase;
   ctx.fillRect(cx - neckW * 0.5, neckTopY, neckW, neckBotY - neckTopY);
   ctx.strokeStyle = P.outline; ctx.lineWidth = Math.max(1, s * 0.016);
   ctx.strokeRect(cx - neckW * 0.5, neckTopY, neckW, neckBotY - neckTopY);
-  // pinkish uneven blotch at the bleach line where it meets the dark chest
-  ctx.fillStyle = P.skinBlotch;
-  ellipse(ctx, cx + neckW * 0.12, neckBotY - s * 0.012, neckW * 0.30, s * 0.012); ctx.fill();
+  if (lvl === 1) {
+    // PATCHY: a couple of pale bleach blotches creeping over the still-dark neck
+    ctx.fillStyle = P.skinPale;
+    ellipse(ctx, cx - neckW * 0.18, neckTopY + s * 0.030, neckW * 0.26, s * 0.026); ctx.fill();
+    ctx.fillStyle = P.skinBlotch;
+    ellipse(ctx, cx + neckW * 0.16, neckBotY - s * 0.024, neckW * 0.22, s * 0.018); ctx.fill();
+  } else if (lvl === 2) {
+    // FULLY BLEACHED: pinkish uneven blotch at the bleach line meeting the dark chest
+    ctx.fillStyle = P.skinBlotch;
+    ellipse(ctx, cx + neckW * 0.12, neckBotY - s * 0.012, neckW * 0.30, s * 0.012); ctx.fill();
+  } else if (lvl >= 3) {
+    // RAW / SKULL: pale skin breaking down — raw red weals across the throat
+    ctx.fillStyle = P.skinPale;
+    ctx.fillRect(cx - neckW * 0.5, neckTopY, neckW, neckBotY - neckTopY);
+    ctx.fillStyle = P.rawFlesh;
+    ellipse(ctx, cx - neckW * 0.10, neckTopY + s * 0.034, neckW * 0.34, s * 0.022); ctx.fill();
+    ctx.fillStyle = P.rawFleshDk;
+    ellipse(ctx, cx + neckW * 0.20, neckBotY - s * 0.026, neckW * 0.20, s * 0.016); ctx.fill();
+  }
 
-  // ── Head — bleached pale face ──
+  // ── Head — base face per stage, then stage-specific skin condition ──
   ctx.fillStyle = 'rgba(0,0,0,0.30)';
   ellipse(ctx, cx + s * 0.012, headCY + s * 0.012, headRX, headRY); ctx.fill();
-  ctx.fillStyle = P.skinPale;
+  ctx.fillStyle = faceBase;
   ellipse(ctx, cx, headCY, headRX, headRY); ctx.fill();
   ctx.strokeStyle = P.outline; ctx.lineWidth = Math.max(1.5, s * 0.022); ctx.stroke();
 
-  // uneven bleach blotches + forehead highlight
-  ctx.fillStyle = P.skinBlotch;
-  ellipse(ctx, cx - headRX * 0.52, headCY - headRY * 0.04, headRX * 0.24, headRY * 0.18); ctx.fill();
-  ellipse(ctx, cx + headRX * 0.46, headCY + headRY * 0.20, headRX * 0.18, headRY * 0.15); ctx.fill();
-  ctx.fillStyle = 'rgba(255,240,220,0.30)';
-  ellipse(ctx, cx, headCY - headRY * 0.22, headRX * 0.48, headRY * 0.28); ctx.fill();
+  if (lvl === 0) {
+    // NATURAL: honest dark skin, just a forehead-plane highlight (like the Rasta)
+    ctx.fillStyle = '#4a2810';
+    ellipse(ctx, cx, headCY - headRY * 0.24, headRX * 0.60, headRY * 0.34); ctx.fill();
+  } else if (lvl === 1) {
+    // PATCHY: pale bleach blotches breaking across the still-dark face
+    ctx.fillStyle = P.skinPale;
+    ellipse(ctx, cx - headRX * 0.28, headCY - headRY * 0.10, headRX * 0.34, headRY * 0.26); ctx.fill();
+    ellipse(ctx, cx + headRX * 0.40, headCY + headRY * 0.18, headRX * 0.26, headRY * 0.20); ctx.fill();
+    ellipse(ctx, cx + headRX * 0.10, headCY - headRY * 0.34, headRX * 0.22, headRY * 0.16); ctx.fill();
+    ctx.fillStyle = P.skinPaleEdge;                 // soft pink at the patch edges
+    ellipse(ctx, cx - headRX * 0.10, headCY + headRY * 0.10, headRX * 0.18, headRY * 0.14); ctx.fill();
+  } else if (lvl === 2) {
+    // FULLY BLEACHED: uneven blotches + forehead highlight (the original look)
+    ctx.fillStyle = P.skinBlotch;
+    ellipse(ctx, cx - headRX * 0.52, headCY - headRY * 0.04, headRX * 0.24, headRY * 0.18); ctx.fill();
+    ellipse(ctx, cx + headRX * 0.46, headCY + headRY * 0.20, headRX * 0.18, headRY * 0.15); ctx.fill();
+    ctx.fillStyle = 'rgba(255,240,220,0.30)';
+    ellipse(ctx, cx, headCY - headRY * 0.22, headRX * 0.48, headRY * 0.28); ctx.fill();
+  } else if (lvl === 3) {
+    // RAW / PEELING: reddened raw patches with torn skin flaps lifting off them.
+    ctx.fillStyle = 'rgba(255,240,220,0.25)';        // residual bleached sheen
+    ellipse(ctx, cx, headCY - headRY * 0.24, headRX * 0.46, headRY * 0.26); ctx.fill();
+    // raw under-layer wounds
+    for (const [rx, ry, rrx, rry] of [
+      [-0.40, -0.10, 0.30, 0.22], [0.38, 0.16, 0.26, 0.20], [0.04, 0.40, 0.30, 0.16],
+    ]) {
+      ctx.fillStyle = P.rawFlesh;
+      ellipse(ctx, cx + rx * headRX, headCY + ry * headRY, rrx * headRX, rry * headRY); ctx.fill();
+      ctx.fillStyle = P.rawFleshDk;
+      ellipse(ctx, cx + rx * headRX, headCY + ry * headRY + rry * headRY * 0.30,
+              rrx * headRX * 0.7, rry * headRY * 0.45); ctx.fill();
+    }
+    // torn skin flaps — small pale strips curling off the raw patches
+    ctx.strokeStyle = P.outline; ctx.lineWidth = Math.max(1, s * 0.008);
+    for (const [fx, fy, fa] of [[-0.26, -0.22, -0.5], [0.30, 0.02, 0.6], [-0.06, 0.24, 0.2]]) {
+      const bx = cx + fx * headRX, by = headCY + fy * headRY;
+      ctx.fillStyle = P.skinPale;
+      ctx.beginPath();
+      ctx.moveTo(bx, by);
+      ctx.quadraticCurveTo(bx + headRX * 0.18, by + fa * headRY * 0.10,
+                           bx + headRX * 0.20, by + headRY * 0.16);
+      ctx.quadraticCurveTo(bx + headRX * 0.06, by + headRY * 0.10, bx, by);
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+    }
+  } else if (lvl === 4) {
+    // FLESH HANGING / SKULL: exposed cream-white skull through ragged flesh.
+    // skull dome fills the upper face
+    ctx.fillStyle = P.skullBone;
+    ellipse(ctx, cx, headCY - headRY * 0.10, headRX * 0.92, headRY * 0.86); ctx.fill();
+    ctx.fillStyle = P.skullShadow;                   // cheekbone / temple contour
+    ellipse(ctx, cx - headRX * 0.58, headCY - headRY * 0.02, headRX * 0.18, headRY * 0.26); ctx.fill();
+    ellipse(ctx, cx + headRX * 0.58, headCY - headRY * 0.02, headRX * 0.18, headRY * 0.26); ctx.fill();
+    // ragged strips of raw flesh still clinging at the edges of the face
+    ctx.fillStyle = P.rawFlesh;
+    for (const [fx, fy, frx, fry] of [
+      [-0.66, 0.30, 0.20, 0.30], [0.66, 0.34, 0.20, 0.28],
+      [-0.10, 0.74, 0.40, 0.18], [0.30, -0.46, 0.18, 0.20],
+    ]) { ellipse(ctx, cx + fx * headRX, headCY + fy * headRY, frx * headRX, fry * headRY); ctx.fill(); }
+    ctx.fillStyle = P.rawFleshDk;
+    ellipse(ctx, cx - headRX * 0.66, headCY + headRY * 0.44, headRX * 0.14, headRY * 0.16); ctx.fill();
+    ellipse(ctx, cx + headRX * 0.66, headCY + headRY * 0.48, headRX * 0.14, headRY * 0.16); ctx.fill();
+  }
 
   // Ears — natural dark (bleach skips them)
   for (const sign of [-1, 1]) {
@@ -676,21 +796,65 @@ function _drawConductor(ctx, size) {
   const eyeY    = headCY + headRY * 0.04;
   const eyeSpan = headRX * 0.84;
   const eyeR    = s * 0.042;
-  _eyebrows(ctx, cx, eyeY - eyeR * 1.5, eyeSpan, eyeR, '#3a2808', 0.4);
-  _eyes(ctx, cx, eyeY, eyeSpan, eyeR, '#2a1608');
-  _nose(ctx, cx, eyeY + eyeR * 2.2, s);
+  const lipY    = eyeY + eyeR * 4.0;
 
-  // Black lips with pink centre (characteristic)
-  const lipY = eyeY + eyeR * 4.0;
-  ctx.fillStyle = P.blackLip;
-  ellipse(ctx, cx, lipY + s * 0.006, s * 0.078, s * 0.028); ctx.fill();
-  ctx.fillStyle = P.pinkLipCtr;
-  ellipse(ctx, cx, lipY + s * 0.004, s * 0.052, s * 0.014); ctx.fill();
-  ctx.strokeStyle = P.blackLip; ctx.lineWidth = Math.max(1, s * 0.014);
-  ctx.beginPath();
-  ctx.moveTo(cx - s * 0.066, lipY);
-  ctx.quadraticCurveTo(cx, lipY + s * 0.010, cx + s * 0.066, lipY);
-  ctx.stroke();
+  if (lvl < 4) {
+    // stages 0–3 keep living eyes, brows and a nose
+    _eyebrows(ctx, cx, eyeY - eyeR * 1.5, eyeSpan, eyeR, '#3a2808', 0.4);
+    _eyes(ctx, cx, eyeY, eyeSpan, eyeR, '#2a1608');
+    _nose(ctx, cx, eyeY + eyeR * 2.2, s);
+
+    if (lvl <= 1) {
+      // NATURAL / PATCHY: ordinary dark lips (not the black-pink bleach mouth)
+      _mouth(ctx, cx, lipY, s * 0.18, '#5a2a10', s * 0.012);
+    } else if (lvl === 2) {
+      // FULLY BLEACHED: black lips with a pink centre (characteristic)
+      ctx.fillStyle = P.blackLip;
+      ellipse(ctx, cx, lipY + s * 0.006, s * 0.078, s * 0.028); ctx.fill();
+      ctx.fillStyle = P.pinkLipCtr;
+      ellipse(ctx, cx, lipY + s * 0.004, s * 0.052, s * 0.014); ctx.fill();
+      ctx.strokeStyle = P.blackLip; ctx.lineWidth = Math.max(1, s * 0.014);
+      ctx.beginPath();
+      ctx.moveTo(cx - s * 0.066, lipY);
+      ctx.quadraticCurveTo(cx, lipY + s * 0.010, cx + s * 0.066, lipY);
+      ctx.stroke();
+    } else {
+      // RAW: cracked, sore mouth — dark split lips over raw red
+      ctx.fillStyle = P.rawFlesh;
+      ellipse(ctx, cx, lipY + s * 0.004, s * 0.070, s * 0.022); ctx.fill();
+      ctx.fillStyle = P.blackLip;
+      ellipse(ctx, cx, lipY + s * 0.008, s * 0.074, s * 0.016); ctx.fill();
+      ctx.strokeStyle = P.outline; ctx.lineWidth = Math.max(1, s * 0.012);
+      ctx.beginPath();
+      ctx.moveTo(cx - s * 0.064, lipY); ctx.lineTo(cx + s * 0.064, lipY); ctx.stroke();
+    }
+  } else {
+    // SKULL: hollow eye sockets, a nasal cavity and a bared row of teeth
+    for (const sign of [-1, 1]) {
+      const ex = cx + sign * (eyeSpan / 2);
+      ctx.fillStyle = P.socketDark;                  // deep hollow socket
+      ellipse(ctx, ex, eyeY, eyeR * 1.25, eyeR * 1.05); ctx.fill();
+      ctx.fillStyle = P.skullShadow;                 // bony brow ridge above
+      ellipse(ctx, ex, eyeY - eyeR * 1.4, eyeR * 1.2, eyeR * 0.4); ctx.fill();
+    }
+    // nasal cavity — inverted dark triangle
+    const nx = cx, ny = eyeY + eyeR * 2.3;
+    ctx.fillStyle = P.socketDark;
+    ctx.beginPath();
+    ctx.moveTo(nx - s * 0.022, ny - s * 0.010);
+    ctx.lineTo(nx + s * 0.022, ny - s * 0.010);
+    ctx.lineTo(nx, ny + s * 0.034);
+    ctx.closePath(); ctx.fill();
+    // teeth — a row of small bone tiles on a dark mouth gap
+    ctx.fillStyle = P.socketDark;
+    rrect(ctx, cx - s * 0.080, lipY - s * 0.014, s * 0.160, s * 0.040, s * 0.008); ctx.fill();
+    ctx.fillStyle = P.skullBone;
+    for (let i = -3; i <= 3; i++) {
+      ctx.fillRect(cx + i * s * 0.022 - s * 0.009, lipY - s * 0.010, s * 0.016, s * 0.032);
+    }
+    ctx.strokeStyle = P.socketDark; ctx.lineWidth = Math.max(1, s * 0.006);
+    ctx.strokeRect(cx - s * 0.080, lipY - s * 0.014, s * 0.160, s * 0.040);
+  }
 
   // ── name label ──
   ctx.fillStyle = P.frameGold;

@@ -24,8 +24,20 @@ export const DAMAGE = {
   repairPerCoin: 1
 };
 
-// Windscreen youths cost you coins (a "forced wash") more than condition.
-export const WIPER = { coinLoss: 6 };
+// Windscreen youths (car-only) shake you down for a "forced wash". They start cheap
+// ($50) early and get greedier the DEEPER you drive AND the flashier your ride — a
+// Porsche driver is a far juicier target than a Probox one. See wiperCharge() in run.js.
+//   baseCharge   — the early ask in a cheap car
+//   distRamp     — every `distRamp` metres roughly doubles the ask
+//   greedPerPrice— $ of vehicle price that adds +1.0 to the greed multiplier
+//   maxGreed     — cap on the vehicle greed multiplier
+//   maxCharge    — hard cap on a single wash
+export const WIPER = { baseCharge: 50, distRamp: 1000, greedPerPrice: 4000000, maxGreed: 3.5, maxCharge: 2000 };
+
+// The Bleachaz Conductor starts BLACK and bleaches one stage worse with every bleach
+// item (cake soap / curry powder / toothpaste) he grabs — 0=natural … 2=fully bleached
+// … 4=peeling flesh + exposed skull. Resets each run; drives his portrait + sprite.
+export const BLEACH = { maxLevel: 4 };
 
 // Riding the soft shoulder: hazard-free but bumpy — it bleeds condition per second,
 // AND the cart progressively tips onto its side. The lean (`tipReach` off-slot at full
