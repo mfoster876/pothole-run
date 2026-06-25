@@ -1,4 +1,4 @@
-const CACHE = 'pothole-run-v7';
+const CACHE = 'pothole-run-v8';
 const ASSETS = [
   './', './index.html', './styles.css', './manifest.webmanifest',
   './src/main.js', './src/constants.js', './src/game.js', './src/road.js',
@@ -7,6 +7,10 @@ const ASSETS = [
   './src/hazardTypes.js', './src/input.js', './src/hud.js', './src/audio.js',
   './src/characters.js', './src/stages.js', './src/vehicles.js', './src/money.js',
   './src/upgrades.js', './src/save.js',
+  // Wave 1 additions: economy/power-ups/bounties/solvability + the screen modules
+  './src/economy.js', './src/powerups.js', './src/bounties.js', './src/solvability.js',
+  './src/screens/router.js', './src/screens/hub.js', './src/screens/mechshop.js',
+  './src/screens/cardealer.js', './src/screens/aspirations.js', './src/screens/rotatePrompt.js',
   './assets/icons/icon-192.png', './assets/icons/icon-512.png'
 ];
 self.addEventListener('install', (e) => {
