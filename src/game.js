@@ -1,5 +1,5 @@
 import { VIRTUAL } from './constants.js';
-import { makeRoad, renderRoad, projectEntity, CART_Z } from './road.js';
+import { makeRoad, renderRoad, projectEntity, curveOffsetAt, CART_Z } from './road.js';
 import { createCart, steer, updateCart } from './cart.js';
 import { createField, spawn, advance, activeEntities } from './entities.js';
 import { spawnInterval, pickHazard, laneFor } from './spawner.js';
@@ -31,7 +31,7 @@ export function createGame(audio) {
   const state = { mode: 'menu', save, audio };
   const menuChoice = { character: 'yute', stage: 'fern-gully' };
   let road, stage, cart, field, run, camZ, spawnZ, steerLock = 0;
-  let squeakAccum = 0, jolt = 0; // jolt: impact kick (0..1), decays per frame
+  let squeakAccum = 0, hitShake = 0; // hitShake: impact wobble (0..1), decays per frame
   const rng = Math.random;
 
   function startRun(characterId, stageId) {
@@ -40,7 +40,7 @@ export function createGame(audio) {
     cart = createCart(getCharacter(characterId));
     field = createField();
     run = createRun();
-    camZ = 0; spawnZ = 600; steerLock = 10; squeakAccum = 0; jolt = 0; // ~10 frames: swallow the start-tap so it doesn't steer
+    camZ = 0; spawnZ = 600; steerLock = 10; squeakAccum = 0; hitShake = 0; // ~10 frames: swallow the start-tap so it doesn't steer
     state.mode = 'play';
     audio && audio.unlock();
     audio && audio.playStage(stage.musicId);
@@ -78,11 +78,11 @@ export function createGame(audio) {
     resolveHits(run, cart, field);
     // independent: a coin and a hazard can both resolve in the same frame
     if (run.coins > coinsBefore) audio && audio.sfx('coin');
-    if (cart.condition.value < condBefore) { audio && audio.sfx('hit'); jolt = 1; }
+    if (cart.condition.value < condBefore) { audio && audio.sfx('hit'); hitShake = 1; }
     // rhythmic wheel squeak, paced by distance rolled (faster = squeakier)
     squeakAccum += dz;
-    if (squeakAccum >= 200) { squeakAccum -= 200; audio && audio.sfx('squeak'); }
-    if (jolt > 0) jolt = Math.max(0, jolt - dt * 4);
+    if (squeakAccum >= 215) { squeakAccum -= 215; audio && audio.sfx('squeak'); }
+    if (hitShake > 0) hitShake = Math.max(0, hitShake - dt * 2.4); // ~0.4s wobble
     if (isWrecked(cart.condition)) endRun();
   }
 
@@ -92,15 +92,20 @@ export function createGame(audio) {
     renderRoad(ctx, road, stage.palette, camZ, W, H);
     renderScenery(ctx, stage, camZ, W, H);
     for (const e of activeEntities(field).sort((a, b) => b.z - a.z)) {
-      const p = projectEntity(e.x, e.z + CART_Z, W, H);
-      if (p.visible) drawEntity(ctx, e.type, p.x, p.y, p.size, e.seed);
+      const camZe = e.z + CART_Z;
+      const p = projectEntity(e.x, camZe, W, H);
+      if (p.visible) drawEntity(ctx, e.type, p.x + curveOffsetAt(camZ, camZe), p.y, p.size, e.seed);
     }
     const cp = projectEntity(cart.x, CART_Z, W, H);
-    // jerky ride: rolling wobble + per-frame jitter + an upward kick on impacts
+    const cartCurve = curveOffsetAt(camZ, CART_Z);
+    // jerky ride (dialed back ~10%): rolling wobble + per-frame jitter; impacts add a
+    // decaying vertical kick + horizontal rock.
     const wob = Math.sin(camZ * 0.05) * 0.5 + Math.sin(camZ * 0.13 + 1) * 0.3;
-    const bobPx = (wob + (Math.random() - 0.5) * 0.6) * cp.size * 0.07 - jolt * cp.size * 0.22;
-    const jitX = (Math.random() - 0.5) * cp.size * 0.025;
-    drawCart(ctx, cart, cp.x + jitX, cp.y + 6 + bobPx, cp.size * 0.9);
+    const kickY = -hitShake * cp.size * 0.18;
+    const rockX = Math.sin(hitShake * 30) * hitShake * cp.size * 0.14;
+    const bobPx = (wob + (Math.random() - 0.5) * 0.54) * cp.size * 0.063 + kickY;
+    const jitX = (Math.random() - 0.5) * cp.size * 0.0225 + rockX;
+    drawCart(ctx, cart, cp.x + cartCurve + jitX, cp.y + 6 + bobPx, cp.size * 0.9);
     renderTouchZones(ctx, W, H);
     renderHud(ctx, { stageName: stage.name, coins: run.coins, distance: run.distance, condition: cart.condition }, W);
   }

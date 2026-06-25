@@ -20,40 +20,38 @@ export function drawEntity(ctx, type, sx, sy, size, seed = 0.137) {
   }
 }
 
-// ---- crater: a real hole in the asphalt (broken rim, dark pit, lit near lip, cracks)
+// ---- crater: a flat moon-crater in the road. Torn-asphalt rim, exposed pale
+// limestone-marl floor (what sits under Jamaican asphalt), damp shadowed depression.
 function crater(ctx, x, y, size, seed) {
   const base = Math.floor((seed || 0.137) * 2147483647);
-  const rx = size * 0.95, ry = size * 0.42;
-  // contact shadow that seats it on the road
-  ctx.fillStyle = 'rgba(0,0,0,0.18)';
-  ellipsePath(ctx, x, y + ry * 0.12, rx * 1.2, ry * 1.28); ctx.fill();
-  // crumbled rim — worn, lighter exposed sub-base
-  jaggedPath(ctx, x, y, rx * 1.08, ry * 1.1, 13, mulberry32(base ^ 0x9e37), 0.24);
-  ctx.fillStyle = '#6c665d'; ctx.fill();
-  // loose aggregate speckle on the rim
+  const rx = size * 0.95, ry = size * 0.36;
+  // dark torn edge of the blacktop around the hole
+  jaggedPath(ctx, x, y, rx * 1.14, ry * 1.16, 15, mulberry32(base ^ 0x9e37), 0.2);
+  ctx.fillStyle = '#23201b'; ctx.fill();
+  // exposed pale marl / limestone floor
+  jaggedPath(ctx, x, y, rx, ry, 15, mulberry32(base ^ 0x2545), 0.15);
+  ctx.fillStyle = '#cdbf9f'; ctx.fill();
+  // loose stones / aggregate scattered in the marl
   const sp = mulberry32(base ^ 0x51ed);
-  ctx.fillStyle = '#857d70';
-  for (let i = 0; i < 6; i++) {
-    const a = sp() * Math.PI * 2;
-    ctx.fillRect(x + Math.cos(a) * rx * 1.02, y + Math.sin(a) * ry * 1.02, Math.max(1, size * 0.04), Math.max(1, size * 0.04));
+  ctx.fillStyle = '#857758';
+  for (let i = 0; i < 5; i++) {
+    const a = sp() * Math.PI * 2, rr = sp() * 0.6;
+    ctx.fillRect(x + Math.cos(a) * rx * rr, y + Math.sin(a) * ry * rr, Math.max(1, size * 0.05), Math.max(1, size * 0.04));
   }
-  // dark pit
-  jaggedPath(ctx, x, y, rx, ry, 13, mulberry32(base ^ 0x2545), 0.18);
-  ctx.fillStyle = '#171513'; ctx.fill();
-  // deeper inner shadow, offset down (far wall in shadow → depth)
-  jaggedPath(ctx, x, y + ry * 0.2, rx * 0.66, ry * 0.6, 11, mulberry32(base ^ 0x7777), 0.2);
-  ctx.fillStyle = '#070606'; ctx.fill();
-  // near-lip highlight (top edge catches the light)
-  ctx.strokeStyle = 'rgba(195,195,200,0.42)';
-  ctx.lineWidth = Math.max(1, size * 0.05);
-  ctx.beginPath(); ctx.ellipse(x, y - ry * 0.05, rx * 0.92, ry * 0.9, 0, Math.PI * 1.08, Math.PI * 1.92); ctx.stroke();
-  // radiating cracks across the asphalt
-  ctx.strokeStyle = 'rgba(8,8,8,0.5)'; ctx.lineWidth = Math.max(1, size * 0.025);
+  // damp, shadowed depression toward the far lip (depth without floating)
+  jaggedPath(ctx, x, y + ry * 0.2, rx * 0.62, ry * 0.58, 13, mulberry32(base ^ 0x7777), 0.18);
+  ctx.fillStyle = '#9b8c6b'; ctx.fill();
+  // lit asphalt rim on the near edge (catches the light)
+  ctx.strokeStyle = 'rgba(150,150,150,0.4)';
+  ctx.lineWidth = Math.max(1, size * 0.045);
+  ctx.beginPath(); ctx.ellipse(x, y - ry * 0.02, rx * 1.06, ry * 1.06, 0, Math.PI * 1.1, Math.PI * 1.9); ctx.stroke();
+  // cracks radiating into the surrounding asphalt
+  ctx.strokeStyle = 'rgba(10,10,10,0.45)'; ctx.lineWidth = Math.max(1, size * 0.022);
   const cr = mulberry32(base ^ 0x13af);
   for (let i = 0; i < 4; i++) {
     const a = cr() * Math.PI * 2;
-    const ox = Math.cos(a) * rx, oy = Math.sin(a) * ry * 0.9;
-    const len = 0.4 + cr() * 0.5;
+    const ox = Math.cos(a) * rx * 1.1, oy = Math.sin(a) * ry;
+    const len = 0.3 + cr() * 0.45;
     ctx.beginPath();
     ctx.moveTo(x + ox, y + oy);
     ctx.lineTo(x + ox * (1 + len) + (cr() - 0.5) * size * 0.25, y + oy * (1 + len));

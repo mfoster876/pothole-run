@@ -1,4 +1,4 @@
-const CACHE = 'pothole-run-v2';
+const CACHE = 'pothole-run-v3';
 const ASSETS = [
   './', './index.html', './styles.css', './manifest.webmanifest',
   './src/main.js', './src/constants.js', './src/game.js', './src/road.js',
@@ -15,6 +15,17 @@ self.addEventListener('activate', (e) => {
   e.waitUntil(caches.keys().then((keys) =>
     Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim()));
 });
+// Network-first: always serve the latest when online (and refresh the cache),
+// fall back to cache when offline. Avoids stale code during active development.
 self.addEventListener('fetch', (e) => {
-  e.respondWith(caches.match(e.request).then((hit) => hit || fetch(e.request)));
+  if (e.request.method !== 'GET') return;
+  e.respondWith(
+    fetch(e.request)
+      .then((resp) => {
+        const copy = resp.clone();
+        caches.open(CACHE).then((c) => c.put(e.request, copy)).catch(() => {});
+        return resp;
+      })
+      .catch(() => caches.match(e.request))
+  );
 });

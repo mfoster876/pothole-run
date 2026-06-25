@@ -1,10 +1,11 @@
-import { projectEntity } from './road.js';
+import { projectEntity, curveOffsetAt } from './road.js';
 
 // Roadside props that scroll with the road to give depth, speed and a sense of
-// place. Each stage picks a `scenery` kind; props are drawn just off both edges.
+// place. Each stage picks a `scenery` kind; props are drawn off both edges, beyond
+// the marl shoulder, and follow the road's curve.
 const GAP = 520;     // world units between prop rows
 const COUNT = 26;    // rows drawn ahead
-const EDGE = 1.34;   // normalized x just outside the road (road edge = 1.0)
+const EDGE = 1.9;    // off the asphalt, out on the grass (asphalt edge = 1.0)
 
 export function renderScenery(ctx, stage, position, W, H) {
   const kind = stage.scenery || 'pole';
@@ -12,14 +13,15 @@ export function renderScenery(ctx, stage, position, W, H) {
   for (let n = COUNT; n >= 1; n--) {
     const camZ = n * GAP - off;
     if (camZ <= 1) continue;
-    drawProp(ctx, kind, -EDGE, camZ, W, H);
-    drawProp(ctx, kind, EDGE, camZ, W, H);
+    drawProp(ctx, kind, -EDGE, camZ, position, W, H);
+    drawProp(ctx, kind, EDGE, camZ, position, W, H);
   }
 }
 
-function drawProp(ctx, kind, normX, camZ, W, H) {
+function drawProp(ctx, kind, normX, camZ, position, W, H) {
   const p = projectEntity(normX, camZ, W, H);
   if (!p.visible || p.y < H * 0.5 || p.size < 2) return; // cull above horizon / too tiny
+  p.x += curveOffsetAt(position, camZ);
   const lean = normX < 0 ? 1 : -1; // lean toward the road centre
   switch (kind) {
     case 'fern': fernTree(ctx, p.x, p.y, p.size, lean); break;
