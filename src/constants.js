@@ -37,6 +37,13 @@ export const SHOULDER = { drainPerSec: 7 };
 // flatter, more forgiving early ramp
 export const SPAWN = { baseInterval: 125, minInterval: 20, ramp: 20 };
 export const FLOOR_CONDITION = 40;
+export const POWERUP = {
+  toolsHeal: 35,     // % of max restored by hardware tools
+  boost: 3,          // seconds of water speed/steady boost
+  steady: 3,         // seconds of tools steadiness
+  coffeeDist: 600,   // world-distance length of the smooth-road money window
+  toolDrop: 5000     // coffee flood denomination
+};
 export const MAX_DPR = 2;
 export const VIRTUAL = { width: 960, height: 540 };
 
