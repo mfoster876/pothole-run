@@ -128,6 +128,8 @@ export function createAudio() {
     if (!ctx || muted) return;
     const t = ctx.currentTime;
     if (kind === 'coin') { note(880, t, 0.08, 'square', 0.2); note(1320, t + 0.05, 0.08, 'square', 0.18); }
+    // fatter, richer flourish when you scoop up paper money
+    if (kind === 'cash') { note(660, t, 0.09, 'square', 0.2); note(990, t + 0.06, 0.09, 'square', 0.2); note(1480, t + 0.13, 0.12, 'square', 0.18); }
     if (kind === 'hit') drum(t, false);
     if (kind === 'wreck') { drum(t, false); note(70, t, 0.5, 'sawtooth', 0.3); }
     // a wet, descending squelch for the soapy-can windscreen wash

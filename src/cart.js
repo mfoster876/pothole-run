@@ -12,6 +12,7 @@ export function createCart(character, vehicle = getVehicle('handcart')) {
     halfWidth: PLAYER_HALF_WIDTH,
     speed: CART.startSpeed,
     lean: 0,
+    rattle: 0,        // permanent per-run looseness: every hit ratchets it up
     condition: createCondition(CART.maxCondition)
   };
 }

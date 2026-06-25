@@ -18,6 +18,7 @@ export function spawn(field, type, laneIndex, z) {
   e.seed = Math.random();        // stable per-spawn shape seed (craters, slicks)
   e.vz = info.vz || 0;           // extra closing speed (overtaking traffic)
   e.gust = info.gust || null;    // wake-gust key, or null
+  e.value = 0;                   // money denomination, set by the caller for pickups
   return e;
 }
 export function advance(field, dz, dt = 0) {

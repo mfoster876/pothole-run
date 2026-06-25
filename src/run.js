@@ -29,7 +29,9 @@ export function resolveHits(run, cart, field) {
     }
     e.active = false;
     if (info.collectible) {
-      run.coins += 1;
+      const value = e.value || 1;
+      run.coins += value;
+      cart.pickupValue = value;     // game.js picks the coin vs cash sound
       cart.condition = repair(cart.condition, DAMAGE.repairPerCoin);
     } else {
       const tough = cart.character.toughness * (cart.vehicle ? cart.vehicle.toughness : 1);

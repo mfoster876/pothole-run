@@ -1,4 +1,5 @@
 import { conditionTier } from './wreck.js';
+import { formatMoney } from './money.js';
 
 export function renderHud(ctx, { stageName, coins, distance, condition }, W) {
   ctx.font = '700 26px "Courier New", monospace';
@@ -11,7 +12,7 @@ export function renderHud(ctx, { stageName, coins, distance, condition }, W) {
   ctx.fillText(stageName.toUpperCase(), 24, 28);
   ctx.textAlign = 'center';
   ctx.fillStyle = '#f0c020';
-  ctx.fillText('$ ' + coins, W / 2, 28);
+  ctx.fillText(formatMoney(coins), W / 2, 28);
   ctx.textAlign = 'right';
   ctx.fillStyle = '#cbe7cf';
   ctx.fillText(Math.floor(distance) + ' m', W - 24, 28);

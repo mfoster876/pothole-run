@@ -1,9 +1,9 @@
 // Draw an entity centred at (sx, sy) with base pixel size `size` (from the road
 // projection) and a stable per-entity `seed` (so irregular shapes don't shimmer).
-export function drawEntity(ctx, type, sx, sy, size, seed = 0.137) {
+export function drawEntity(ctx, type, sx, sy, size, seed = 0.137, value = 1) {
   const s = Math.max(6, size);
   switch (type) {
-    case 'coin': disc(ctx, sx, sy, s * 0.5, '#f0c020', '#9a7a10'); break;
+    case 'coin': money(ctx, sx, sy, s, value); break;
     case 'pothole': crater(ctx, sx, sy, s, seed); break;
     case 'manhole': manhole(ctx, sx, sy, s); break;
     case 'slick': slick(ctx, sx, sy, s, seed); break;
@@ -111,6 +111,35 @@ function disc(ctx, x, y, r, fill, stroke) {
   ctx.beginPath(); ctx.arc(x, y - r, r, 0, Math.PI * 2);
   ctx.fillStyle = fill; ctx.fill(); ctx.lineWidth = Math.max(2, r * 0.2);
   ctx.strokeStyle = stroke; ctx.stroke();
+}
+// Money pickup: a coin for loose change ($1–$20), a banknote for paper money,
+// with the rare $5000 note gilded to feel coveted.
+const COIN_COLOR = { 1: ['#b87333', '#7a4a1e'], 5: ['#c9cbce', '#8a8c8f'], 10: ['#f0c020', '#9a7a10'], 20: ['#f7d44a', '#a07e12'] };
+const BILL = { 100: '#c0392b', 500: '#2a7fa0', 1000: '#6f3aa0', 5000: '#1f9a5a' };
+const BILL_LABEL = { 100: '100', 500: '500', 1000: '1K', 5000: '5K' };
+function money(ctx, x, y, s, value) {
+  if (value <= 20) {
+    const [fill, stroke] = COIN_COLOR[value] || COIN_COLOR[10];
+    disc(ctx, x, y, s * 0.5, fill, stroke);
+    return;
+  }
+  // banknote, lying on the road
+  const w = s * 1.15, h = s * 0.62, cy = y - h * 0.7;
+  const body = BILL[value] || '#2a7a4a', gilt = value >= 5000;
+  ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.fillRect(x - w / 2 + s * 0.06, cy - h / 2 + s * 0.06, w, h);
+  ctx.fillStyle = body; ctx.fillRect(x - w / 2, cy - h / 2, w, h);
+  ctx.strokeStyle = gilt ? '#f7d44a' : 'rgba(255,255,255,0.5)';
+  ctx.lineWidth = Math.max(1.5, s * (gilt ? 0.07 : 0.04));
+  ctx.strokeRect(x - w / 2, cy - h / 2, w, h);
+  // centre medallion + denomination
+  ctx.fillStyle = 'rgba(255,255,255,0.85)';
+  ctx.beginPath(); ctx.ellipse(x, cy, w * 0.18, h * 0.32, 0, 0, Math.PI * 2); ctx.fill();
+  if (s >= 14) {
+    ctx.fillStyle = gilt ? '#f7d44a' : '#ffffff';
+    ctx.font = '700 ' + Math.round(s * 0.34) + 'px "Courier New", monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(BILL_LABEL[value] || String(value), x, cy);
+  }
 }
 function roundedBar(ctx, x, y, w, h, fill) {
   ctx.fillStyle = fill; ctx.fillRect(x - w / 2, y - h, w, h);

@@ -12,6 +12,7 @@ import { renderScenery } from './scenery.js';
 import { getCharacter } from './characters.js';
 import { getStage } from './stages.js';
 import { VEHICLES, getVehicle } from './vehicles.js';
+import { pickMoney, formatMoney } from './money.js';
 import { loadSave, writeSave, recordBest, addCoins, buyVehicle, selectVehicle, GENRES } from './save.js';
 
 const W = VIRTUAL.width, H = VIRTUAL.height;
@@ -78,8 +79,8 @@ export function createGame(audio) {
     if (run.distance >= 400 && stage.id === 'fern-gully' && !u.stages.includes('holland-bamboo')) u.stages.push('holland-bamboo');
     if (run.distance >= 400 && stage.id === 'holland-bamboo' && !u.stages.includes('negril')) u.stages.push('negril');
     // New Kingston (where the JUTC buses run) opens once you've banked a little
-    if (save.coins >= 120 && !u.stages.includes('new-kingston')) u.stages.push('new-kingston');
-    if (save.coins >= 150 && !u.characters.includes('conductor')) u.characters.push('conductor');
+    if (save.coins >= 500 && !u.stages.includes('new-kingston')) u.stages.push('new-kingston');
+    if (save.coins >= 2500 && !u.characters.includes('conductor')) u.characters.push('conductor');
   }
 
   function update(dt) {
@@ -94,13 +95,16 @@ export function createGame(audio) {
     if (spawnZ <= 0) {
       const type = pickHazard(activeWeights, rng);
       const lane = type === 'bus' ? 0 : laneFor(rng, 3); // JUTC buses overtake on the left
-      spawn(field, type, lane, 5200);
+      const e = spawn(field, type, lane, 5200);
+      if (type === 'coin') e.value = pickMoney(run.distance, rng); // denomination by depth
       spawnZ = spawnInterval(run.distance) * 8;
     }
     const coinsBefore = run.coins, condBefore = cart.condition.value;
-    cart.gusted = false; cart.washed = false;
+    cart.gusted = false; cart.washed = false; cart.pickupValue = 0;
     resolveHits(run, cart, field);
-    if (run.coins > coinsBefore) audio && audio.sfx('coin');
+    if (run.coins > coinsBefore) audio && audio.sfx(cart.pickupValue >= 100 ? 'cash' : 'coin');
+    // any damage event ratchets the permanent rattle up (caps so it stays drivable)
+    if (cart.condition.value < condBefore) cart.rattle = Math.min(0.5, cart.rattle + 0.05);
     if (cart.washed) { audio && audio.sfx('wash'); hitShake = Math.max(hitShake, 0.4); }
     else if (cart.condition.value < condBefore) { audio && audio.sfx('hit'); hitShake = 1; }
     if (cart.gusted) { audio && audio.sfx('whoosh'); hitShake = Math.max(hitShake, 0.55); }
@@ -118,13 +122,17 @@ export function createGame(audio) {
     for (const e of activeEntities(field).sort((a, b) => b.z - a.z)) {
       const camZe = e.z + CART_Z;
       const p = projectEntity(e.x, camZe, W, H);
-      if (p.visible) drawEntity(ctx, e.type, p.x + curveOffsetAt(camZ, camZe), p.y, p.size, e.seed);
+      if (p.visible) drawEntity(ctx, e.type, p.x + curveOffsetAt(camZ, camZe), p.y, p.size, e.seed, e.value);
     }
     const cp = projectEntity(cart.x, CART_Z, W, H);
     const cartCurve = curveOffsetAt(camZ, CART_Z);
-    // jerky ride: rolling wobble + per-frame jitter scaled by the driver's `sway`;
-    // impacts add a decaying vertical kick + horizontal rock.
-    const sway = (cart.character.sway || 1);
+    // jerky ride: rolling wobble + per-frame jitter scaled by the driver's `sway`,
+    // AND by accumulated damage — the more battered the ride, the looser and harder
+    // to control it gets (every hit drops condition, which feeds straight back here).
+    const condFrac = cart.condition.value / cart.condition.max;          // 1 = pristine
+    // condition-based wobble recovers if you heal; rattle is a one-way per-run ratchet
+    const damageWobble = 1 + (1 - condFrac) * 1.3 + (cart.rattle || 0);  // up to ~2.8× battered
+    const sway = (cart.character.sway || 1) * damageWobble;
     const wob = (Math.sin(camZ * 0.05) * 0.5 + Math.sin(camZ * 0.13 + 1) * 0.3) * sway;
     const kickY = -hitShake * cp.size * 0.18;
     const rockX = Math.sin(hitShake * 30) * hitShake * cp.size * 0.14;
@@ -166,7 +174,7 @@ export function createGame(audio) {
     const v = getVehicle(menuChoice.vehicle);
     if (save.garage.includes(v.id)) return;
     if (buyVehicle(save, v)) { audio && audio.sfx('coin'); driveVehicle(v.id); }
-    else { state.popup = { title: 'NUH RICH YET', lines: ['Yuh need $' + v.price + ' fi di ' + v.name + '.', 'Bank more coins pon di road first.'] }; }
+    else { state.popup = { title: 'NUH RICH YET', lines: ['Yuh need ' + formatMoney(v.price) + ' fi di ' + v.name + '.', 'Win races or grind deep runs fi dat kinda money.'] }; }
   }
   function cycleGenre(dir) {
     const i = GENRES.indexOf(menuChoice.genre);
@@ -264,7 +272,7 @@ export function createGame(audio) {
       ctx.fillText(veh.id === save.vehicle ? '▶ DRIVING' : 'OWNED', W / 2, H * 0.515);
     } else {
       const afford = save.coins >= veh.price;
-      button(ctx, BTN.buy, 'BUY  $' + veh.price, {
+      button(ctx, BTN.buy, 'BUY  ' + formatMoney(veh.price), {
         font: '700 22px "Courier New", monospace',
         stroke: afford ? '#f0c020' : '#5a5a5a', text: afford ? '#f0c020' : '#7a7a7a'
       });
@@ -284,7 +292,7 @@ export function createGame(audio) {
 
     button(ctx, BTN.start, 'START');
     ctx.fillStyle = '#9fb8a3'; ctx.font = '500 16px "Courier New", monospace';
-    ctx.fillText('coins banked: ' + save.coins + '    ♪ press M to mute', W / 2, H * 0.95);
+    ctx.fillText('banked: ' + formatMoney(save.coins) + '    ♪ press M to mute', W / 2, H * 0.95);
 
     if (state.popup) renderPopup(ctx, state.popup);
   }
@@ -307,7 +315,7 @@ export function createGame(audio) {
     ctx.fillStyle = '#c0382c'; ctx.font = '700 60px "Courier New", monospace';
     ctx.fillText('CART MASH UP!', W / 2, H * 0.3);
     ctx.fillStyle = '#cbe7cf'; ctx.font = '500 30px "Courier New", monospace';
-    ctx.fillText(Math.floor(run.distance) + ' m   •   $' + run.coins, W / 2, H * 0.48);
+    ctx.fillText(Math.floor(run.distance) + ' m   •   ' + formatMoney(run.coins), W / 2, H * 0.48);
     ctx.fillText('best: ' + (save.bests[stage.id] || 0) + ' m', W / 2, H * 0.56);
     ctx.fillStyle = '#f0c020'; ctx.font = '700 26px "Courier New", monospace';
     ctx.fillText('TAP / PRESS TO CONTINUE', W / 2, H * 0.74);
