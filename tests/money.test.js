@@ -1,6 +1,24 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { MONEY, pickMoney, formatMoney } from '../src/money.js';
+import { DAMAGE } from '../src/constants.js';
+
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+
+test('money heals only a sliver now', () => {
+  assert.equal(DAMAGE.repairPerCoin, 1);
+});
+
+test('coins and cash interleave through mid-distance (coins not gone by 1500m)', () => {
+  const rng = mulberry32(7);
+  let coinHits = 0, cashHits = 0;
+  for (let i = 0; i < 400; i++) {
+    const v = pickMoney(1500, rng);
+    if (v <= 20) coinHits++; else cashHits++;
+  }
+  assert.ok(coinHits > 0, 'coins still drop at 1500m');
+  assert.ok(cashHits > 0, 'cash also drops at 1500m');
+});
 import { createCart } from '../src/cart.js';
 import { getCharacter } from '../src/characters.js';
 import { getVehicle } from '../src/vehicles.js';

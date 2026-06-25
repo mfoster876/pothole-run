@@ -21,7 +21,7 @@ export const DAMAGE = {
   animal: 18,
   bump: 5,
   wiper: 5,            // soapy-can windscreen youth: a nuisance scrape, not a wreck
-  repairPerCoin: 4
+  repairPerCoin: 1
 };
 
 // Windscreen youths cost you coins (a "forced wash") more than condition.

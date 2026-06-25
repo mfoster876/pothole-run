@@ -3,14 +3,14 @@
 // rare, coveted $5000 note — while the small coins stop appearing. `from` = distance
 // a denomination starts dropping; `until` = distance the small ones dry up.
 export const MONEY = [
-  { value: 1,    weight: 6, from: 0,    until: 700 },
-  { value: 5,    weight: 5, from: 0,    until: 1100 },
-  { value: 10,   weight: 5, from: 0,    until: 1700 },
-  { value: 20,   weight: 4, from: 150,  until: null },
+  { value: 1,    weight: 5, from: 0,    until: 1200 },
+  { value: 5,    weight: 5, from: 0,    until: 1800 },
+  { value: 10,   weight: 5, from: 0,    until: 2400 },
+  { value: 20,   weight: 5, from: 150,  until: 3200 },
   { value: 100,  weight: 4, from: 550,  until: null },
   { value: 500,  weight: 3, from: 1000, until: null },
   { value: 1000, weight: 2, from: 1600, until: null },
-  { value: 5000, weight: 1, from: 2400, until: null }  // rare & coveted, deep only
+  { value: 5000, weight: 1, from: 2400, until: null }
 ];
 
 // Pick a denomination appropriate to how far you've travelled.
