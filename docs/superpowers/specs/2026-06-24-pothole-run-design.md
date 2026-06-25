@@ -120,10 +120,17 @@ Remaining 4 personas unlock via progression, each its own distinct archetype
 
 ## 7. Environments — stage-select + endless
 
-Nine locations, each with its own palette, hazard mix, and chiptune:
+Ten locations, each with its own palette, hazard mix, and chiptune:
 
 Fern Gully · Holland Bamboo · Coronation Market · Montego Bay Pier 1 ·
-Negril 7-Mile Beach · Portmore back road · Old Hope Road · Norbrook · Cherry Gardens
+Negril 7-Mile Beach · Portmore back road · Old Hope Road · Norbrook · Cherry Gardens ·
+Bog Walk Gorge (Flat Bridge)
+
+**Bog Walk Gorge (Flat Bridge)** is the **set-piece "gauntlet"** stage: a narrow road
+squeezed between the Rio Cobre and a sheer cliff, with falling boulders, rockslides, a
+rising river that floods the road, and the infamously low, railing-thin Flat Bridge as a
+one-lane pinch. Intense and memorable — a natural second challenge stage alongside the
+Downtown hard mode.
 
 Plus **Downtown Kingston = unlockable HARD mode**, styled as a **Tron-influenced
 neon-grid "digital dancehall"**: night setting, glowing road lines, laser-lit
@@ -246,7 +253,7 @@ only module that touches `localStorage`. This keeps each unit testable in isolat
 - Deployed to GitHub Pages, verified on Mac Safari and iPhone Safari.
 
 **Phase 2 — Full game:**
-- Remaining 4 drivers + 6 stages.
+- Remaining 4 drivers + 7 stages (incl. Bog Walk Gorge / Flat Bridge gauntlet).
 - Downtown Kingston hard mode (Tron-influenced neon-grid night stage).
 - "Round Jamaica" endless polish + full unlock economy.
 - Personas as road traffic/cameos across all stages.

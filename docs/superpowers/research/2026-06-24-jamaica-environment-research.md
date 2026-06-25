@@ -230,6 +230,25 @@ by stolen light poles), blind walled hairpins.
   roadside V-drain fall-in; gate/speed-bump sudden slow; even here, a stolen sign or
   missing cover is true to life.
 
+### Bog Walk Gorge / Flat Bridge (St. Catherine) — Phase-2 set-piece "gauntlet"
+- **Beauty:** a dramatic limestone gorge where the road threads between the green
+  **Rio Cobre** and a sheer cliff face; lush, shaded, river-cool — genuinely scenic
+  between the dangers.
+- **Horrors:** *the* iconic killer corridor *(documented)*. Regularly **impassable from
+  falling boulders and rockslides** off the cliff, and from the **river rising and
+  flooding** the carriageway; the historic **Flat Bridge is low, narrow, and railing-thin
+  with no real barrier** between the deck and the water — vehicles have gone over the
+  edge into the Rio Cobre over the years. Single corridor, easily cut off.
+- **Signature look:** narrow road pinched between river (one side) and tall grey-green
+  cliff (other side); the low flat single-lane bridge over the river with minimal/absent
+  railing; boulders mid-tumble; brown river water creeping over the road edge; deep
+  shade and rock walls.
+- **Signature hazards:** **falling boulders / rockslide** dropping into the lane; the
+  road **narrowing to the one-lane Flat Bridge pinch** (thread it, no margin);
+  **rising-river flood** sheeting across and hiding the edge; **missing bridge railing**
+  (drift wide = into the Rio Cobre); blind gorge bends with oncoming traffic. The natural
+  capstone gauntlet alongside Downtown.
+
 ---
 
 ## Sources
