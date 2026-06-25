@@ -7,8 +7,34 @@ const GAP = 520;     // world units between prop rows
 const COUNT = 26;    // rows drawn ahead
 const EDGE = 1.9;    // off the asphalt, out on the grass (asphalt edge = 1.0)
 
+// Fern Gully constants — tighter rows, a receding back-layer at 0.6× the main edge
+const FERN_GAP   = 380;   // world units between fern rows (tighter than the base GAP)
+const FERN_COUNT = 32;    // more rows drawn ahead for a denser gorge
+const FERN_EDGE  = 2.1;   // main bank, slightly further out
+const FERN_BACK  = 1.5;   // inner back-layer (closer to road, receding depth)
+
 export function renderScenery(ctx, stage, position, W, H) {
   const kind = stage.scenery || 'pole';
+  if (kind === 'fern') {
+    // Dense gorge: two offset row grids — a deep back layer + the main bank
+    const offMain = ((position % FERN_GAP) + FERN_GAP) % FERN_GAP;
+    const offBack = ((position % (FERN_GAP * 1.4)) + FERN_GAP * 1.4) % (FERN_GAP * 1.4);
+    // Back (inner) layer — darker depth tint applied by drawing at closer edge
+    for (let n = FERN_COUNT; n >= 1; n--) {
+      const camZ = n * FERN_GAP * 1.4 - offBack;
+      if (camZ <= 1) continue;
+      drawFernBack(ctx, -FERN_BACK, camZ, position, W, H);
+      drawFernBack(ctx, FERN_BACK,  camZ, position, W, H);
+    }
+    // Main bank
+    for (let n = FERN_COUNT; n >= 1; n--) {
+      const camZ = n * FERN_GAP - offMain;
+      if (camZ <= 1) continue;
+      drawProp(ctx, kind, -FERN_EDGE, camZ, position, W, H);
+      drawProp(ctx, kind, FERN_EDGE,  camZ, position, W, H);
+    }
+    return;
+  }
   const off = ((position % GAP) + GAP) % GAP;
   for (let n = COUNT; n >= 1; n--) {
     const camZ = n * GAP - off;
@@ -16,6 +42,18 @@ export function renderScenery(ctx, stage, position, W, H) {
     drawProp(ctx, kind, -EDGE, camZ, position, W, H);
     drawProp(ctx, kind, EDGE, camZ, position, W, H);
   }
+}
+
+// Draw a receding back-layer fern clump, tinted darker to sell depth.
+function drawFernBack(ctx, normX, camZ, position, W, H) {
+  const p = projectEntity(normX, camZ, W, H);
+  if (!p.visible || p.y < H * 0.5 || p.size < 2) return;
+  p.x += curveOffsetAt(position, camZ);
+  const lean = normX < 0 ? 1 : -1;
+  ctx.save();
+  ctx.globalAlpha = 0.72;
+  fernTree(ctx, p.x, p.y, p.size * 0.88, lean, true /* dark */);
+  ctx.restore();
 }
 
 function drawProp(ctx, kind, normX, camZ, position, W, H) {
@@ -35,10 +73,13 @@ function drawProp(ctx, kind, normX, camZ, position, W, H) {
 
 // A low, dense clump of ferns — not a tall tree. Dark damp greens, fronds fanning
 // up and arching over the road (set `lean`). Leaflet ticks give the pinnate look.
-function fernTree(ctx, x, y, s, lean) {
-  const greens = ['#12381a', '#1c5226', '#277034'];
+// dark=true: uses a deeper, receding palette for the back layer.
+function fernTree(ctx, x, y, s, lean, dark = false) {
+  const greens = dark
+    ? ['#0b2210', '#112e18', '#174020']   // darker depth tint for back layer
+    : ['#12381a', '#1c5226', '#277034'];
   // dark damp base mound
-  ctx.fillStyle = '#10311a';
+  ctx.fillStyle = dark ? '#091a0e' : '#10311a';
   ctx.beginPath(); ctx.ellipse(x, y, s * 0.95, s * 0.34, 0, 0, Math.PI * 2); ctx.fill();
   const n = 9;
   for (let i = 0; i < n; i++) {
