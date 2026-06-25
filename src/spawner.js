@@ -4,6 +4,7 @@ export function spawnInterval(distance, base = SPAWN.baseInterval, min = SPAWN.m
   return Math.max(min, base - distance / SPAWN.ramp);
 }
 export function pickHazard(weights, rng) {
+  if (!weights.length) return null;
   const total = weights.reduce((sum, w) => sum + w.weight, 0);
   let r = rng() * total;
   for (const w of weights) {

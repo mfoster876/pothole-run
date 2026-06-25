@@ -4,7 +4,7 @@ import { hazardInfo } from './hazardTypes.js';
 import { DAMAGE } from './constants.js';
 
 export function createRun() {
-  return { distance: 0, score: 0, coins: 0, wrecked: false };
+  return { distance: 0, coins: 0 };
 }
 
 // Crossing-based resolution: an entity's z is its distance ahead of the cart and

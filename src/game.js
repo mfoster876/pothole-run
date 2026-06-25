@@ -8,7 +8,7 @@ import { isWrecked } from './wreck.js';
 import { renderHud, renderTouchZones } from './hud.js';
 import { drawEntity } from './sprites.js';
 import { drawCart } from './cartSprite.js';
-import { getCharacter, CHARACTERS } from './characters.js';
+import { getCharacter } from './characters.js';
 import { getStage } from './stages.js';
 import { loadSave, writeSave, recordBest, addCoins } from './save.js';
 
@@ -38,7 +38,7 @@ export function createGame(audio) {
     cart = createCart(getCharacter(characterId));
     field = createField();
     run = createRun();
-    camZ = 0; spawnZ = 600; steerLock = 10;
+    camZ = 0; spawnZ = 600; steerLock = 10; // ~10 frames: swallow the start-tap so it doesn't steer
     state.mode = 'play';
     audio && audio.unlock();
     audio && audio.playStage(stage.musicId);
@@ -74,8 +74,9 @@ export function createGame(audio) {
     }
     const coinsBefore = run.coins, condBefore = cart.condition.value;
     resolveHits(run, cart, field);
+    // independent: a coin and a hazard can both resolve in the same frame
     if (run.coins > coinsBefore) audio && audio.sfx('coin');
-    else if (cart.condition.value < condBefore) audio && audio.sfx('hit');
+    if (cart.condition.value < condBefore) audio && audio.sfx('hit');
     if (isWrecked(cart.condition)) endRun();
   }
 

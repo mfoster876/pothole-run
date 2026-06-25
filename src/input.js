@@ -18,6 +18,7 @@ export function createInput(target, { onSteer, onTap }) {
   target.addEventListener('touchend', (e) => {
     held.left = held.right = false;
     for (const t of e.touches) held[sideFromX(t.clientX)] = true;
+    repeatTimer = REPEAT; // don't fire an immediate step from a freshly-implied hold
     e.preventDefault();
   }, { passive: false });
   target.addEventListener('mousedown', (e) => { onTap && onTap(); press(sideFromX(e.clientX)); });
