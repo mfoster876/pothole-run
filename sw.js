@@ -1,4 +1,4 @@
-const CACHE = 'pothole-run-v14';
+const CACHE = 'pothole-run-v15';
 const ASSETS = [
   './', './index.html', './styles.css', './manifest.webmanifest',
   './src/main.js', './src/constants.js', './src/game.js', './src/road.js',
@@ -18,6 +18,7 @@ const ASSETS = [
   './src/drinks.js',    // Phase 2: per-character drink boosts
   './src/tithes.js', './src/screens/tithes.js',  // Phase 2: variable tithe blessing
   './src/portrait.js',  // Phase 2: front-facing driver portraits
+  './src/usermusic.js', './src/screens/help.js',  // Phase 2.1: custom soundtracks + help screen
   './assets/icons/icon-192.png', './assets/icons/icon-512.png'
 ];
 self.addEventListener('install', (e) => {

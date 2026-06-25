@@ -66,3 +66,32 @@ export function blessingEffects(blessing) {
 export function decayBlessing(save) {
   save.blessing = Math.max(0, (save.blessing || 0) - TITHE.decay);
 }
+
+// Free, faith-based blessing top-ups — each limited to once per run-cycle.
+// (The controller resets prayedSinceRun / readBibleSinceRun at run start.)
+export const FAITH = {
+  prayGift:  0.08,
+  bibleGift: 0.10,
+};
+
+/**
+ * Pray — free blessing top-up, once per run-cycle.
+ * Returns true if the prayer was accepted; false if already prayed this cycle.
+ */
+export function pray(save) {
+  if (save.prayedSinceRun) return false;
+  save.blessing = Math.min(1, (save.blessing || 0) + FAITH.prayGift);
+  save.prayedSinceRun = true;
+  return true;
+}
+
+/**
+ * Read Bible — free blessing top-up, once per run-cycle.
+ * Returns true if accepted; false if already read this cycle.
+ */
+export function readBible(save) {
+  if (save.readBibleSinceRun) return false;
+  save.blessing = Math.min(1, (save.blessing || 0) + FAITH.bibleGift);
+  save.readBibleSinceRun = true;
+  return true;
+}

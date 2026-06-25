@@ -2,9 +2,20 @@
 // each its own riddim: a reggae one-drop, an up-tempo ska chop, a digital dancehall
 // bounce, and a boom-bap hip-hop beat. Stage `musicId` sets the key; genre sets the
 // tempo and the pattern. SFX for coins, hits, the cart wreck, squeak/creak/whoosh.
+//
+// User-music path: HTMLAudioElement playlist from IndexedDB blobs.
+// Controller calls playUserMusic() instead of playStage(); SFX always use Web Audio.
+import { getPlayableTracks, revoke } from './usermusic.js';
+
 export function createAudio() {
   let ctx = null, master = null, loopTimer = null, muted = false;
   let stageRoot = 146.83, genre = 'reggae', noiseBuf = null;
+
+  // --- User-music playlist state ---
+  let userEl     = null;   // single reused HTMLAudioElement
+  let userTracks = [];     // [{ id, name, url }]
+  let userUrls   = [];     // tracked for revocation
+  let userIdx    = 0;      // current track index
 
   function unlock() {
     if (ctx) { if (ctx.state === 'suspended') ctx.resume(); return; }
@@ -124,9 +135,57 @@ export function createAudio() {
     };
     tick();
   }
-  function stop() { if (loopTimer) { clearTimeout(loopTimer); loopTimer = null; } }
+  function stopUserMusic() {
+    if (userEl) { userEl.pause(); userEl.src = ''; }
+    revoke(userUrls);
+    userUrls = [];
+    userTracks = [];
+    userIdx = 0;
+  }
+
+  function stop() {
+    if (loopTimer) { clearTimeout(loopTimer); loopTimer = null; }
+    stopUserMusic();
+  }
+
   // switch genre live — the running loop picks up the new pattern on the next bar
   function setGenre(g) { if (GENRE_BPM[g]) genre = g; }
+
+  /**
+   * Load tracks from IndexedDB and play them as a looping playlist.
+   * If no tracks are stored, does nothing (caller should fall back to playStage).
+   * SFX remain on Web Audio; only the music goes through the HTMLAudioElement.
+   */
+  async function playUserMusic() {
+    // Stop any running procedural music first
+    if (loopTimer) { clearTimeout(loopTimer); loopTimer = null; }
+    stopUserMusic();
+
+    const tracks = await getPlayableTracks();
+    if (!tracks.length) return;   // nothing uploaded — caller falls back
+
+    userTracks = tracks;
+    userUrls   = tracks.map(t => t.url);
+    userIdx    = 0;
+
+    if (!userEl) {
+      userEl = new Audio();
+      userEl.addEventListener('ended', () => {
+        if (!userTracks.length) return;
+        userIdx = (userIdx + 1) % userTracks.length;
+        _playUserTrack();
+      });
+    }
+
+    if (!muted) _playUserTrack();
+  }
+
+  function _playUserTrack() {
+    if (!userEl || !userTracks.length) return;
+    userEl.src    = userTracks[userIdx].url;
+    userEl.volume = 0.6;
+    userEl.play().catch(() => { /* autoplay blocked — user gesture needed */ });
+  }
 
   // A short band-passed glide — used for the dry wheel squeak and the wood creak.
   function rub(t, f0, f1, peak, dur, bp, q) {
@@ -168,7 +227,18 @@ export function createAudio() {
       o.connect(bp); bp.connect(g); g.connect(master); o.start(t); o.stop(t + 0.38);
     }
   }
-  function setMuted(v) { muted = v; if (master) master.gain.value = v ? 0 : 0.5; }
+  function setMuted(v) {
+    muted = v;
+    if (master) master.gain.value = v ? 0 : 0.5;
+    // also pause / resume the user-music element
+    if (userEl && userTracks.length) {
+      if (v) {
+        userEl.pause();
+      } else {
+        userEl.play().catch(() => {});
+      }
+    }
+  }
 
-  return { unlock, playStage, stop, sfx, setMuted, setGenre };
+  return { unlock, playStage, playUserMusic, stop, sfx, setMuted, setGenre };
 }

@@ -106,9 +106,20 @@ requestAnimationFrame(frame);
 import { createGame } from './game.js';
 import { createInput } from './input.js';
 import { createAudio } from './audio.js';
+import { addTracks } from './usermusic.js';
 
 const audio = createAudio();
 const game  = createGame(audio);
+
+// Player's own soundtracks: store picked audio files locally, then refresh the count.
+const musicInput = document.getElementById('music-upload');
+if (musicInput) {
+  musicInput.addEventListener('change', async (e) => {
+    const files = e.target.files;
+    if (files && files.length) { await addTracks(files); game.refreshMusicCount(); }
+    e.target.value = '';   // let the player re-pick the same file later
+  });
+}
 
 // Play-mode steering (hold-repeat lane slides). Acts only while playing.
 const input = createInput(canvas, { onSteer: (d) => game.onSteer(d), onTap: () => audio.unlock() });

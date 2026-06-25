@@ -1,7 +1,7 @@
 const KEY = 'pothole-run-save:v2';
 const KEY_V1 = 'pothole-run-save:v1';
 
-export const GENRES = ['reggae', 'ska', 'dancehall', 'hiphop'];
+export const GENRES = ['reggae', 'ska', 'dancehall', 'hiphop', 'mymusic'];
 
 export function defaultSave() {
   return {
@@ -21,6 +21,8 @@ export function defaultSave() {
     aspirations: { achieved: [] },
     goldHandcart: false,
     blessing: 0,
+    prayedSinceRun: false,
+    readBibleSinceRun: false,
   };
 }
 export function loadSave(storage = globalThis.localStorage) {
@@ -42,6 +44,8 @@ export function loadSave(storage = globalThis.localStorage) {
       unlocks: { ...base.unlocks, ...(parsed.unlocks || {}) },
       settings: { ...base.settings, ...(parsed.settings || {}) },
       blessing: Number.isFinite(parsed.blessing) ? Math.max(0, Math.min(1, parsed.blessing)) : 0,
+      prayedSinceRun:   parsed.prayedSinceRun   === true ? true : false,
+      readBibleSinceRun: parsed.readBibleSinceRun === true ? true : false,
     };
     if (!save.garage.includes(save.vehicle)) save.vehicle = save.garage[0];
     if (!GENRES.includes(save.settings.genre)) save.settings.genre = 'reggae';

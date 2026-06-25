@@ -12,7 +12,8 @@ function hubRects(W, H) {
     play:        { x: bx, y: H * 0.36 - bh / 2, w: bw, h: bh },
     mechshop:    { x: bx, y: H * 0.50 - bh / 2, w: bw, h: bh },
     cardealer:   { x: bx, y: H * 0.64 - bh / 2, w: bw, h: bh },
-    aspirations: { x: bx, y: H * 0.78 - bh / 2, w: bw, h: bh }
+    aspirations: { x: bx, y: H * 0.78 - bh / 2, w: bw, h: bh },
+    help:        { x: W - 64, y: 18, w: 46, h: 46 }  // small "?" — How To Play
   };
 }
 
@@ -52,16 +53,18 @@ export function render(ctx, { save, W, H }) {
   btn(ctx, R.mechshop,    'MECH SHOP',    { stroke: '#cbe7cf' });
   btn(ctx, R.cardealer,   'CAR DEALER',   { stroke: '#cbe7cf' });
   btn(ctx, R.aspirations, 'ASPIRATIONS',  { stroke: '#9fb8a3', text: '#9fb8a3' });
+  btn(ctx, R.help, '?', { stroke: '#f0c020', text: '#f0c020', font: '700 28px "Courier New", monospace' });
 
   ctx.fillStyle = '#9fb8a3'; ctx.font = '500 13px "Courier New", monospace';
   ctx.textAlign = 'center';
-  ctx.fillText('♪ press M to mute', W / 2, H * 0.96);
+  ctx.fillText('♪ press M to mute   ·   ? = how to play', W / 2, H * 0.96);
 }
 
 function inRect(r, x, y) { return x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h; }
 
 export function hit(x, y, { W, H }) {
   const R = hubRects(W, H);
+  if (inRect(R.help, x, y))        return 'help';
   if (inRect(R.play, x, y))        return 'play';
   if (inRect(R.mechshop, x, y))    return 'mechshop';
   if (inRect(R.cardealer, x, y))   return 'cardealer';

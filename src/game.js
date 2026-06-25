@@ -32,11 +32,13 @@ import { rankFor } from './ranks.js';
 import { purchaseAspiration, canBuy } from './aspirations.js';
 import { playCashPot } from './cashpot.js';
 import * as tithesScreen from './screens/tithes.js';
-import { blessingEffects, decayBlessing, offeringAmount, giveTithe } from './tithes.js';
+import { blessingEffects, decayBlessing, offeringAmount, giveTithe, pray, readBible } from './tithes.js';
 import { renderPortrait } from './portrait.js';
+import * as help from './screens/help.js';
+import { count as countMusic } from './usermusic.js';
 
 const W = VIRTUAL.width, H = VIRTUAL.height;
-const GENRE_LABEL = { reggae: 'Reggae', ska: 'Ska', dancehall: 'Dancehall', hiphop: 'Hip-Hop' };
+const GENRE_LABEL = { reggae: 'Reggae', ska: 'Ska', dancehall: 'Dancehall', hiphop: 'Hip-Hop', mymusic: 'My Music' };
 
 // Menu hit-regions (virtual coords). One row each for driver, ride, stage, genre.
 const arrow = (xf, yf) => ({ x: W * xf, y: H * yf - 24, w: 48, h: 48 });
@@ -44,6 +46,7 @@ const BTN = {
   driverPrev: arrow(0.15, 0.225), driverNext: arrow(0.80, 0.225),
   stagePrev:  arrow(0.15, 0.61),  stageNext:  arrow(0.80, 0.61),
   genrePrev:  arrow(0.15, 0.70),  genreNext:  arrow(0.80, 0.70),
+  genreValue: { x: W * 0.30, y: H * 0.70 - 20, w: W * 0.40, h: 40 }, // tap to upload when "My Music"
   start:      { x: W * 0.5 - 130, y: H * 0.795 - 28, w: 260, h: 54 },
   back:       { x: 24, y: 18, w: 80, h: 36 }
 };
@@ -75,7 +78,10 @@ export function createGame(audio) {
   let endingId = null; // tracks which aspiration's ending is showing
   let goldToast = 0;  // frames remaining to show GOLD CART UNLOCK toast
   let cashpotResult = null; // last result from playCashPot
+  let myMusicCount = 0; // how many of the player's own tracks are stored (for the riddim picker)
   const rng = Math.random;
+  function refreshMusicCount() { try { countMusic().then((n) => { myMusicCount = n || 0; }).catch(() => {}); } catch (_) {} }
+  refreshMusicCount();
 
   function startRun(characterId, stageId) {
     road = makeRoad();
@@ -104,10 +110,18 @@ export function createGame(audio) {
       ? stage.hazardWeights.concat([{ type: 'wiper', weight: 3 }])
       : stage.hazardWeights.slice()
     ).concat(drinkWeightsFor(cart.character));
+    // Faith upkeep resets each run — pray/read-bible become available again.
+    save.prayedSinceRun = false;
+    save.readBibleSinceRun = false;
     camZ = 0; spawnZ = 600; steerLock = 10; squeakAccum = 0; hitShake = 0;
     state.mode = 'play';
     audio && audio.unlock();
-    audio && audio.playStage(stage.musicId);
+    // Play the player's own uploaded soundtrack if chosen (and any exist), else the stage riddim.
+    if (save.settings.genre === 'mymusic' && myMusicCount > 0) {
+      audio && audio.playUserMusic();
+    } else {
+      audio && audio.playStage(stage.musicId);
+    }
   }
   function endRun() {
     state.mode = 'gameover';
@@ -278,6 +292,10 @@ export function createGame(audio) {
     audio && audio.setMuted(save.settings.muted);
     writeSave(save);
   }
+  // Open the OS file picker so the player can add their own driving soundtracks.
+  function triggerMusicUpload() {
+    try { const el = document.getElementById('music-upload'); if (el) el.click(); } catch (_) {}
+  }
 
   // Mech shop: repair and rig upgrade handlers
   function doRepair() {
@@ -309,6 +327,7 @@ export function createGame(audio) {
     if (screen === 'hub') {
       const action = hub.hit(vx, vy, { W, H });
       if (action === 'play') { router.go('play'); return; }
+      if (action === 'help') { help.resetHelp(); router.go('help'); return; }
       if (action) { router.go(action); return; }
       // Corner tap secret code — only fires when no hub button was hit
       const corner = (vx < W * 0.5 ? 'L' : 'R');
@@ -332,6 +351,7 @@ export function createGame(audio) {
       else if (inRect(BTN.stageNext, vx, vy)) cycleStage(1);
       else if (inRect(BTN.genrePrev, vx, vy)) cycleGenre(-1);
       else if (inRect(BTN.genreNext, vx, vy)) cycleGenre(1);
+      else if (menuChoice.genre === 'mymusic' && inRect(BTN.genreValue, vx, vy)) triggerMusicUpload();
       else if (inRect(BTN.start, vx, vy)) startRun(menuChoice.character, menuChoice.stage);
       return;
     }
@@ -390,16 +410,25 @@ export function createGame(audio) {
       return;
     }
 
-    // Tithes & Offerings — choose an amount to give for a blessing
+    // Faith & Offerings — pray, read the Bible, or tithe to sustain the blessing
     if (screen === 'tithes') {
       const action = tithesScreen.hit(vx, vy, { W, H });
       if (action === 'back') { router.go('aspirations'); return; }
+      if (action === 'pray') { if (pray(save)) { audio && audio.sfx('coin'); writeSave(save); } return; }
+      if (action === 'bible') { if (readBible(save)) { audio && audio.sfx('coin'); writeSave(save); } return; }
       if (action && action.startsWith('give:')) {
         const amount = offeringAmount(save, action.slice(5));
         if (giveTithe(save, amount)) { audio && audio.sfx('cash'); writeSave(save); }
         return;
       }
       return;
+    }
+
+    // Help / How to Play — paged guide
+    if (screen === 'help') {
+      const action = help.hit(vx, vy, { W, H });
+      if (action === 'back') { router.go('hub'); return; }
+      return; // 'next'/'prev' advance the page inside help.js
     }
 
     // Ending vignette — CONTINUE returns to hub
@@ -436,6 +465,10 @@ export function createGame(audio) {
     }
     if (screen === 'cashpot' || screen === 'tithes') {
       if (key === 'Escape') router.go('aspirations');
+      return;
+    }
+    if (screen === 'help') {
+      if (key === 'Escape') router.go('hub');
       return;
     }
     if (screen === 'ending') {
@@ -498,6 +531,10 @@ export function createGame(audio) {
       if (state.popup) renderPopup(ctx, state.popup);
       return;
     }
+    if (screen === 'help') {
+      help.render(ctx, { save, W, H });
+      return;
+    }
     if (screen === 'ending') {
       ending.render(ctx, { aspirationId: endingId, W, H });
       return;
@@ -543,7 +580,13 @@ export function createGame(audio) {
     ctx.fillStyle = '#cbe7cf'; ctx.font = '500 15px "Courier New", monospace';
     ctx.fillText('RIDDIM', W / 2, H * 0.66);
     ctx.fillStyle = '#f0c020'; ctx.font = '700 26px "Courier New", monospace';
-    ctx.fillText(GENRE_LABEL[menuChoice.genre] || 'Reggae', W / 2, H * 0.70);
+    if (menuChoice.genre === 'mymusic') {
+      ctx.fillText('My Music (' + myMusicCount + ')', W / 2, H * 0.70);
+      ctx.fillStyle = '#9fb8a3'; ctx.font = '500 13px "Courier New", monospace';
+      ctx.fillText(myMusicCount ? 'tap here to add more tracks' : 'tap here to upload your own tracks', W / 2, H * 0.735);
+    } else {
+      ctx.fillText(GENRE_LABEL[menuChoice.genre] || 'Reggae', W / 2, H * 0.70);
+    }
 
     button(ctx, BTN.start, 'START');
     ctx.fillStyle = '#9fb8a3'; ctx.font = '500 15px "Courier New", monospace';
@@ -586,5 +629,5 @@ export function createGame(audio) {
     ctx.fillText('TAP / PRESS TO CONTINUE', W / 2, H * 0.78);
   }
 
-  return { state, update, render, onSteer, menuPoint, menuKey, toggleMute, menuChoice };
+  return { state, update, render, onSteer, menuPoint, menuKey, toggleMute, menuChoice, refreshMusicCount };
 }

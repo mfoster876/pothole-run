@@ -7,6 +7,9 @@ import {
   giveTithe,
   blessingEffects,
   decayBlessing,
+  FAITH,
+  pray,
+  readBible,
 } from '../src/tithes.js';
 
 // ── offeringAmount ──────────────────────────────────────────────────────────
@@ -180,4 +183,102 @@ test('decayBlessing handles save without blessing field', () => {
   decayBlessing(save);
   assert.ok(Number.isFinite(save.blessing));
   assert.ok(save.blessing >= 0);
+});
+
+// ── pray ────────────────────────────────────────────────────────────────────
+
+test('pray: raises blessing by FAITH.prayGift and sets prayedSinceRun', () => {
+  const save = { blessing: 0.2, prayedSinceRun: false, readBibleSinceRun: false };
+  const result = pray(save);
+  assert.equal(result, true);
+  assert.ok(Math.abs(save.blessing - (0.2 + FAITH.prayGift)) < 1e-9,
+    `blessing should be ${0.2 + FAITH.prayGift} but got ${save.blessing}`);
+  assert.equal(save.prayedSinceRun, true);
+});
+
+test('pray: second call in same cycle returns false and does not change blessing', () => {
+  const save = { blessing: 0.2, prayedSinceRun: false, readBibleSinceRun: false };
+  pray(save);
+  const blessingAfterFirst = save.blessing;
+  const result = pray(save);
+  assert.equal(result, false);
+  assert.equal(save.blessing, blessingAfterFirst);
+});
+
+test('pray: resetting prayedSinceRun lets it work again', () => {
+  const save = { blessing: 0.1, prayedSinceRun: false, readBibleSinceRun: false };
+  pray(save);
+  const blessingAfterFirst = save.blessing;
+  save.prayedSinceRun = false; // controller resets this at run start
+  const result = pray(save);
+  assert.equal(result, true);
+  assert.ok(Math.abs(save.blessing - (blessingAfterFirst + FAITH.prayGift)) < 1e-9);
+});
+
+test('pray: blessing caps at 1', () => {
+  const save = { blessing: 0.97, prayedSinceRun: false, readBibleSinceRun: false };
+  pray(save);
+  assert.ok(save.blessing <= 1, `blessing ${save.blessing} exceeded 1`);
+  assert.equal(save.blessing, 1);
+});
+
+test('pray: handles save without pre-existing blessing field', () => {
+  const save = { prayedSinceRun: false, readBibleSinceRun: false };
+  pray(save);
+  assert.ok(Number.isFinite(save.blessing));
+  assert.ok(Math.abs(save.blessing - FAITH.prayGift) < 1e-9);
+});
+
+// ── readBible ────────────────────────────────────────────────────────────────
+
+test('readBible: raises blessing by FAITH.bibleGift and sets readBibleSinceRun', () => {
+  const save = { blessing: 0.2, prayedSinceRun: false, readBibleSinceRun: false };
+  const result = readBible(save);
+  assert.equal(result, true);
+  assert.ok(Math.abs(save.blessing - (0.2 + FAITH.bibleGift)) < 1e-9,
+    `blessing should be ${0.2 + FAITH.bibleGift} but got ${save.blessing}`);
+  assert.equal(save.readBibleSinceRun, true);
+});
+
+test('readBible: second call in same cycle returns false and does not change blessing', () => {
+  const save = { blessing: 0.2, prayedSinceRun: false, readBibleSinceRun: false };
+  readBible(save);
+  const blessingAfterFirst = save.blessing;
+  const result = readBible(save);
+  assert.equal(result, false);
+  assert.equal(save.blessing, blessingAfterFirst);
+});
+
+test('readBible: resetting readBibleSinceRun lets it work again', () => {
+  const save = { blessing: 0.1, prayedSinceRun: false, readBibleSinceRun: false };
+  readBible(save);
+  const blessingAfterFirst = save.blessing;
+  save.readBibleSinceRun = false; // controller resets this at run start
+  const result = readBible(save);
+  assert.equal(result, true);
+  assert.ok(Math.abs(save.blessing - (blessingAfterFirst + FAITH.bibleGift)) < 1e-9);
+});
+
+test('readBible: blessing caps at 1', () => {
+  const save = { blessing: 0.95, prayedSinceRun: false, readBibleSinceRun: false };
+  readBible(save);
+  assert.ok(save.blessing <= 1, `blessing ${save.blessing} exceeded 1`);
+  assert.equal(save.blessing, 1);
+});
+
+test('readBible: handles save without pre-existing blessing field', () => {
+  const save = { prayedSinceRun: false, readBibleSinceRun: false };
+  readBible(save);
+  assert.ok(Number.isFinite(save.blessing));
+  assert.ok(Math.abs(save.blessing - FAITH.bibleGift) < 1e-9);
+});
+
+test('pray and readBible are independent — both can be used in one cycle', () => {
+  const save = { blessing: 0, prayedSinceRun: false, readBibleSinceRun: false };
+  assert.equal(pray(save), true);
+  assert.equal(readBible(save), true);
+  assert.ok(Math.abs(save.blessing - (FAITH.prayGift + FAITH.bibleGift)) < 1e-9);
+  // But each is blocked after first use
+  assert.equal(pray(save), false);
+  assert.equal(readBible(save), false);
 });
