@@ -95,11 +95,26 @@ road traffic / cameo in the world.
 6. Jonkonnu
 7. Rasta Musician
 
-**Driver stats** (light tilts, not extreme): top speed, handling, and a "cool"
-coin-magnet stat. Stats are flavour-forward, balanced so every driver is viable.
+**Driver stats — distinct, not subtle.** Each driver should play *noticeably*
+differently. Stats span: top speed, handling (steering responsiveness / how loose
+the cart slides), cart toughness (damage taken per hit), and coin draw (pickup
+magnet radius / coin multiplier). Drivers are archetypes with real trade-offs, not
+near-identical clones — but each is *viable* in skilled hands.
 
-**MVP roster (3):** School Yute (balanced/easy), Rasta Musician (cool coin-magnet),
-Bleachaz Conductor (fast, loud). Remaining 4 unlock via progression.
+**MVP roster (3) — concrete archetypes:**
+
+| Driver | Archetype | Top speed | Handling | Toughness | Coin draw |
+|---|---|---|---|---|---|
+| **School Yute** | Balanced / beginner — the "learn the game" pick | Mid | Tight & forgiving | Mid | Mid |
+| **Rasta Musician** | Cool & steady — economy player | Low–mid | Smooth | High | High (big magnet) |
+| **Bleachaz Conductor** | **Reckless** — high risk / high reward | **Highest** | **Loose & twitchy** (hard to control, oversteers) | **Fragile** (takes extra damage) | High (score/coin multiplier as the payoff for surviving) |
+
+The Conductor is the adrenaline pick: blistering speed and a scoring bonus, but the
+cart is hard to keep straight and shatters fast — built for players chasing top
+scores, punishing for beginners.
+
+Remaining 4 personas unlock via progression, each its own distinct archetype
+(e.g. Police = sturdy/slow tank, Taxi Man = fast/aggressive lane-weaver).
 
 ---
 
