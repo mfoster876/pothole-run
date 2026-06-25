@@ -10,9 +10,12 @@ test('every character has the required stat fields', () => {
     }
   }
 });
-test('MVP ships exactly 3 characters incl. yute, rasta, conductor', () => {
+test('roster: yute, rasta, conductor, and the unlock-only politician', () => {
   const ids = CHARACTERS.map(c => c.id);
-  assert.deepEqual(ids, ['yute', 'rasta', 'conductor']);
+  assert.deepEqual(ids, ['yute', 'rasta', 'conductor', 'politician']);
+  // the two elite drivers are locked behind progression
+  assert.equal(getCharacter('conductor').locked, true);
+  assert.equal(getCharacter('politician').locked, true);
 });
 test('conductor is the reckless archetype: fastest, loosest, most fragile', () => {
   const c = getCharacter('conductor');

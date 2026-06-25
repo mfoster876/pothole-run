@@ -149,6 +149,8 @@ export function createGame(audio) {
     // New Kingston (where the JUTC buses run) opens once you've banked a little
     if (save.coins >= 500 && !u.stages.includes('new-kingston')) u.stages.push('new-kingston');
     if (save.coins >= 2500 && !u.characters.includes('conductor')) u.characters.push('conductor');
+    // Di Politician — unlocked only with loads of money (tunable threshold).
+    if (save.coins >= 250000 && !u.characters.includes('politician')) u.characters.push('politician');
   }
 
   function update(dt) {

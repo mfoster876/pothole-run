@@ -190,9 +190,8 @@ function drawDriver(ctx, ch, s) {
   ctx.fillStyle = shirt; ctx.fillRect(-s * 0.3, -s * 1.18, s * 0.6, s * 0.5);
   ctx.strokeStyle = shirt; ctx.lineWidth = s * 0.13; ctx.lineCap = 'round';
   ctx.beginPath(); ctx.moveTo(-s * 0.18, -s * 1.02); ctx.lineTo(s * 0.08, -s * 1.0); ctx.stroke();
-  // Bleachaz conductor: left arm stays original un-bleached black, right arm is lighter
-  const rightArmSkin = id === 'conductor' ? '#e8d4b8' : skin;
-  const leftArmSkin  = id === 'conductor' ? '#1c1208'  : skin;  // un-bleached arm
+  // Bleachaz conductor: bleach reaches only the face & neck — BOTH arms stay black.
+  const rightArmSkin = id === 'conductor' ? '#1c1208' : skin;
   ctx.strokeStyle = rightArmSkin; ctx.lineWidth = s * 0.1;
   ctx.beginPath(); ctx.moveTo(s * 0.05, -s * 1.0); ctx.lineTo(s * 0.2, -s * 0.98); ctx.stroke();
   // neck stub — lighter for conductor (bleached)
@@ -229,9 +228,13 @@ function drawHead(ctx, ch, s, x, y) {
     ctx.beginPath(); ctx.moveTo(x - s * 0.16, y + s * 0.08); ctx.lineTo(x - s * 0.22, y + s * 0.34); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(x + s * 0.16, y + s * 0.08); ctx.lineTo(x + s * 0.22, y + s * 0.34); ctx.stroke();
   } else if (id === 'conductor') {
-    // Flat conductor cap (dark)
-    ctx.fillStyle = '#2b2b30'; ctx.beginPath(); ctx.arc(x, y - s * 0.04, s * 0.19, Math.PI, 0); ctx.fill();
-    ctx.fillRect(x - s * 0.2, y - s * 0.04, s * 0.32, s * 0.04);
+    // Bantu knots — a few small dark hair knots across the crown (no cap)
+    ctx.fillStyle = '#15110a';
+    for (const kx of [-0.12, 0, 0.12]) {
+      ctx.beginPath(); ctx.arc(x + s * kx, y - s * 0.12, s * 0.045, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.fillStyle = '#1c1208';
+    ctx.beginPath(); ctx.arc(x, y - s * 0.04, s * 0.16, Math.PI, 0); ctx.fill();   // dark scalp cap
     // Black lips with a pink centre — drawn at the lower third of the face
     const lipY = y + s * 0.07;
     const lipW = s * 0.09;
@@ -250,6 +253,12 @@ function drawHead(ctx, ch, s, x, y) {
   } else if (id === 'police') {
     ctx.fillStyle = '#1a2740'; ctx.beginPath(); ctx.arc(x, y - s * 0.04, s * 0.19, Math.PI, 0); ctx.fill();
     ctx.fillStyle = '#d8c24a'; ctx.fillRect(x - s * 0.06, y - s * 0.08, s * 0.12, s * 0.05);
+  } else if (id === 'politician') {
+    // Neat greying side-parted hair (statesmanlike)
+    ctx.fillStyle = '#3a342c'; ctx.beginPath(); ctx.arc(x, y - s * 0.02, s * 0.17, Math.PI, 0); ctx.fill();
+    ctx.strokeStyle = '#bfb6a4'; ctx.lineWidth = Math.max(0.8, s * 0.018);   // grey temples
+    ctx.beginPath(); ctx.moveTo(x - s * 0.13, y - s * 0.02); ctx.lineTo(x - s * 0.15, y + s * 0.06); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x + s * 0.13, y - s * 0.02); ctx.lineTo(x + s * 0.15, y + s * 0.06); ctx.stroke();
   } else {
     ctx.fillStyle = '#1c1208'; ctx.beginPath(); ctx.arc(x, y, s * 0.18, Math.PI, 0); ctx.fill();
   }
@@ -258,7 +267,7 @@ function drawHead(ctx, ch, s, x, y) {
 function shirtColor(ch) {
   const id = ch && ch.id;
   return { yute: '#dfe3ea', rasta: '#3f7a3a', conductor: '#d8a23a', police: '#27407a',
-    taxi: '#9a3b2c', business: '#b04a78', jonkonnu: '#c0392b' }[id] || '#cfae6a';
+    politician: '#1e2a44', taxi: '#9a3b2c', business: '#b04a78', jonkonnu: '#c0392b' }[id] || '#cfae6a';
 }
 function wheel(ctx, x, y, r, hubColor = '#8a8a8a') {
   ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fillStyle = '#1c1c1c'; ctx.fill();

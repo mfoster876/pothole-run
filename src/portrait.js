@@ -13,7 +13,7 @@
 // The portrait (frame + bust) is drawn fully within the size×size box centred on
 // (cx, cy).  Unknown ids fall back to a neutral silhouette.
 
-export const PORTRAITS = new Set(['yute', 'rasta', 'conductor']);
+export const PORTRAITS = new Set(['yute', 'rasta', 'conductor', 'politician']);
 
 // ─── public entry point ──────────────────────────────────────────────────────
 export function renderPortrait(ctx, characterId, cx, cy, size) {
@@ -26,6 +26,7 @@ export function renderPortrait(ctx, characterId, cx, cy, size) {
     case 'yute':      _drawYute(ctx, size);      break;
     case 'rasta':     _drawRasta(ctx, size);     break;
     case 'conductor': _drawConductor(ctx, size); break;
+    case 'politician':_drawPolitician(ctx, size); break;
     default:          _drawSilhouette(ctx, size); break;
   }
 
@@ -691,6 +692,127 @@ function _drawConductor(ctx, size) {
   ctx.fillStyle = '#cbe7cf';
   ctx.font = `500 ${Math.round(s * 0.070)}px "Courier New", monospace`;
   ctx.fillText('CONDUCTOR', s * 0.50, s * 0.142);
+}
+
+// ─── POLITICIAN — "Di Politician" ─────────────────────────────────────────────
+// Statesmanlike bust: dark suit, white shirt, red tie, gold lapel pin, greying
+// side-parted hair and a sly, money-magnet smirk. Laid out to sit inside the frame.
+function _drawPolitician(ctx, size) {
+  const s = size;
+  const cx = s * 0.50;
+
+  _frame(ctx, s, P.frameSlateDim, P.frameGold, '#4a3808');
+  _clipPanel(ctx, s);
+
+  const headCY = s * 0.47, headRX = s * 0.175, headRY = s * 0.200;
+  const chinY  = headCY + headRY * 0.92;
+  const neckW  = s * 0.120;
+  const neckTopY = chinY - headRY * 0.05;
+  const neckBotY = chinY + s * 0.070;
+  const shTopY = neckBotY - s * 0.004, shBotY = s * 0.955, shHalf = s * 0.36;
+
+  // ── Suit shoulders (navy) ──
+  ctx.fillStyle = '#1e2a44';
+  ctx.beginPath();
+  ctx.moveTo(cx - neckW * 0.5, neckBotY);
+  ctx.lineTo(cx + neckW * 0.5, neckBotY);
+  ctx.lineTo(cx + shHalf, shBotY);
+  ctx.lineTo(cx - shHalf, shBotY);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = P.outline; ctx.lineWidth = Math.max(1, s * 0.016); ctx.stroke();
+  ctx.fillStyle = '#141d30';
+  ctx.beginPath();
+  ctx.moveTo(cx - shHalf * 0.86, shBotY);
+  ctx.quadraticCurveTo(cx, shTopY + (shBotY - shTopY) * 0.20, cx + shHalf * 0.86, shBotY);
+  ctx.closePath(); ctx.fill();
+
+  // white shirt V
+  ctx.fillStyle = '#eef0f2';
+  ctx.beginPath();
+  ctx.moveTo(cx - neckW * 0.55, neckBotY);
+  ctx.lineTo(cx + neckW * 0.55, neckBotY);
+  ctx.lineTo(cx, shBotY);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = P.outline; ctx.lineWidth = Math.max(1, s * 0.012); ctx.stroke();
+  // red tie
+  ctx.fillStyle = '#c0251a';
+  ctx.beginPath();
+  ctx.moveTo(cx - s * 0.028, neckBotY + s * 0.005);
+  ctx.lineTo(cx + s * 0.028, neckBotY + s * 0.005);
+  ctx.lineTo(cx + s * 0.020, shBotY);
+  ctx.lineTo(cx - s * 0.020, shBotY);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = '#7a1208'; ctx.lineWidth = Math.max(1, s * 0.010); ctx.stroke();
+  // gold lapel pin
+  ctx.fillStyle = P.frameGold;
+  ellipse(ctx, cx - shHalf * 0.42, shTopY + s * 0.07, s * 0.013, s * 0.013); ctx.fill();
+
+  // ── Neck ──
+  ctx.fillStyle = P.skinMid;
+  ctx.fillRect(cx - neckW * 0.5, neckTopY, neckW, neckBotY - neckTopY);
+  ctx.strokeStyle = P.outline; ctx.lineWidth = Math.max(1, s * 0.014);
+  ctx.strokeRect(cx - neckW * 0.5, neckTopY, neckW, neckBotY - neckTopY);
+
+  // ── Head ──
+  ctx.fillStyle = 'rgba(0,0,0,0.30)';
+  ellipse(ctx, cx + s * 0.012, headCY + s * 0.012, headRX, headRY); ctx.fill();
+  ctx.fillStyle = P.skinMid;
+  ellipse(ctx, cx, headCY, headRX, headRY); ctx.fill();
+  ctx.strokeStyle = P.outline; ctx.lineWidth = Math.max(1.5, s * 0.022); ctx.stroke();
+  ctx.fillStyle = P.skinLight;
+  ellipse(ctx, cx - headRX * 0.46, headCY + headRY * 0.14, headRX * 0.24, headRY * 0.18); ctx.fill();
+  ellipse(ctx, cx + headRX * 0.46, headCY + headRY * 0.14, headRX * 0.24, headRY * 0.18); ctx.fill();
+
+  // ears
+  for (const sign of [-1, 1]) {
+    ctx.fillStyle = P.skinMid;
+    ellipse(ctx, cx + sign * headRX * 0.96, headCY + headRY * 0.06, headRX * 0.10, headRY * 0.13); ctx.fill();
+    ctx.strokeStyle = P.outline; ctx.lineWidth = Math.max(1, s * 0.014); ctx.stroke();
+  }
+
+  // ── Greying side-parted hair ──
+  ctx.fillStyle = '#2a2620';
+  ctx.beginPath();
+  ctx.ellipse(cx, headCY - headRY * 0.30, headRX * 0.98, headRY * 0.55, 0, Math.PI, 2 * Math.PI);
+  ctx.fill();
+  ctx.strokeStyle = '#0e0c08'; ctx.lineWidth = Math.max(1, s * 0.012);    // side part
+  ctx.beginPath();
+  ctx.moveTo(cx - headRX * 0.28, headCY - headRY * 0.62);
+  ctx.lineTo(cx - headRX * 0.10, headCY - headRY * 0.30);
+  ctx.stroke();
+  ctx.strokeStyle = '#b8b0a0'; ctx.lineWidth = Math.max(1, s * 0.013);    // grey temples
+  for (const sign of [-1, 1]) {
+    ctx.beginPath();
+    ctx.moveTo(cx + sign * headRX * 0.82, headCY - headRY * 0.28);
+    ctx.lineTo(cx + sign * headRX * 0.92, headCY + headRY * 0.04);
+    ctx.stroke();
+  }
+  ctx.strokeStyle = P.outline; ctx.lineWidth = Math.max(1, s * 0.014);
+  ctx.beginPath();
+  ctx.ellipse(cx, headCY - headRY * 0.30, headRX * 0.98, headRY * 0.55, 0, Math.PI, 2 * Math.PI);
+  ctx.stroke();
+
+  // ── Face features — sly & confident ──
+  const eyeY = headCY + headRY * 0.02, eyeSpan = headRX * 0.84, eyeR = s * 0.040;
+  _eyebrows(ctx, cx, eyeY - eyeR * 1.5, eyeSpan, eyeR, '#2a2620', 0.35);
+  _eyes(ctx, cx, eyeY, eyeSpan, eyeR, '#2a1a0c');
+  _nose(ctx, cx, eyeY + eyeR * 2.2, s);
+  // smug asymmetric smirk
+  ctx.strokeStyle = '#3a1e10'; ctx.lineWidth = Math.max(1.5, s * 0.018); ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(cx - s * 0.060, eyeY + eyeR * 3.9);
+  ctx.quadraticCurveTo(cx, eyeY + eyeR * 4.2, cx + s * 0.070, eyeY + eyeR * 3.6);
+  ctx.stroke();
+  ctx.lineCap = 'butt';
+
+  // ── name label ──
+  ctx.fillStyle = P.frameGold;
+  ctx.font = `700 ${Math.round(s * 0.082)}px "Courier New", monospace`;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText('DI', s * 0.50, s * 0.086);
+  ctx.fillStyle = '#cbe7cf';
+  ctx.font = `500 ${Math.round(s * 0.066)}px "Courier New", monospace`;
+  ctx.fillText('POLITICIAN', s * 0.50, s * 0.146);
 }
 
 // ─── FALLBACK — neutral silhouette ───────────────────────────────────────────
