@@ -33,19 +33,32 @@ function drawProp(ctx, kind, normX, camZ, position, W, H) {
   }
 }
 
+// A low, dense clump of ferns — not a tall tree. Dark damp greens, fronds fanning
+// up and arching over the road (set `lean`). Leaflet ticks give the pinnate look.
 function fernTree(ctx, x, y, s, lean) {
-  const h = s * 3.0;
-  ctx.strokeStyle = '#4a3a22'; ctx.lineWidth = Math.max(2, s * 0.16);
-  ctx.beginPath(); ctx.moveTo(x, y); ctx.quadraticCurveTo(x + lean * s * 0.5, y - h * 0.6, x + lean * s * 1.1, y - h); ctx.stroke();
-  const cx = x + lean * s * 1.1, cy = y - h;
-  for (let i = 0; i < 7; i++) {
-    const a = Math.PI + (i / 6) * Math.PI; // upper fan
-    ctx.strokeStyle = i % 2 ? '#1e5e2a' : '#267a33';
-    ctx.lineWidth = Math.max(1.5, s * 0.1);
-    ctx.beginPath(); ctx.moveTo(cx, cy);
-    ctx.quadraticCurveTo(cx + Math.cos(a) * s * 0.9, cy + Math.sin(a) * s * 0.5,
-      cx + Math.cos(a) * s * 1.7, cy + Math.sin(a) * s * 1.1);
-    ctx.stroke();
+  const greens = ['#12381a', '#1c5226', '#277034'];
+  // dark damp base mound
+  ctx.fillStyle = '#10311a';
+  ctx.beginPath(); ctx.ellipse(x, y, s * 0.95, s * 0.34, 0, 0, Math.PI * 2); ctx.fill();
+  const n = 9;
+  for (let i = 0; i < n; i++) {
+    const f = i / (n - 1);                                    // 0..1 across the spray
+    const ang = -Math.PI * 0.5 + (f - 0.5) * Math.PI * 1.05 + lean * 0.25; // fan up, arch roadward
+    const len = s * (1.0 + (1 - Math.abs(f - 0.5) * 2) * 0.65); // tallest in the middle (~s*1.65)
+    const tipx = x + Math.cos(ang) * len, tipy = y + Math.sin(ang) * len;
+    const midx = x + Math.cos(ang) * len * 0.5 + lean * s * 0.12, midy = y + Math.sin(ang) * len * 0.5;
+    ctx.strokeStyle = greens[i % 3]; ctx.lineWidth = Math.max(1.5, s * 0.085);
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.quadraticCurveTo(midx, midy, tipx, tipy); ctx.stroke();
+    // leaflets along the frond
+    ctx.lineWidth = Math.max(1, s * 0.035);
+    const perp = ang + Math.PI / 2;
+    for (let t = 0.3; t < 0.98; t += 0.2) {
+      const px = x + (tipx - x) * t, py = y + (tipy - y) * t, ll = s * 0.11 * (1 - t * 0.5);
+      ctx.beginPath();
+      ctx.moveTo(px - Math.cos(perp) * ll, py - Math.sin(perp) * ll);
+      ctx.lineTo(px + Math.cos(perp) * ll, py + Math.sin(perp) * ll);
+      ctx.stroke();
+    }
   }
 }
 

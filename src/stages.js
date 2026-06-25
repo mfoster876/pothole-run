@@ -1,7 +1,8 @@
 export const STAGES = [
   {
     id: 'fern-gully', name: 'Fern Gully', locked: false, musicId: 'fern', scenery: 'fern',
-    palette: { sky: '#cdeef0', hill: '#1e5e2a', ground: '#3a8f44', road: '#54585e', rumble: '#3f6b3f' },
+    // a shaded, damp gorge — muted misty light, deep fern greens (not bright tropics)
+    palette: { sky: '#a7bcae', hill: '#123417', ground: '#27592c', road: '#474b50', rumble: '#3f5836' },
     hazardWeights: [
       { type: 'pothole', weight: 5 }, { type: 'coin', weight: 4 },
       { type: 'slick', weight: 2 }, { type: 'stall', weight: 2 }, { type: 'manhole', weight: 1 },

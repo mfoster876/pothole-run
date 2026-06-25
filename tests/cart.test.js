@@ -1,28 +1,30 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createCart, steer, updateCart } from '../src/cart.js';
+import { createCart, steer, updateCart, onShoulder } from '../src/cart.js';
 import { getCharacter } from '../src/characters.js';
 
-test('createCart starts centred, full condition, in middle lane', () => {
+test('createCart starts centred (slot 2 of 5), full condition', () => {
   const cart = createCart(getCharacter('yute'));
-  assert.equal(cart.laneIndex, 1);
+  assert.equal(cart.laneIndex, 2);   // middle of 5 slots: shoulder, lane, lane, lane, shoulder
   assert.equal(cart.x, 0);
   assert.equal(cart.condition.value, 100);
+  assert.equal(onShoulder(cart), false);
 });
-test('steer right increments target lane, clamped to track', () => {
+test('steer can reach the soft shoulder and clamps at the edge', () => {
   const cart = createCart(getCharacter('yute'));
-  steer(cart, +1); assert.equal(cart.laneIndex, 2);
-  steer(cart, +1); assert.equal(cart.laneIndex, 2);
-  steer(cart, -1); assert.equal(cart.laneIndex, 1);
+  steer(cart, +1); assert.equal(cart.laneIndex, 3);
+  steer(cart, +1); assert.equal(cart.laneIndex, 4); assert.equal(onShoulder(cart), true);
+  steer(cart, +1); assert.equal(cart.laneIndex, 4); // clamped at the right shoulder
+  steer(cart, -1); assert.equal(cart.laneIndex, 3); assert.equal(onShoulder(cart), false);
 });
-test('updateCart eases x toward the target lane and ramps speed', () => {
+test('updateCart eases x toward the target slot and ramps speed', () => {
   const cart = createCart(getCharacter('yute'));
-  steer(cart, +1);
+  steer(cart, +1); // target the right lane (x 0.6)
   const before = cart.x;
   updateCart(cart, 0.5);
   assert.ok(cart.x > before);
-  assert.ok(cart.x <= 0.6 + 1e-9);
-  assert.ok(cart.speed > 80);
+  assert.ok(cart.x < 0.95);          // still on the track (wander can't fling it past)
+  assert.ok(cart.speed > 72);        // climbing from the eased start speed
 });
 test('reckless conductor slides looser (less handling) than yute over one step', () => {
   const yute = createCart(getCharacter('yute'));

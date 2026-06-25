@@ -1,11 +1,12 @@
-const CACHE = 'pothole-run-v6';
+const CACHE = 'pothole-run-v7';
 const ASSETS = [
   './', './index.html', './styles.css', './manifest.webmanifest',
   './src/main.js', './src/constants.js', './src/game.js', './src/road.js',
   './src/scenery.js', './src/cart.js', './src/cartSprite.js', './src/sprites.js', './src/entities.js',
   './src/run.js', './src/collision.js', './src/wreck.js', './src/spawner.js',
   './src/hazardTypes.js', './src/input.js', './src/hud.js', './src/audio.js',
-  './src/characters.js', './src/stages.js', './src/vehicles.js', './src/money.js', './src/save.js',
+  './src/characters.js', './src/stages.js', './src/vehicles.js', './src/money.js',
+  './src/upgrades.js', './src/save.js',
   './assets/icons/icon-192.png', './assets/icons/icon-512.png'
 ];
 self.addEventListener('install', (e) => {

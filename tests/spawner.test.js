@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { spawnInterval, pickHazard, laneFor } from '../src/spawner.js';
 
 test('spawnInterval shrinks with distance but never below min', () => {
-  assert.equal(spawnInterval(0), 90);          // wide gaps at the start
+  assert.equal(spawnInterval(0), 100);         // wide gaps at the start
   assert.ok(spawnInterval(10000) >= 20);       // floored, stays survivable
   assert.ok(spawnInterval(800) < spawnInterval(0)); // tightens as you speed up
 });

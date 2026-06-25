@@ -23,7 +23,7 @@ test('hitting a pothole damages the cart once, not every frame', () => {
   spawn(field, 'pothole', 1, 0);
   resolveHits(run, cart, field);
   resolveHits(run, cart, field);
-  assert.equal(cart.condition.value, 88);
+  assert.equal(cart.condition.value, 89); // one 11-pt pothole hit, not two
 });
 test('manhole is an instant wreck', () => {
   const { cart, field, run } = setup();

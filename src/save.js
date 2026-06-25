@@ -9,6 +9,7 @@ export function defaultSave() {
     // vehicle: which rides you own and which is selected; handcart is the free icon.
     garage: ['handcart'],
     vehicle: 'handcart',
+    upgrades: [],                 // owned rig stability upgrades (see upgrades.js)
     seenCarTip: false,            // has the windscreen-youth pop-up been shown?
     unlocks: { characters: ['yute', 'rasta'], stages: ['fern-gully'] },
     settings: { muted: false, genre: 'reggae' }
@@ -23,6 +24,7 @@ export function loadSave(storage = globalThis.localStorage) {
     const save = {
       ...base, ...parsed,
       garage: Array.isArray(parsed.garage) && parsed.garage.length ? parsed.garage : base.garage,
+      upgrades: Array.isArray(parsed.upgrades) ? parsed.upgrades : base.upgrades,
       unlocks: { ...base.unlocks, ...(parsed.unlocks || {}) },
       settings: { ...base.settings, ...(parsed.settings || {}) }
     };
@@ -56,4 +58,12 @@ export function buyVehicle(state, vehicle) {
 export function selectVehicle(state, id) {
   if (state.garage.includes(id)) state.vehicle = id;
   return state;
+}
+// Buy a rig stability upgrade if affordable and not already owned.
+export function buyUpgrade(state, upgrade) {
+  if (state.upgrades.includes(upgrade.id)) return false;
+  if (state.coins < upgrade.price) return false;
+  state.coins -= upgrade.price;
+  state.upgrades.push(upgrade.id);
+  return true;
 }

@@ -10,18 +10,21 @@
 // marques are millions. Buying your way up should feel as out-of-reach as it does
 // in real life — the grind (deep runs for paper money) or the races are how you
 // actually close the gap.
+// `stability` = how steady the ride is out of the box (higher = less wobble/wander).
+// The handcart is deliberately low — wobbly and hard to control until you buy rig
+// upgrades (see upgrades.js); cars are inherently steadier.
 export const VEHICLES = [
-  { id: 'bicycle',   name: 'Bicycle',         price: 8000,      speed: 0.78, handling: 1.35, toughness: 0.55, isCar: false, sprite: 'bicycle',   body: '#2b6cb0' },
-  { id: 'handcart',  name: 'Sound-System Cart', price: 0,       speed: 1.00, handling: 1.00, toughness: 1.00, isCar: false, sprite: 'handcart',  body: '#7a4a22' },
-  { id: 'probox',    name: 'White Probox',    price: 350000,    speed: 1.15, handling: 1.02, toughness: 1.08, isCar: true,  sprite: 'probox',    body: '#eef0f2' },
-  { id: 'yengyeng',  name: 'Yeng Yeng Bike',  price: 220000,    speed: 1.38, handling: 1.30, toughness: 0.52, isCar: false, sprite: 'yengyeng',  body: '#c0392b' },
-  { id: 'swift',     name: 'Suzuki Swift',    price: 900000,    speed: 1.26, handling: 1.12, toughness: 1.00, isCar: true,  sprite: 'swift',     body: '#5a7d9a' },
-  { id: 'x6',        name: 'BMW X6 (White)',  price: 6500000,   speed: 1.46, handling: 1.04, toughness: 1.32, isCar: true,  sprite: 'x6',        body: '#f4f4f6' },
-  { id: 'audi',      name: 'Audi',            price: 5500000,   speed: 1.56, handling: 1.16, toughness: 1.16, isCar: true,  sprite: 'audi',      body: '#2c2f34' },
-  { id: 'porsche',   name: 'Porsche',         price: 12000000,  speed: 1.82, handling: 1.32, toughness: 0.96, isCar: true,  sprite: 'porsche',   body: '#d8b020' },
-  { id: 'pickup',    name: 'Pickup Truck',    price: 2200000,   speed: 1.32, handling: 0.90, toughness: 1.62, isCar: true,  sprite: 'pickup',    body: '#3a5a3a' },
-  { id: 'jetour',    name: 'Jetour EV',       price: 9000000,   speed: 1.72, handling: 1.22, toughness: 1.34, isCar: true,  sprite: 'jetour',    body: '#1f6f6f' },
-  { id: 'cybertruck',name: 'Cybertruck',      price: 22000000,  speed: 1.94, handling: 1.00, toughness: 2.05, isCar: true,  sprite: 'cybertruck',body: '#9aa0a6' }
+  { id: 'bicycle',   name: 'Bicycle',         price: 8000,      speed: 0.78, handling: 1.35, toughness: 0.55, stability: 0.62, isCar: false, sprite: 'bicycle',   body: '#2b6cb0' },
+  { id: 'handcart',  name: 'Sound-System Cart', price: 0,       speed: 1.00, handling: 1.00, toughness: 1.00, stability: 0.70, isCar: false, sprite: 'handcart',  body: '#7a4a22' },
+  { id: 'probox',    name: 'White Probox',    price: 350000,    speed: 1.15, handling: 1.02, toughness: 1.08, stability: 1.05, isCar: true,  sprite: 'probox',    body: '#eef0f2' },
+  { id: 'yengyeng',  name: 'Yeng Yeng Bike',  price: 220000,    speed: 1.38, handling: 1.30, toughness: 0.52, stability: 0.80, isCar: false, sprite: 'yengyeng',  body: '#c0392b' },
+  { id: 'swift',     name: 'Suzuki Swift',    price: 900000,    speed: 1.26, handling: 1.12, toughness: 1.00, stability: 1.10, isCar: true,  sprite: 'swift',     body: '#5a7d9a' },
+  { id: 'x6',        name: 'BMW X6 (White)',  price: 6500000,   speed: 1.46, handling: 1.04, toughness: 1.32, stability: 1.20, isCar: true,  sprite: 'x6',        body: '#f4f4f6' },
+  { id: 'audi',      name: 'Audi',            price: 5500000,   speed: 1.56, handling: 1.16, toughness: 1.16, stability: 1.20, isCar: true,  sprite: 'audi',      body: '#2c2f34' },
+  { id: 'porsche',   name: 'Porsche',         price: 12000000,  speed: 1.82, handling: 1.32, toughness: 0.96, stability: 1.25, isCar: true,  sprite: 'porsche',   body: '#d8b020' },
+  { id: 'pickup',    name: 'Pickup Truck',    price: 2200000,   speed: 1.32, handling: 0.90, toughness: 1.62, stability: 1.15, isCar: true,  sprite: 'pickup',    body: '#3a5a3a' },
+  { id: 'jetour',    name: 'Jetour EV',       price: 9000000,   speed: 1.72, handling: 1.22, toughness: 1.34, stability: 1.30, isCar: true,  sprite: 'jetour',    body: '#1f6f6f' },
+  { id: 'cybertruck',name: 'Cybertruck',      price: 22000000,  speed: 1.94, handling: 1.00, toughness: 2.05, stability: 1.40, isCar: true,  sprite: 'cybertruck',body: '#9aa0a6' }
 ];
 
 export function getVehicle(id) {

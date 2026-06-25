@@ -12,7 +12,7 @@ export function drawCart(ctx, cart, cx, cy, s) {
 
   ctx.save();
   ctx.translate(cx, cy);
-  ctx.rotate(cart.lean * 0.15);
+  ctx.rotate(cart.lean * 0.15 + (cart.reel || 0)); // reel = teetering on two wheels on the shoulder
   switch (veh.sprite) {
     case 'bicycle':    drawBicycle(ctx, cart, s); break;
     case 'yengyeng':   drawYengYeng(ctx, cart, s); break;

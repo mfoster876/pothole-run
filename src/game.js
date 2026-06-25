@@ -1,10 +1,10 @@
-import { VIRTUAL } from './constants.js';
+import { VIRTUAL, SHOULDER } from './constants.js';
 import { makeRoad, renderRoad, projectEntity, curveOffsetAt, CART_Z } from './road.js';
-import { createCart, steer, updateCart } from './cart.js';
+import { createCart, steer, updateCart, onShoulder } from './cart.js';
 import { createField, spawn, advance, activeEntities } from './entities.js';
 import { spawnInterval, pickHazard, laneFor } from './spawner.js';
 import { createRun, resolveHits } from './run.js';
-import { isWrecked } from './wreck.js';
+import { isWrecked, applyDamage } from './wreck.js';
 import { renderHud, renderTouchZones } from './hud.js';
 import { drawEntity } from './sprites.js';
 import { drawCart } from './cartSprite.js';
@@ -12,8 +12,9 @@ import { renderScenery } from './scenery.js';
 import { getCharacter } from './characters.js';
 import { getStage } from './stages.js';
 import { VEHICLES, getVehicle } from './vehicles.js';
+import { STABILITY_UPGRADES, stabilityBonus, nextUpgrade } from './upgrades.js';
 import { pickMoney, formatMoney } from './money.js';
-import { loadSave, writeSave, recordBest, addCoins, buyVehicle, selectVehicle, GENRES } from './save.js';
+import { loadSave, writeSave, recordBest, addCoins, buyVehicle, selectVehicle, buyUpgrade, GENRES } from './save.js';
 
 const W = VIRTUAL.width, H = VIRTUAL.height;
 const GENRE_LABEL = { reggae: 'Reggae', ska: 'Ska', dancehall: 'Dancehall', hiphop: 'Hip-Hop' };
@@ -26,7 +27,8 @@ const BTN = {
   buy:        { x: W * 0.5 - 90, y: H * 0.515 - 20, w: 180, h: 40 },
   stagePrev:  arrow(0.15, 0.61),  stageNext:  arrow(0.80, 0.61),
   genrePrev:  arrow(0.15, 0.70),  genreNext:  arrow(0.80, 0.70),
-  start:      { x: W * 0.5 - 130, y: H * 0.81 - 28, w: 260, h: 56 }
+  start:      { x: W * 0.5 - 130, y: H * 0.795 - 28, w: 260, h: 54 },
+  upgrade:    { x: W * 0.5 - 185, y: H * 0.905 - 21, w: 370, h: 42 }
 };
 function inRect(r, x, y) { return x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h; }
 
@@ -53,7 +55,7 @@ export function createGame(audio) {
   function startRun(characterId, stageId) {
     road = makeRoad();
     stage = getStage(stageId);
-    cart = createCart(getCharacter(characterId), getVehicle(save.vehicle));
+    cart = createCart(getCharacter(characterId), getVehicle(save.vehicle), stabilityBonus(save.upgrades));
     field = createField();
     run = createRun();
     // windscreen youths only appear when you drive a car (a windscreen to wash)
@@ -109,7 +111,13 @@ export function createGame(audio) {
     else if (cart.condition.value < condBefore) { audio && audio.sfx('hit'); hitShake = 1; }
     if (cart.gusted) { audio && audio.sfx('whoosh'); hitShake = Math.max(hitShake, 0.55); }
     squeakAccum += dz;
-    if (squeakAccum >= 215) { squeakAccum -= 215; audio && audio.sfx('squeak'); }
+    // shoulder is squeakier (bumpy marl); also drip-feeds damage the longer you ride it
+    const shoulder = onShoulder(cart);
+    if (squeakAccum >= (shoulder ? 120 : 215)) { squeakAccum -= (shoulder ? 120 : 215); audio && audio.sfx('squeak'); }
+    if (shoulder) cart.condition = applyDamage(cart.condition, SHOULDER.drainPerSec * dt);
+    // reel up onto two wheels, teetering, while out on the shoulder
+    const reelTarget = shoulder ? (cart.laneIndex === 0 ? -1 : 1) * (0.17 + Math.sin(camZ * 0.06) * 0.05) : 0;
+    cart.reel = (cart.reel || 0) + (reelTarget - (cart.reel || 0)) * (1 - Math.exp(-9 * dt));
     if (hitShake > 0) hitShake = Math.max(0, hitShake - dt * 2.4);
     if (isWrecked(cart.condition)) endRun();
   }
@@ -182,6 +190,12 @@ export function createGame(audio) {
     menuChoice.genre = g; save.settings.genre = g;
     audio && audio.setGenre(g); writeSave(save);
   }
+  function buyRig() {
+    const next = nextUpgrade(save.upgrades);
+    if (!next) return;
+    if (buyUpgrade(save, next)) { audio && audio.sfx('cash'); writeSave(save); }
+    else state.popup = { title: 'NUH RICH YET', lines: [next.name + ' cost ' + formatMoney(next.price) + '.', 'Grind some more money pon di road first.'] };
+  }
   function menuPoint(vx, vy) {
     if (state.popup) { state.popup = null; return; }   // any tap dismisses a pop-up
     if (state.mode === 'gameover') { state.mode = 'menu'; return; }
@@ -195,6 +209,7 @@ export function createGame(audio) {
     else if (inRect(BTN.stageNext, vx, vy)) cycleStage(1);
     else if (inRect(BTN.genrePrev, vx, vy)) cycleGenre(-1);
     else if (inRect(BTN.genreNext, vx, vy)) cycleGenre(1);
+    else if (inRect(BTN.upgrade, vx, vy)) buyRig();
     else if (inRect(BTN.start, vx, vy)) startRun(menuChoice.character, menuChoice.stage);
   }
   function menuKey(key) {
@@ -210,6 +225,7 @@ export function createGame(audio) {
     else if (key === 'b' || key === 'B') { if (!save.garage.includes(menuChoice.vehicle)) buyCurrent(); }
     else if (key === ',') cycleGenre(-1);
     else if (key === '.') cycleGenre(1);
+    else if (key === 'u' || key === 'U') buyRig();
     else if (key === 'Enter' || key === ' ') startRun(menuChoice.character, menuChoice.stage);
   }
   function toggleMute() {
@@ -291,10 +307,34 @@ export function createGame(audio) {
     ctx.fillText(GENRE_LABEL[menuChoice.genre] || 'Reggae', W / 2, H * 0.70);
 
     button(ctx, BTN.start, 'START');
-    ctx.fillStyle = '#9fb8a3'; ctx.font = '500 16px "Courier New", monospace';
-    ctx.fillText('banked: ' + formatMoney(save.coins) + '    ♪ press M to mute', W / 2, H * 0.95);
+    renderUpgrade(ctx);
+    ctx.fillStyle = '#9fb8a3'; ctx.font = '500 15px "Courier New", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('banked: ' + formatMoney(save.coins) + '    ♪ press M to mute', W / 2, H * 0.97);
 
     if (state.popup) renderPopup(ctx, state.popup);
+  }
+  // Rig stability: pips for owned upgrades + a buy-next control (the accessible
+  // grind path that buys down the handcart's wobble).
+  function renderUpgrade(ctx) {
+    const r = BTN.upgrade, total = STABILITY_UPGRADES.length, owned = save.upgrades.length;
+    const next = nextUpgrade(save.upgrades);
+    const afford = next && save.coins >= next.price;
+    ctx.fillStyle = 'rgba(244,241,230,0.06)'; ctx.fillRect(r.x, r.y, r.w, r.h);
+    ctx.strokeStyle = next ? (afford ? '#f0c020' : '#5a5a5a') : '#3fae54'; ctx.lineWidth = 2;
+    ctx.strokeRect(r.x, r.y, r.w, r.h);
+    // label + pips on the left
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#cbe7cf'; ctx.font = '700 16px "Courier New", monospace';
+    ctx.fillText('RIG', r.x + 14, r.y + r.h / 2);
+    for (let i = 0; i < total; i++) {
+      ctx.fillStyle = i < owned ? '#3fae54' : '#2a3a2e';
+      ctx.fillRect(r.x + 58 + i * 22, r.y + r.h / 2 - 8, 16, 16);
+    }
+    // action on the right
+    ctx.textAlign = 'right'; ctx.font = '700 18px "Courier New", monospace';
+    if (next) { ctx.fillStyle = afford ? '#f0c020' : '#7a7a7a'; ctx.fillText('UPGRADE ' + formatMoney(next.price), r.x + r.w - 14, r.y + r.h / 2); }
+    else { ctx.fillStyle = '#3fae54'; ctx.fillText('FULLY STEADY', r.x + r.w - 14, r.y + r.h / 2); }
   }
   function renderPopup(ctx, p) {
     ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(0, 0, W, H);

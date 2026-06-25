@@ -13,7 +13,8 @@ export function drawEntity(ctx, type, sx, sy, size, seed = 0.137, value = 1) {
     case 'dog': blob(ctx, sx, sy, s * 0.5, '#9a7a4a', '#5a4326'); break;
     case 'cat': blob(ctx, sx, sy, s * 0.34, '#5a5a5a', '#333333'); break;
     case 'cattle': blob(ctx, sx, sy, s * 0.85, '#5a4636', '#2f261d'); break;
-    case 'taxi': vehicle(ctx, sx, sy, s, '#c0382c'); break;
+    // route taxi: a white Probox-shape car with the tell-tale RED PP plate
+    case 'taxi': carRear(ctx, sx, sy, s, '#eef0f2', '#c0392b'); break;
     case 'bus': vehicle(ctx, sx, sy, s * 1.35, '#e7c84a'); break;
     case 'coaster': vehicle(ctx, sx, sy, s * 1.15, '#eef0f2'); break;
     case 'hustler': person(ctx, sx, sy, s, '#d06a30'); break;
@@ -153,6 +154,35 @@ function vehicle(ctx, x, y, s, color) {
   ctx.fillStyle = color; ctx.fillRect(x - s * 0.55, y - s * 0.9, s * 1.1, s * 0.9);
   ctx.fillStyle = '#1c1c1c'; ctx.fillRect(x - s * 0.55, y - s * 0.2, s * 1.1, s * 0.2);
   ctx.fillStyle = '#bfe0ff'; ctx.fillRect(x - s * 0.4, y - s * 0.8, s * 0.8, s * 0.3);
+}
+// A rounded rear-view car for road traffic. `plate` tints the licence plate —
+// red marks a route taxi (PP plate). Drawn driving away from the player.
+function carRear(ctx, x, y, s, body, plate) {
+  const w = s * 0.62, top = y - s * 1.02, h = s * 1.0;
+  ctx.fillStyle = '#141414';
+  ctx.fillRect(x - w, y - s * 0.14, w * 0.32, s * 0.2);
+  ctx.fillRect(x + w * 0.68, y - s * 0.14, w * 0.32, s * 0.2);
+  rrect(ctx, x - w, top, w * 2, h, s * 0.16); ctx.fillStyle = body; ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,0.4)'; ctx.lineWidth = Math.max(1, s * 0.04); ctx.stroke();
+  // rear window
+  ctx.fillStyle = '#16242e'; rrect(ctx, x - w * 0.74, top + s * 0.12, w * 1.48, s * 0.34, s * 0.05); ctx.fill();
+  // body highlight
+  ctx.fillStyle = 'rgba(255,255,255,0.12)'; ctx.fillRect(x - w * 0.94, y - s * 0.5, w * 1.88, s * 0.05);
+  // tail-lights
+  ctx.fillStyle = '#d23a2a';
+  rrect(ctx, x - w * 0.92, y - s * 0.36, w * 0.34, s * 0.14, s * 0.03); ctx.fill();
+  rrect(ctx, x + w * 0.58, y - s * 0.36, w * 0.34, s * 0.14, s * 0.03); ctx.fill();
+  // licence plate
+  ctx.fillStyle = plate || '#e8e8e0'; ctx.fillRect(x - s * 0.18, y - s * 0.2, s * 0.36, s * 0.12);
+}
+function rrect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
 }
 function person(ctx, x, y, s, color) {
   ctx.fillStyle = color; ctx.fillRect(x - s * 0.2, y - s, s * 0.4, s * 0.8);
