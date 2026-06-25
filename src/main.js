@@ -39,28 +39,33 @@ function frame(now) {
 }
 requestAnimationFrame(frame);
 
-import { makeRoad, renderRoad, projectEntity, CART_Z } from './road.js';
-import { createCart, steer, updateCart } from './cart.js';
+import { createGame } from './game.js';
 import { createInput } from './input.js';
-import { getCharacter } from './characters.js';
-import { getStage } from './stages.js';
+import { createAudio } from './audio.js';
 
-const road = makeRoad();
-const stage = getStage('fern-gully');
-const cart = createCart(getCharacter('yute'));
-const input = createInput(canvas, { onSteer: (d) => steer(cart, d) });
-let camZ = 0;
+const audio = createAudio();
+const game = createGame(audio);
 
-setUpdate((dt) => {
-  input.update(dt);
-  updateCart(cart, dt);
-  camZ += cart.speed * dt * 4;
+// Play-mode steering (hold-repeat lane slides). Acts only while playing.
+const input = createInput(canvas, { onSteer: (d) => game.onSteer(d), onTap: () => audio.unlock() });
+
+// Convert a client point into virtual stage coords (uniform 16:9 letterbox).
+function toVirtual(clientX, clientY) {
+  return { x: clientX / window.innerWidth * VIRTUAL.width, y: clientY / window.innerHeight * VIRTUAL.height };
+}
+function handlePoint(clientX, clientY) {
+  audio.unlock();
+  const p = toVirtual(clientX, clientY);
+  game.menuPoint(p.x, p.y);
+}
+canvas.addEventListener('pointerdown', (e) => handlePoint(e.clientX, e.clientY));
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'm' || e.key === 'M') { game.toggleMute(); return; }
+  game.menuKey(e.key);
 });
+
+setUpdate((dt) => { input.update(dt); game.update(dt); });
 setRender((c) => {
   c.setTransform(viewport.scale, 0, 0, viewport.scale, 0, 0);
-  renderRoad(c, road, stage.palette, camZ, VIRTUAL.width, VIRTUAL.height);
-  // temporary cart marker (replaced by the real cart sprite in Milestone 3)
-  const p = projectEntity(cart.x, CART_Z, VIRTUAL.width, VIRTUAL.height);
-  c.fillStyle = '#c0382c';
-  c.fillRect(p.x - p.size * 0.5, p.y - p.size, p.size, p.size);
+  game.render(c);
 });
