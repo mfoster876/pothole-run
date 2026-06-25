@@ -16,7 +16,7 @@ import { getCharacter } from './characters.js';
 import { getStage } from './stages.js';
 import { VEHICLES, getVehicle } from './vehicles.js';
 import { STABILITY_UPGRADES, stabilityBonus, nextUpgrade } from './upgrades.js';
-import { pickMoney, formatMoney } from './money.js';
+import { pickMoney, nextBill, formatMoney } from './money.js';
 import { loadSave, writeSave, recordBest, addCoins, buyVehicle, selectVehicle, buyUpgrade, GENRES } from './save.js';
 import { emptyState as tapcodeEmpty, feedTap } from './tapcode.js';
 import { bankRun } from './economy.js';
@@ -197,9 +197,10 @@ export function createGame(audio) {
       const lane = type === 'bus' ? 0 : laneFor(rng, 3); // JUTC buses overtake on the left
       const e = spawn(field, type, lane, 5200);
       if (type === 'coin') {
-        // During coffee window bias to $5000 notes; supercharge fattens every note.
+        // During coffee window bias to $5000 notes; supercharge bumps each note up one
+        // bill tier (keeps denominations strictly on the $100–$5000 ladder).
         e.value = inCoffeeWindow ? 5000
-          : Math.round(pickMoney(run.distance, rng) * (supercharged ? SUPERCHARGE.moneyMult : 1));
+          : (supercharged ? nextBill(pickMoney(run.distance, rng)) : pickMoney(run.distance, rng));
       }
       spawnZ = spawnInterval(run.distance, undefined, undefined, cart.speed) * 8;
     }

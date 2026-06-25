@@ -1,16 +1,13 @@
-// Money you scoop off the road. Early on it's loose coin ($1–$20); the deeper you
-// survive, the bigger the denominations get — paper money ($100/$500/$1000) and the
-// rare, coveted $5000 note — while the small coins stop appearing. `from` = distance
-// a denomination starts dropping; `until` = distance the small ones dry up.
+// Money you scoop off the road. Bills are STRICTLY $100 / $500 / $1000 / $2000 /
+// $5000 — nothing in between. The deeper you survive, the bigger the notes that start
+// dropping. `from` = distance a denomination begins appearing.
+export const BILLS = [100, 500, 1000, 2000, 5000];
 export const MONEY = [
-  { value: 1,    weight: 5, from: 0,    until: 1200 },
-  { value: 5,    weight: 5, from: 0,    until: 1800 },
-  { value: 10,   weight: 5, from: 0,    until: 2400 },
-  { value: 20,   weight: 5, from: 150,  until: 3200 },
-  { value: 100,  weight: 4, from: 550,  until: null },
-  { value: 500,  weight: 3, from: 1000, until: null },
-  { value: 1000, weight: 2, from: 1600, until: null },
-  { value: 5000, weight: 1, from: 2400, until: null }
+  { value: 100,  weight: 6, from: 0,    until: null },
+  { value: 500,  weight: 4, from: 400,  until: null },
+  { value: 1000, weight: 3, from: 1000, until: null },
+  { value: 2000, weight: 2, from: 1800, until: null },
+  { value: 5000, weight: 1, from: 2800, until: null }
 ];
 
 // Pick a denomination appropriate to how far you've travelled.
@@ -21,6 +18,14 @@ export function pickMoney(distance, rng) {
   let r = rng() * total;
   for (const m of live) { r -= m.weight; if (r < 0) return m.value; }
   return live[live.length - 1].value;
+}
+
+// The next bill up from `value` (for fattening notes during a supercharge), staying
+// on the strict denomination ladder. Tops out at $5000.
+export function nextBill(value) {
+  const i = BILLS.indexOf(value);
+  if (i === -1) return BILLS[0];
+  return BILLS[Math.min(i + 1, BILLS.length - 1)];
 }
 
 // $1,234,567 — thousands separators, for the now-large sums.
