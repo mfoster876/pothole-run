@@ -29,6 +29,7 @@ export function drawEntity(ctx, type, sx, sy, size, seed = 0.137, value = 1) {
     case 'water':  waterBottle(ctx, sx, sy, s); break;
     case 'tools':  hardwareTools(ctx, sx, sy, s, seed); break;
     case 'coffee': coffeeBag(ctx, sx, sy, s); break;
+    case 'fruit':  drawFruit(ctx, sx, sy, s); break;
     // Drink pickups — soda cans vs spirit bottles by alcohol content
     case 'ting':       drinkCan(ctx, sx, sy, s, '#7ec850', '#5a9e30', 'T'); break;
     case 'boom':       drinkCan(ctx, sx, sy, s, '#1f78d1', '#0a4e9a', 'B'); break;
@@ -949,6 +950,30 @@ function drinkBottle(ctx, x, y, s, bodyColor, shadowColor, label) {
   ctx.fillStyle = 'rgba(255,255,255,0.3)'; ctx.fillRect(bx + w * 0.1, by + neckH + s * 0.05, w * 0.12, (h - neckH) * 0.55);
 }
 
+// ---- fruit: a vendor's mango with a banana behind it — bright market fruit ----
+function drawFruit(ctx, x, y, s) {
+  // ground shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.2)'; ellipsePath(ctx, x, y + s * 0.04, s * 0.5, s * 0.1); ctx.fill();
+  // banana arc tucked behind
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = '#f2c233'; ctx.lineWidth = Math.max(2, s * 0.16);
+  ctx.beginPath(); ctx.arc(x + s * 0.04, y - s * 0.16, s * 0.42, Math.PI * 1.12, Math.PI * 1.96); ctx.stroke();
+  // mango body (front, tilted oval)
+  ctx.fillStyle = '#f2992a';
+  ctx.beginPath(); ctx.ellipse(x - s * 0.06, y - s * 0.30, s * 0.34, s * 0.27, -0.35, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = '#c06a12'; ctx.lineWidth = Math.max(1, s * 0.04); ctx.stroke();
+  // ruddy blush + sheen
+  ctx.fillStyle = 'rgba(220,70,40,0.55)';
+  ctx.beginPath(); ctx.ellipse(x - s * 0.16, y - s * 0.40, s * 0.13, s * 0.1, -0.4, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.4)';
+  ctx.beginPath(); ctx.ellipse(x + s * 0.0, y - s * 0.40, s * 0.07, s * 0.04, -0.4, 0, Math.PI * 2); ctx.fill();
+  // green leaf + stem on top
+  ctx.strokeStyle = '#3a7a28'; ctx.lineWidth = Math.max(1, s * 0.035);
+  ctx.beginPath(); ctx.moveTo(x + s * 0.06, y - s * 0.5); ctx.lineTo(x + s * 0.12, y - s * 0.62); ctx.stroke();
+  ctx.fillStyle = '#4a9a34';
+  ctx.beginPath(); ctx.ellipse(x + s * 0.2, y - s * 0.64, s * 0.12, s * 0.06, 0.5, 0, Math.PI * 2); ctx.fill();
+}
+
 // ============================================================================
 // Conductor bleach vanity items — dedicated, road-recognizable icons (Task 1)
 // ============================================================================
@@ -1265,25 +1290,31 @@ function obeahCharm(ctx, x, y, s) {
   ctx.beginPath(); ctx.arc(x + s * 0.05, cy - s * 0.18, s * 0.03, 0, Math.PI * 2); ctx.fill();
 }
 
-// ---- pork: a pink ham / pork cut with a bone end ----
+// ---- pork (drawn as BACON): a couple of wavy streaky-bacon rashers ----
 function porkCut(ctx, x, y, s) {
-  const col = '#e0a0a0', shade = '#c07878', rind = '#f0d0c8', bone = '#efe8da';
-  const cy = y - s * 0.4, w = s * 0.8, h = s * 0.6;
-  ctx.fillStyle = 'rgba(0,0,0,0.18)'; ellipsePath(ctx, x + s * 0.03, y + s * 0.03, w * 0.5, s * 0.07); ctx.fill();
-  // ham body (teardrop-ish oval)
-  ctx.fillStyle = col;
-  ctx.beginPath(); ctx.ellipse(x + s * 0.04, cy, w * 0.46, h * 0.5, -0.2, 0, Math.PI * 2); ctx.fill();
-  ctx.strokeStyle = shade; ctx.lineWidth = Math.max(1, s * 0.04); ctx.stroke();
-  // rind highlight
-  ctx.fillStyle = rind;
-  ctx.beginPath(); ctx.ellipse(x - s * 0.06, cy - h * 0.18, w * 0.26, h * 0.18, -0.3, 0, Math.PI * 2); ctx.fill();
-  // scoring marks
-  ctx.strokeStyle = shade; ctx.lineWidth = Math.max(1, s * 0.025);
-  ctx.beginPath(); ctx.moveTo(x - s * 0.1, cy - s * 0.04); ctx.lineTo(x + s * 0.2, cy - s * 0.12);
-  ctx.moveTo(x - s * 0.08, cy + s * 0.08); ctx.lineTo(x + s * 0.22, cy + s * 0.0); ctx.stroke();
-  // protruding bone end
-  ctx.fillStyle = bone;
-  ctx.beginPath(); ctx.arc(x + w * 0.42, cy - h * 0.22, s * 0.09, 0, Math.PI * 2); ctx.fill();
+  const meat = '#c0503f', meatDk = '#9a3a2c', fat = '#f3d9cf';
+  const w = s * 0.92, th = s * 0.22;
+  const wave = (t) => Math.sin(t * Math.PI * 3) * s * 0.05;   // gentle ripple along each strip
+  ctx.fillStyle = 'rgba(0,0,0,0.18)'; ellipsePath(ctx, x + s * 0.02, y + s * 0.06, s * 0.52, s * 0.08); ctx.fill();
+  // two stacked rashers (back one sits higher/left so they read as a pile)
+  for (let r = 0; r < 2; r++) {
+    const oy = y - s * 0.16 - r * s * 0.28;
+    const left = x - r * s * 0.05 - w * 0.5;
+    // strip body: wavy top edge across, wavy bottom edge back
+    ctx.beginPath();
+    for (let i = 0; i <= 10; i++) { const t = i / 10, px = left + w * t, py = oy + wave(t); i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); }
+    for (let i = 10; i >= 0; i--) { const t = i / 10; ctx.lineTo(left + w * t, oy + th + wave(t)); }
+    ctx.closePath();
+    ctx.fillStyle = meat; ctx.fill();
+    ctx.strokeStyle = meatDk; ctx.lineWidth = Math.max(1, s * 0.03); ctx.stroke();
+    // streaky pale-fat ribbons running the length (what makes it read as bacon)
+    ctx.strokeStyle = fat; ctx.lineWidth = Math.max(1.5, s * 0.05); ctx.lineCap = 'round';
+    for (const fy of [0.32, 0.68]) {
+      ctx.beginPath();
+      for (let i = 0; i <= 10; i++) { const t = i / 10, px = left + w * t, py = oy + th * fy + wave(t); i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); }
+      ctx.stroke();
+    }
+  }
 }
 
 // ---- jw: a cream "Watchtower"-style tract / booklet ----

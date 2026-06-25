@@ -20,17 +20,21 @@ export const ITEMS = {
   // ── Di Politician — perks of power ──
   // cashMin/cashMax = a backhander of a VARIABLE size, rolled on pickup (corruption pays
   //   anywhere from $50k to $5M); cashDrain = money LOST (his vices cost him).
+  // ladynight: a temporary boost + heal, but she DRAINS his money AND strips away any
+  //   spiritual blessing he obtained (the wages of the vice — drainBlessing wipes it).
   privatebribe: { id: 'privatebribe', label: 'Private-Sector Bribe', char: 'politician', cashMin: 50000, cashMax: 5000000, boost: 1.2, color: '#1f9a4c' },
-  ladynight:    { id: 'ladynight',    label: 'Lady of di Night',     char: 'politician', heal: 25, boost: 2.0, cashDrain: 150000, color: '#c0306a' },
+  ladynight:    { id: 'ladynight',    label: 'Lady of di Night',     char: 'politician', heal: 25, boost: 2.0, cashDrain: 150000, drainBlessing: true, color: '#c0306a' },
 };
 
-// Eligibility list per character id.
+// Eligibility list per character id. The Lady of di Night is a shared temptation —
+// the Politician, the Rasta, and the Taxi Man can all call on her (boost now, pay later).
 const ELIGIBLE = {
   yute:       ['books', 'stationery', 'bagjuice', 'lasco'],
   politician: ['privatebribe', 'ladynight'],
-  // Rasta keeps his edge in the drinks pool; Conductor's "items" are now avoid-hazards.
+  // Conductor's "items" are now avoid-hazards; Rasta keeps his edge in the drinks pool.
   conductor:  [],
-  rasta:      [],
+  rasta:      ['ladynight'],
+  taximan:    ['ladynight'],
 };
 
 // Spawn rarity weights. Kept modest so these stay a treat, not a constant crutch.
@@ -64,9 +68,12 @@ export function canUseItem(character, id) {
  *  - Yute items: heal condition, raise steadiness, and/or a brief `super` dash.
  *  - Politician items: a `cash` windfall (private-sector bribe) or a `cashDrain` vice
  *    (lady of di night — boosts vitality but costs him).
+ * A `drainBlessing` item (the lady of di night) strips away the spiritual blessing the
+ *   driver obtained — both this run's active protection (cart.blessing) and the stored
+ *   grace (save.blessing) he tithed/prayed for. `save` is optional (absent in some tests).
  * A blessing's invincExtend lengthens any boost, same as drinks/water.
  */
-export function applyItem(effects, cart, id, run) {
+export function applyItem(effects, cart, id, run, save) {
   const it = ITEMS[id];
   if (!it) return;
   const ext = 1 + ((cart.blessing && cart.blessing.invincExtend) || 0);
@@ -85,6 +92,12 @@ export function applyItem(effects, cart, id, run) {
   if (run) {
     if (typeof it.cash === 'number' || it.cashMin != null) run.coins += pickBribe(it);  // a windfall (fixed or a $50k–$5M backhander)
     if (typeof it.cashDrain === 'number') chargeRun(run, cart, it.cashDrain);  // costly vice (floored for the debt-proof)
+  }
+  if (it.drainBlessing) {
+    // the lady strips away whatever blessing he obtained — the active run protection
+    // AND the stored grace (so he must tithe/pray afresh to earn it back).
+    if (cart.blessing) cart.blessing = { resist: 0, invincExtend: 0, startGrace: 0 };
+    if (save) save.blessing = 0;
   }
 }
 

@@ -36,6 +36,9 @@ export const HAZARD_TYPES = {
   water:    { damage: 0, collectible: true, powerup: 'water',  depth: 3, color: '#8fd3ff', label: 'water' },
   tools:    { damage: 0, collectible: true, powerup: 'tools',  depth: 3, color: '#c9c9c9', label: 'hardware tools' },
   coffee:   { damage: 0, collectible: true, powerup: 'coffee', depth: 3, color: '#5b3a1a', label: 'Blue Mountain coffee' },
+  // Street-vendor fruit — a PAID pickup (any driver): costs a little cash, gives a quick
+  // strength top-up (condition heal) + short dash. Routed to applyPowerup via powerup:'fruit'.
+  fruit:    { damage: 0, collectible: true, powerup: 'fruit',  depth: 3, color: '#f4a020', label: 'Vendor Fruit' },
   // Drink collectibles — character-gated; routed to applyDrink via powerup:'drink'
   ting:       { damage: 0, collectible: true, powerup: 'drink', drink: 'ting',       depth: 3, color: '#7ec850', label: 'Ting' },
   boom:       { damage: 0, collectible: true, powerup: 'drink', drink: 'boom',       depth: 3, color: '#1f78d1', label: 'Boom' },

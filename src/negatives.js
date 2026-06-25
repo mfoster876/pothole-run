@@ -27,7 +27,7 @@ export const NEGATIVES = {
 
   // ── Rasta — things to steer clear of ──
   obeah:      { id: 'obeah',      label: 'Obeah',           char: 'rasta', damage: 16, drainPct: 0.15, color: '#5a2a6a' },
-  pork:       { id: 'pork',       label: 'Pork',            char: 'rasta', damage: 12, blessingLoss: true, color: '#e0a0a0' },
+  pork:       { id: 'pork',       label: 'Pork',            char: 'rasta', damage: 12, blessingLoss: true, color: '#c0503f' },
   jw:         { id: 'jw',         label: "Jehovah Witness", char: 'rasta', impair: 0.4, drainPct: 0.08, color: '#cfc8b0' },
 
   // ── Bleachaz Conductor — must AVOID these (they were once his vanity boost) ──

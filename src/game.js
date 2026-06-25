@@ -1,5 +1,5 @@
-import { VIRTUAL, SHOULDER, SUPERCHARGE, IMPAIR, SPAWN_TUNE, POLICE, POLITICIAN, RACE, TOPPLE, LANES, UPKEEP } from './constants.js';
-import { setLetterboxColors } from './main.js';
+import { VIRTUAL, SHOULDER, SUPERCHARGE, IMPAIR, SPAWN_TUNE, POLICE, POLITICIAN, RACE, TOPPLE, LANES, UPKEEP, FRUIT, MAX_DPR } from './constants.js';
+import { setLetterboxColors, setDprCap } from './main.js';
 import { drinkWeightsFor } from './drinks.js';
 import { itemWeightsFor } from './charitems.js';
 import { negativesFor } from './negatives.js';
@@ -36,6 +36,7 @@ import { playCashPot } from './cashpot.js';
 import * as tithesScreen from './screens/tithes.js';
 import * as racesScreen from './screens/races.js';
 import * as legendScreen from './screens/legend.js';
+import * as prefs from './screens/prefs.js';
 import { tierById, enterRace, tickRival, placement, settleRace } from './races.js';
 import { blessingEffects, decayBlessing, offeringAmount, giveTithe, pray, readBible } from './tithes.js';
 import { renderPortrait } from './portrait.js';
@@ -59,6 +60,18 @@ const BTN = {
 };
 function inRect(r, x, y) { return x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h; }
 
+// Pause overlay hit-regions (virtual coords). `btn` is the little ❚❚ shown while driving
+// (top-left, clear of the steering zones); the rest are the paused-screen controls so you
+// can change the riddim / station and mute without leaving the run.
+const PAUSE = {
+  btn:        { x: 8, y: 8, w: 44, h: 40 },
+  resume:     { x: W * 0.5 - 140, y: H * 0.30, w: 280, h: 60 },
+  genrePrev:  { x: W * 0.17 - 24, y: H * 0.55 - 24, w: 48, h: 48 },
+  genreNext:  { x: W * 0.83 - 24, y: H * 0.55 - 24, w: 48, h: 48 },
+  genreValue: { x: W * 0.30, y: H * 0.515, w: W * 0.40, h: H * 0.085 }, // tap = next station / upload
+  mute:       { x: W * 0.5 - 120, y: H * 0.72 - 26, w: 240, h: 52 },
+};
+
 const CAR_TIP = {
   title: 'WINDSCREEN YOUTHS',
   lines: [
@@ -73,11 +86,15 @@ export function createGame(audio) {
   const save = loadSave();
   if (audio && audio.setMuted) audio.setMuted(save.settings.muted);
   if (audio && audio.setGenre) audio.setGenre(save.settings.genre);
+  // Apply the saved graphics preference up front (Fast caps the render scale to 1×).
+  function applyGraphics() { setDprCap(save.settings.graphics === 'fast' ? 1 : MAX_DPR); }
+  applyGraphics();
   const router = createRouter('hub');
   const state = { mode: 'menu', save, audio, popup: null };
   const menuChoice = { character: 'yute', stage: 'fern-gully', vehicle: save.vehicle, genre: save.settings.genre };
   let road, stage, cart, field, run, camZ, spawnZ, steerLock = 0, activeWeights = [];
   let squeakAccum = 0, hitShake = 0;
+  let throttleInput = 0;             // -1 brake … 0 coast … +1 accelerate (set by main.js from input)
   let tapcodeState = tapcodeEmpty(); // secret tap-code progress
   // Power-up effects + car dealer display index
   let effects = createEffects();
@@ -126,6 +143,7 @@ export function createGame(audio) {
     ).concat(drinkWeightsFor(ch))
       .concat(itemWeightsFor(ch))      // character-specific bleach / wholesome items
       .concat(negativesFor(ch))        // character-gated temptations / responsibilities
+      .concat([{ type: 'fruit', weight: FRUIT.weight }])   // paid street fruit — open to all
       .map(w => {
         // Repair tools are the in-run lifeline — spawn them 20% more often.
         if (w.type === 'tools') return { type: 'tools', weight: w.weight * SPAWN_TUNE.toolMult };
@@ -143,15 +161,39 @@ export function createGame(audio) {
     camZ = 0; spawnZ = 600; steerLock = 10; squeakAccum = 0; hitShake = 0;
     state.mode = 'play';
     audio && audio.unlock();
-    // Music source: the player's own uploads, a live Jamaican radio stream, or the
-    // procedural stage riddim (the fallback when neither is chosen/available).
+    playRunMusic();
+  }
+  // Start (or restart) the music for the current run from the chosen riddim: the player's
+  // own uploads, a live Jamaican radio stream, or the procedural stage riddim (the fallback
+  // when neither is chosen/available). Reused by the pause screen's live riddim switcher.
+  function playRunMusic() {
     if (save.settings.genre === 'mymusic' && myMusicCount > 0) {
       audio && audio.playUserMusic();
     } else if (save.settings.genre === 'radio' && stationCount() > 0) {
       audio && audio.playRadio(stationAt(save.settings.radioStation || 0).url);
     } else {
-      audio && audio.playStage(stage.musicId);
+      audio && audio.playStage(stage && stage.musicId);
     }
+  }
+  // --- pause / resume (player-initiated; the world freezes, music keeps playing) ---
+  function pauseGame()  { if (state.mode === 'play')   state.mode = 'paused'; }
+  function resumeGame() { if (state.mode === 'paused') { state.mode = 'play'; steerLock = 6; } }
+  // Change the riddim live while paused: swap genre, persist, and (re)start the source so
+  // the new music is audible immediately — no need to end the run to pick a different vibe.
+  function changeRunGenre(dir) {
+    const i = GENRES.indexOf(save.settings.genre);
+    const g = GENRES[(i + dir + GENRES.length) % GENRES.length];
+    save.settings.genre = g; menuChoice.genre = g;
+    audio && audio.setGenre(g);
+    writeSave(save);
+    playRunMusic();
+  }
+  // Flick to the next live station (only meaningful when the riddim is JA Radio).
+  function changeRunStation() {
+    const n = stationCount(); if (!n) return;
+    save.settings.radioStation = ((save.settings.radioStation || 0) + 1) % n;
+    writeSave(save);
+    audio && audio.playRadio(stationAt(save.settings.radioStation).url);
   }
   // Start a bank-gated street race: pay the buy-in, then drive a normal run toward the
   // tier's finish line with 3 AI rivals pacing alongside.
@@ -239,18 +281,16 @@ export function createGame(audio) {
     // Impairment wears off: once both the booze (tipsy) AND bleach-burn timers
     // expire, steering steadies again. Either one keeps cart.tipsy alive.
     if (!effectActive(effects, 'tipsy') && !effectActive(effects, 'burn')) cart.tipsy = 0;
-    // Supercharge: water makes the cart invincible (handled in run.js) and surges
-    // the speed up toward a higher cap so you cover more ground while collecting.
-    if (effectActive(effects, 'super')) {
-      // Scale the supercharge cap by speedScale so a race (fast) isn't slowed by water.
-      cart.speed = Math.min(cart.speed + SUPERCHARGE.accel * dt, SUPERCHARGE.maxSpeed * (cart.speedScale || 1));
-    }
     // Steady: tools power-up raises effective stability
     if (effectActive(effects, 'steady')) {
       cart.stability = Math.min((cart.stability || 1) + 0.3 * dt, 2.0);
     }
 
-    updateCart(cart, dt);
+    cart.throttle = throttleInput;   // player accelerate/brake (keyboard ↑/↓ or W/S)
+    // During a supercharge, water surges the cart toward its high cap — handed to updateCart
+    // as an override target so it eases UP regardless of throttle (a real, felt speed burst).
+    const supercharged = effectActive(effects, 'super');
+    updateCart(cart, dt, run.distance, supercharged ? SUPERCHARGE.maxSpeed : null);
     const dz = cart.speed * dt * 4;
     camZ += dz;
     const dDist = cart.speed * dt * 0.1 * cart.character.scoreMult;
@@ -298,7 +338,7 @@ export function createGame(audio) {
     const coinsBefore = run.coins, condBefore = cart.condition.value;
     cart.gusted = false; cart.washed = false; cart.pickupValue = 0; cart.nearMiss = false;
     cart.pickupLabel = null; cart.hitNegative = null; cart.fined = false; cart.washCharge = 0; cart.bribed = false;
-    resolveHits(run, cart, field, effects);
+    resolveHits(run, cart, field, effects, save);
     if (run.coins > coinsBefore) audio && audio.sfx(cart.pickupValue >= 100 ? 'cash' : 'coin');
     // any damage event ratchets the permanent rattle up — but a steadier, upgraded ride
     // holds its composure, ratcheting (and so visibly shaking) noticeably less per hit.
@@ -377,13 +417,70 @@ export function createGame(audio) {
     const wob = (Math.sin(camZ * 0.05) * 0.5 + Math.sin(camZ * 0.13 + 1) * 0.3) * sway;
     const kickY = -hitShake * cp.size * 0.18;
     const rockX = Math.sin(hitShake * 30) * hitShake * cp.size * 0.14;
-    const bobPx = (wob + (Math.random() - 0.5) * 0.54 * sway) * cp.size * 0.063 + kickY;
-    const jitX = (Math.random() - 0.5) * cp.size * 0.0225 * sway + rockX;
+    // "Fast" graphics steadies the per-frame random micro-jitter (reads as smoother) and
+    // skips the soft HUD glow blur — both cut work that makes weaker phones drop frames.
+    const lite = save.settings.graphics === 'fast';
+    const jr = lite ? 0 : 1;
+    const bobPx = (wob + jr * (Math.random() - 0.5) * 0.54 * sway) * cp.size * 0.063 + kickY;
+    const jitX = jr * (Math.random() - 0.5) * cp.size * 0.0225 * sway + rockX;
     drawCart(ctx, cart, cp.x + cartCurve + jitX, cp.y + 6 + bobPx, cp.size * 0.9);
     renderTouchZones(ctx, W, H);
-    renderHud(ctx, { stageName: stage.name, coins: run.coins, distance: run.distance, condition: cart.condition, effects }, W, H);
+    renderHud(ctx, { stageName: stage.name, coins: run.coins, distance: run.distance, condition: cart.condition, effects, lite }, W, H);
     renderPickupToast(ctx, pickupToast, W, H);
     if (race) renderRaceHud(ctx);
+    if (state.mode === 'play') renderPauseButton(ctx);
+    if (state.mode === 'paused') renderPauseOverlay(ctx);
+  }
+
+  // The little ❚❚ button shown top-left while driving (clear of the steering zones).
+  function renderPauseButton(ctx) {
+    const r = PAUSE.btn;
+    ctx.save();
+    ctx.fillStyle = 'rgba(14,26,18,0.55)'; ctx.fillRect(r.x, r.y, r.w, r.h);
+    ctx.strokeStyle = 'rgba(203,231,207,0.7)'; ctx.lineWidth = 2; ctx.strokeRect(r.x, r.y, r.w, r.h);
+    ctx.fillStyle = '#f4f1e6';
+    const bw = 6, gap = 5, cx = r.x + r.w / 2, cy = r.y + r.h / 2;
+    ctx.fillRect(cx - gap - bw, cy - 11, bw, 22);
+    ctx.fillRect(cx + gap, cy - 11, bw, 22);
+    ctx.restore();
+  }
+
+  // Paused overlay: the frozen road behind a dim scrim, with RESUME, a LIVE riddim/station
+  // switcher (music changes the instant you tap), and a mute toggle (touch's only mute).
+  function renderPauseOverlay(ctx) {
+    ctx.save();
+    ctx.fillStyle = 'rgba(0,0,0,0.74)'; ctx.fillRect(0, 0, W, H);
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#f0c020'; ctx.font = '700 52px "Courier New", monospace';
+    ctx.fillText('PAUSED', W / 2, H * 0.17);
+
+    button(ctx, PAUSE.resume, '▶ RESUME', { stroke: '#3fae54', text: '#cbe7cf' });
+
+    ctx.fillStyle = '#cbe7cf'; ctx.font = '500 16px "Courier New", monospace';
+    ctx.fillText('RIDDIM', W / 2, H * 0.46);
+    button(ctx, PAUSE.genrePrev, '‹', { font: '700 30px "Courier New", monospace' });
+    button(ctx, PAUSE.genreNext, '›', { font: '700 30px "Courier New", monospace' });
+    ctx.fillStyle = '#f0c020'; ctx.font = '700 26px "Courier New", monospace';
+    const g = save.settings.genre;
+    if (g === 'mymusic') {
+      ctx.fillText('My Music (' + myMusicCount + ')', W / 2, H * 0.55);
+      ctx.fillStyle = '#9fb8a3'; ctx.font = '500 13px "Courier New", monospace';
+      ctx.fillText(myMusicCount ? 'tap here to add more tracks' : 'tap here to upload your own tracks', W / 2, H * 0.605);
+    } else if (g === 'radio') {
+      const st = stationCount() ? stationAt(save.settings.radioStation || 0) : null;
+      ctx.fillText(st ? st.name : 'JA Radio', W / 2, H * 0.55);
+      ctx.fillStyle = '#9fb8a3'; ctx.font = '500 13px "Courier New", monospace';
+      ctx.fillText(st ? 'live online · tap here for next station' : 'no stations available', W / 2, H * 0.605);
+    } else {
+      ctx.fillText(GENRE_LABEL[g] || 'Reggae', W / 2, H * 0.55);
+    }
+
+    button(ctx, PAUSE.mute, save.settings.muted ? '🔇 SOUND: OFF' : '🔊 SOUND: ON',
+      { font: '700 20px "Courier New", monospace', stroke: '#9fb8a3', text: '#f4f1e6' });
+
+    ctx.fillStyle = '#9fb8a3'; ctx.font = '500 14px "Courier New", monospace';
+    ctx.fillText('tap ❚❚ or press P / Esc to pause · resume any time', W / 2, H * 0.86);
+    ctx.restore();
   }
 
   // Draw the race opponents on the road at their relative positions. A rival's lead in
@@ -422,6 +519,8 @@ export function createGame(audio) {
   }
 
   // --- input ---
+  // Throttle from main.js each frame (keyboard accelerate/brake); applied to the cart in update.
+  function setThrottle(v) { throttleInput = (state.mode === 'play') ? (v || 0) : 0; }
   function onSteer(dir) {
     if (state.mode !== 'play' || steerLock !== 0) return;
     const before = cart.laneIndex;
@@ -488,9 +587,26 @@ export function createGame(audio) {
     else state.popup = { title: 'NUH RICH YET', lines: ['Yuh need ' + formatMoney(v.price) + ' fi di ' + v.name + '.', 'Win races or grind deep runs fi dat kinda money.'] };
   }
 
+  // Taps on the paused overlay: resume, switch riddim/station, upload, or mute.
+  function pausePoint(vx, vy) {
+    if (inRect(PAUSE.resume, vx, vy)) { resumeGame(); return; }
+    if (inRect(PAUSE.genrePrev, vx, vy)) { changeRunGenre(-1); return; }
+    if (inRect(PAUSE.genreNext, vx, vy)) { changeRunGenre(1); return; }
+    if (inRect(PAUSE.genreValue, vx, vy)) {
+      if (save.settings.genre === 'radio') changeRunStation();
+      else if (save.settings.genre === 'mymusic') triggerMusicUpload();
+      return;
+    }
+    if (inRect(PAUSE.mute, vx, vy)) { toggleMute(); return; }
+  }
+
   function menuPoint(vx, vy) {
     if (state.popup) { state.popup = null; return; }
     if (state.mode === 'gameover') { router.go('hub'); state.mode = 'menu'; return; }
+    // While driving, the only tap the menu layer cares about is the pause button (steering
+    // is handled separately in input.js). While paused, route taps to the overlay controls.
+    if (state.mode === 'play') { if (inRect(PAUSE.btn, vx, vy)) pauseGame(); return; }
+    if (state.mode === 'paused') { pausePoint(vx, vy); return; }
     if (state.mode !== 'menu') return;
 
     const screen = router.current;
@@ -598,6 +714,19 @@ export function createGame(audio) {
       return;
     }
 
+    // Preferences — graphics quality + sound toggles
+    if (screen === 'prefs') {
+      const action = prefs.hit(vx, vy, { W, H });
+      if (action === 'back') { router.go('hub'); return; }
+      if (action === 'graphics') {
+        save.settings.graphics = save.settings.graphics === 'fast' ? 'smooth' : 'fast';
+        applyGraphics(); writeSave(save);
+        return;
+      }
+      if (action === 'sound') { toggleMute(); return; }
+      return;
+    }
+
     // Faith & Offerings — pray, read the Bible, or tithe to sustain the blessing
     if (screen === 'tithes') {
       const action = tithesScreen.hit(vx, vy, { W, H, save });   // hit() needs save (prayed flags + offering amounts)
@@ -630,6 +759,14 @@ export function createGame(audio) {
   function menuKey(key) {
     if (state.popup) { state.popup = null; return; }
     if (state.mode === 'gameover') { router.go('hub'); state.mode = 'menu'; return; }
+    // P / Esc pause and resume the run; while paused, ‹ , . › cycle the riddim live.
+    if (state.mode === 'play') { if (key === 'p' || key === 'P' || key === 'Escape') pauseGame(); return; }
+    if (state.mode === 'paused') {
+      if (key === 'p' || key === 'P' || key === 'Escape' || key === 'Enter' || key === ' ') resumeGame();
+      else if (key === ',') changeRunGenre(-1);
+      else if (key === '.') changeRunGenre(1);
+      return;
+    }
     if (state.mode !== 'menu') return;
     const screen = router.current;
     if (screen === 'hub') {
@@ -661,6 +798,10 @@ export function createGame(audio) {
     }
     if (screen === 'legend') {
       if (key === 'Escape') router.go('play');
+      return;
+    }
+    if (screen === 'prefs') {
+      if (key === 'Escape') router.go('hub');
       return;
     }
     if (screen === 'ending') {
@@ -732,6 +873,11 @@ export function createGame(audio) {
       legendScreen.render(ctx, { characterId: menuChoice.character, W, H });
       return;
     }
+    if (screen === 'prefs') {
+      prefs.render(ctx, { save, W, H });
+      if (state.popup) renderPopup(ctx, state.popup);
+      return;
+    }
     if (screen === 'help') {
       help.render(ctx, { save, W, H });
       return;
@@ -798,7 +944,7 @@ export function createGame(audio) {
     button(ctx, BTN.start, 'START');
     ctx.fillStyle = '#9fb8a3'; ctx.font = '500 15px "Courier New", monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('wallet: ' + formatMoney(save.wallet) + '    ♪ press M to mute', W / 2, H * 0.97);
+    ctx.fillText('wallet: ' + formatMoney(save.wallet) + '   ·   ↑/↓ throttle  ·  ❚❚/P pause  ·  M mute', W / 2, H * 0.97);
 
     if (state.popup) renderPopup(ctx, state.popup);
   }
@@ -837,5 +983,5 @@ export function createGame(audio) {
     ctx.fillText('TAP / PRESS TO CONTINUE', W / 2, H * 0.78);
   }
 
-  return { state, update, render, onSteer, menuPoint, menuKey, toggleMute, menuChoice, refreshMusicCount };
+  return { state, update, render, onSteer, setThrottle, menuPoint, menuKey, toggleMute, menuChoice, refreshMusicCount };
 }

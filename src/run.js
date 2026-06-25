@@ -25,7 +25,7 @@ export function wiperCharge(distance, vehicle) {
 // shrinks each frame. The moment it reaches/passes the cart plane (z <= 0) it gets
 // exactly ONE chance to connect, then is consumed (`collected`) so it can never hit
 // twice or hit late after a dodge. This is immune to step-size tunnelling.
-export function resolveHits(run, cart, field, effects = cart._effects || {}) {
+export function resolveHits(run, cart, field, effects = cart._effects || {}, save = null) {
   for (const e of field.pool) {
     if (!e.active || e.collected) continue;
     if (e.z > 0) continue;                 // not yet at the cart plane
@@ -56,7 +56,7 @@ export function resolveHits(run, cart, field, effects = cart._effects || {}) {
       cart.pickupValue = value;     // game.js picks the coin vs cash sound
       cart.condition = repair(cart.condition, DAMAGE.repairPerCoin);
       if (info.powerup) {
-        applyPowerup(effects, cart, run, info.powerup, run.distance, info);
+        applyPowerup(effects, cart, run, info.powerup, run.distance, info, save);
         cart.pickupLabel = info.label;   // name the exact pick-up for the HUD toast
       }
     } else if (e.type === 'bump') {

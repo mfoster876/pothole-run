@@ -2,7 +2,7 @@ import { conditionTier } from './wreck.js';
 import { formatMoney } from './money.js';
 import { SUPERCHARGE } from './constants.js';
 
-export function renderHud(ctx, { stageName, coins, distance, condition, effects = {} }, W, H = 540) {
+export function renderHud(ctx, { stageName, coins, distance, condition, effects = {}, lite = false }, W, H = 540) {
   ctx.font = '700 26px "Courier New", monospace';
   ctx.textBaseline = 'middle';
 
@@ -10,7 +10,8 @@ export function renderHud(ctx, { stageName, coins, distance, condition, effects 
   ctx.fillRect(0, 0, W, 56);
   ctx.fillStyle = '#f4f1e6';
   ctx.textAlign = 'left';
-  ctx.fillText(stageName.toUpperCase(), 24, 28);
+  // Start past the top-left ❚❚ pause button (drawn by game.js) so they never overlap.
+  ctx.fillText(stageName.toUpperCase(), 62, 28);
   ctx.textAlign = 'center';
   ctx.fillStyle = '#f0c020';
   ctx.fillText(formatMoney(coins), W / 2, 28);
@@ -36,7 +37,7 @@ export function renderHud(ctx, { stageName, coins, distance, condition, effects 
   // Any impairing boost (booze tipsy OR bleach burn) glows the hotter orange.
   const hot = !!(effects.tipsy || effects.burn);
   const boostLabel = effects.burn ? '🧴 BLEACH BOOST  ' : (effects.tipsy ? '🍺 IRIE BOOST  ' : '⚡ SUPERCHARGE  ');
-  if (superT > 0) renderSupercharge(ctx, superT, effects.superMax || SUPERCHARGE.dur, hot, boostLabel, W, H);
+  if (superT > 0) renderSupercharge(ctx, superT, effects.superMax || SUPERCHARGE.dur, hot, boostLabel, W, H, lite);
 
   // Once the boost ends the impairment lingers (sloppy steering) — warn the player
   // so the swerve isn't a mystery. (During the boost the boost label covers it.)
@@ -55,15 +56,15 @@ export function renderHud(ctx, { stageName, coins, distance, condition, effects 
   }
 }
 
-function renderSupercharge(ctx, remaining, max, tipsy, label, W, H) {
+function renderSupercharge(ctx, remaining, max, tipsy, label, W, H, lite = false) {
   ctx.save();
   const pulse = 0.5 + 0.5 * Math.sin((typeof performance !== 'undefined' ? performance.now() : 0) / 1000 * 9);
   const gold = tipsy ? '255,120,60' : '255,215,60';   // boozy/bleach boost glows a hotter orange
-  // Pulsing glow frame around the play stage
+  // Pulsing glow frame around the play stage. The soft shadow blur is the priciest HUD
+  // effect on mobile — "Fast" graphics skips the blur and keeps just the bright frame.
   ctx.strokeStyle = `rgba(${gold},${0.45 + 0.4 * pulse})`;
   ctx.lineWidth = 7 + 5 * pulse;
-  ctx.shadowColor = `rgba(${gold},0.9)`;
-  ctx.shadowBlur = 26 + 14 * pulse;
+  if (!lite) { ctx.shadowColor = `rgba(${gold},0.9)`; ctx.shadowBlur = 26 + 14 * pulse; }
   ctx.strokeRect(7, 7, W - 14, H - 14);
   ctx.shadowBlur = 0;
   // Countdown bar centred under the cash readout

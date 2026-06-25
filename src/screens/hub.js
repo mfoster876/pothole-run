@@ -14,7 +14,8 @@ function hubRects(W, H) {
     mechshop:    { x: bx, y: H * 0.56 - bh / 2, w: bw, h: bh },
     cardealer:   { x: bx, y: H * 0.67 - bh / 2, w: bw, h: bh },
     aspirations: { x: bx, y: H * 0.78 - bh / 2, w: bw, h: bh },
-    help:        { x: W - 64, y: 18, w: 46, h: 46 }  // small "?" — How To Play
+    help:        { x: W - 64, y: 18, w: 46, h: 46 }, // small "?" — How To Play
+    prefs:       { x: 18,    y: 18, w: 46, h: 46 }   // small "⚙" — Preferences
   };
 }
 
@@ -56,6 +57,7 @@ export function render(ctx, { save, W, H }) {
   btn(ctx, R.cardealer,   'CAR DEALER',   { stroke: '#cbe7cf' });
   btn(ctx, R.aspirations, 'ASPIRATIONS',  { stroke: '#9fb8a3', text: '#9fb8a3' });
   btn(ctx, R.help, '?', { stroke: '#f0c020', text: '#f0c020', font: '700 28px "Courier New", monospace' });
+  btn(ctx, R.prefs, '⚙', { stroke: '#9fb8a3', text: '#9fb8a3', font: '700 26px "Courier New", monospace' });
 
   // Repair reminder — every ride needs upkeep between plays; nudge it for best driving.
   if ((save.condition || 0) < 100) {
@@ -76,6 +78,7 @@ function inRect(r, x, y) { return x >= r.x && x <= r.x + r.w && y >= r.y && y <=
 export function hit(x, y, { W, H }) {
   const R = hubRects(W, H);
   if (inRect(R.help, x, y))        return 'help';
+  if (inRect(R.prefs, x, y))       return 'prefs';
   if (inRect(R.play, x, y))        return 'play';
   if (inRect(R.races, x, y))       return 'races';
   if (inRect(R.mechshop, x, y))    return 'mechshop';

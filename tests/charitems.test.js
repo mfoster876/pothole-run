@@ -10,6 +10,7 @@ import { createEffects, effectActive, tickEffects } from '../src/powerups.js';
 const conductor = { id: 'conductor' };
 const yute      = { id: 'yute' };
 const rasta     = { id: 'rasta' };
+const taximan   = { id: 'taximan' };
 
 // ---- eligibility (each item gated to one driver) ----
 
@@ -21,9 +22,13 @@ test('the Conductor has NO pickups now (his bleach items became avoid-hazards)',
 test('yute can use wholesome items', () => {
   assert.ok(canUseItem(yute, 'books'));
 });
-test('rasta gets no character items (keeps his drink edge)', () => {
-  assert.deepEqual(itemWeightsFor(rasta), []);
-  assert.equal(canUseItem(rasta, 'lasco'), false);
+test('the Lady of di Night is open to the Rasta and the Taxi Man (but not yute items)', () => {
+  for (const ch of [rasta, taximan]) {
+    assert.deepEqual(itemWeightsFor(ch).map(w => w.type), ['ladynight'], `${ch.id} can call the lady`);
+    assert.ok(canUseItem(ch, 'ladynight'), `${ch.id} eligible for ladynight`);
+    assert.equal(canUseItem(ch, 'lasco'), false, `${ch.id} keeps no school-yute items`);
+    assert.equal(canUseItem(ch, 'privatebribe'), false, `${ch.id} gets no politician bribe`);
+  }
 });
 test('unknown character / item → false', () => {
   assert.equal(canUseItem(null, 'books'), false);

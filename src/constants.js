@@ -14,6 +14,22 @@ export const CART = {
   laneLerp: 7
 };
 
+// Player throttle — Up = accelerate, Down = brake (keyboard ↑/↓ or W/S). The cart NEVER
+// fully stops: braking only eases it down toward `brakeFloor` of its current capability.
+// `cruise` is the hands-off coast level; accelerating pushes toward full (1.0), braking
+// toward the floor. `respond` = how fast the speed eases toward the throttle target.
+export const THROTTLE = { cruise: 0.88, brakeFloor: 0.45, respond: 2.4 };
+
+// Pace: the whole run speeds up the deeper you get, so survival keeps ramping the
+// pressure instead of plateauing at one cruising speed. A gentle per-metre climb that
+// multiplies the cart's capability from `start` up to `max`.
+export const PACE = { start: 1.0, perMetre: 0.00012, max: 1.35 };
+
+// Fruit from a street vendor — a paid pickup any driver can grab: it costs a little cash
+// but gives a quick STRENGTH top-up (condition heal) and a short dash. `cost` = JMD spent,
+// `heal` = % of max condition restored, `boost` = seconds of dash, `weight` = spawn rarity.
+export const FRUIT = { cost: 120, heal: 14, boost: 1.3, weight: 0.5 };
+
 export const DAMAGE = {
   pothole: 10,         // +10% difficulty
   manhole: 100,

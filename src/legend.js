@@ -10,6 +10,7 @@ const SHARED_GOOD = [
   { id: 'water',  label: 'Water — supercharge' },
   { id: 'tools',  label: 'Hardware Tools — repair' },
   { id: 'coffee', label: 'Blue Mountain Coffee — cash window' },
+  { id: 'fruit',  label: 'Vendor Fruit — strength (costs a lil)' },
 ];
 
 // One-line flavour on how this driver earns (the risk/reward dial).
@@ -40,7 +41,7 @@ const TRAITS = {
   },
   rasta: {
     perks: ['Tough cart — soaks up hits', 'Calm & steady, barely sway', 'Easy money — strong draw'],
-    cons:  ['Slowest top speed', 'Babylon trouble yuh most (2× police)', 'Pork wipes out yuh blessing'],
+    cons:  ['Slowest top speed', 'Babylon trouble yuh most (2× police)', 'Pork wipes out yuh blessing', 'Lady of di Night drains cash & blessing'],
   },
   conductor: {
     perks: ['Very fast', 'Huge score ceiling — big notes'],
@@ -52,7 +53,7 @@ const TRAITS = {
   },
   taximan: {
     perks: ['Most dexterous — top handling', 'Fast, high score ceiling', 'Bigger notes'],
-    cons:  ['Most fragile cart', 'Wildest sway — reckless', 'Police trouble yuh (1.4×)', 'Cash rare & hard to grab'],
+    cons:  ['Most fragile cart', 'Wildest sway — reckless', 'Police trouble yuh (1.4×)', 'Cash rare & hard to grab', 'Lady of di Night drains cash & blessing'],
   },
 };
 

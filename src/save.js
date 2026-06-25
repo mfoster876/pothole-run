@@ -30,7 +30,7 @@ export function defaultSave() {
     upgrades: {},                 // per-vehicle owned upgrades: { [vehicleId]: [ids] } (see upgrades.js)
     seenCarTip: false,            // has the windscreen-youth pop-up been shown?
     unlocks: { characters: ['yute', 'rasta'], stages: ['fern-gully'] },
-    settings: { muted: false, genre: 'reggae', radioStation: 0 },
+    settings: { muted: false, genre: 'reggae', radioStation: 0, graphics: 'smooth' },
     lifetimeEarned: 0,
     wallet: 0,
     condition: 100,
@@ -66,6 +66,7 @@ export function loadSave(storage = globalThis.localStorage) {
     };
     if (!save.garage.includes(save.vehicle)) save.vehicle = save.garage[0];
     if (!GENRES.includes(save.settings.genre)) save.settings.genre = 'reggae';
+    if (save.settings.graphics !== 'fast') save.settings.graphics = 'smooth';
     return save;
   } catch {
     return defaultSave();

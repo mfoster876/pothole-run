@@ -1,4 +1,4 @@
-import { CART_SLOTS, CART, PLAYER_HALF_WIDTH, FLOOR_CONDITION, IMPAIR, WEAR, SHOULDER } from './constants.js';
+import { CART_SLOTS, CART, PLAYER_HALF_WIDTH, FLOOR_CONDITION, IMPAIR, WEAR, SHOULDER, THROTTLE, PACE } from './constants.js';
 import { createCondition } from './wreck.js';
 import { getVehicle } from './vehicles.js';
 
@@ -34,9 +34,16 @@ export function createCart(character, vehicle = getVehicle('handcart'), stabilit
     toppled: false,   // set true the frame the cart tips over (a shoulder wreck)
     bleachLevel: 0,   // Conductor bleach disfigurement 0..BLEACH.maxLevel (per-run; grows on bleach items)
     speedScale: 1,    // top-speed multiplier (street races crank this up); 1 = normal
+    throttle: 0,      // player throttle −1 (brake) … 0 (coast) … +1 (accelerate)
     toppleT: 0,       // soft-shoulder topple death animation progress 0..1 (0 = upright)
     blessing: null    // { resist, invincExtend, startGrace } — set by game.js at run start
   };
+}
+
+// Pace multiplier for the current run distance: the deeper you get, the faster the whole
+// game runs (a gentle climb from PACE.start up to PACE.max), so it never just plateaus.
+export function paceFor(distance) {
+  return Math.min(PACE.max, PACE.start + Math.max(0, distance || 0) * PACE.perMetre);
 }
 
 // Riding the soft shoulder tips the cart progressively onto its side. The longer you
@@ -90,7 +97,7 @@ function effHandling(cart) {
   return Math.max(0.25, h);
 }
 
-export function updateCart(cart, dt) {
+export function updateCart(cart, dt, distance = 0, overrideTarget = null) {
   if (cart.jumpT > 0) cart.jumpT = Math.max(0, cart.jumpT - dt);
   const stability = cart.stability || 1;
   // gust push first, then the driver hauls back toward the slot (offset by any drift)
@@ -115,8 +122,23 @@ export function updateCart(cart, dt) {
   const t = 1 - Math.exp(-k * dt);
   cart.x += (targetX - cart.x) * t;
   cart.lean = (targetX - cart.x);
-  // speedScale lets street races run MUCH faster than the normal game (default 1).
+  // --- speed: ALWAYS eases toward a target, so the cart never fully stops. Normally the
+  // target is progression-pace × player-throttle (braking only down to brakeFloor); a power-up
+  // (water supercharge) can hand in an `overrideTarget` to surge the cart toward a higher cap
+  // regardless of throttle. speedScale lets street races run MUCH faster (default 1).
   const scale = cart.speedScale || 1;
-  const max = CART.maxSpeed * effSpeed(cart) * scale;
-  cart.speed = Math.min(max, cart.speed + CART.accel * dt * effSpeed(cart) * scale);
+  let target;
+  if (overrideTarget != null) {
+    target = overrideTarget * scale;                            // e.g. the supercharge cap
+  } else {
+    const capability = CART.maxSpeed * effSpeed(cart) * scale;  // top capability of the ride
+    const pace = paceFor(distance);                             // deeper run → faster game
+    const th = Math.max(-1, Math.min(1, cart.throttle || 0));
+    // throttle maps coast(cruise) → full(1.0) accelerating, coast → brakeFloor braking.
+    const frac = th >= 0
+      ? THROTTLE.cruise + (1 - THROTTLE.cruise) * th
+      : THROTTLE.cruise - (THROTTLE.cruise - THROTTLE.brakeFloor) * (-th);
+    target = capability * pace * Math.max(THROTTLE.brakeFloor, Math.min(1, frac));
+  }
+  cart.speed += (target - cart.speed) * (1 - Math.exp(-THROTTLE.respond * dt));
 }

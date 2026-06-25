@@ -25,8 +25,13 @@ export function setLetterboxColors(sky, ground) {
   lbGround = ground;
 }
 
+// Device-pixel-ratio cap. The "Fast" graphics preference drops this to 1 — rendering at
+// 1× instead of 2× quarters the pixels pushed each frame, the single biggest frame-rate win.
+let dprCap = MAX_DPR;
+export function setDprCap(cap) { dprCap = Math.max(1, cap || MAX_DPR); resize(); }
+
 function resize() {
-  const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
+  const dpr = Math.min(window.devicePixelRatio || 1, dprCap);
   const vv = window.visualViewport;
   // Guard against a transient 0 from visualViewport (?? wouldn't catch 0) so the
   // canvas never collapses to nothing on a flaky Android URL-bar resize.
@@ -147,7 +152,7 @@ window.addEventListener('keydown', (e) => {
   game.menuKey(e.key);
 });
 
-setUpdate((dt) => { input.update(dt); game.update(dt); });
+setUpdate((dt) => { input.update(dt); game.setThrottle(input.throttle()); game.update(dt); });
 setRender((c) => {
   // The setTransform is already applied by the frame loop; just render the game.
   game.render(c);

@@ -50,6 +50,19 @@ test('the Politician has his own perks: a cash bribe and a draining vice', () =>
   assert.equal(run2.coins, -ITEMS.ladynight.cashDrain, 'but it drains his money — into the red');
 });
 
+test('the Lady of di Night strips away any spiritual blessing he obtained', () => {
+  const cart = createCart(getCharacter('politician'));
+  // he rolled out under a strong tithe blessing (active run protection)…
+  cart.blessing = { resist: 0.3, invincExtend: 0.4, startGrace: 1.2 };
+  const save = { blessing: 0.8 };   // …and stored grace from faithful giving
+  const run = { coins: 0 };
+  applyItem({}, cart, 'ladynight', run, save);
+  assert.equal(save.blessing, 0, 'the stored blessing is wiped');
+  assert.equal(cart.blessing.resist, 0, 'this run loses its damage resist');
+  assert.equal(cart.blessing.invincExtend, 0, 'and its longer invincibility');
+  assert.equal(cart.blessing.startGrace, 0, 'and its roll-out grace');
+});
+
 test('the bribe is a $50k–$5M backhander, rounded to a tidy step', () => {
   const it = ITEMS.privatebribe;
   assert.equal(pickBribe(it, () => 0), it.cashMin, 'low roll = the $50k floor');
