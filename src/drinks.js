@@ -8,6 +8,12 @@ export const DRINKS = {
   whiterum:   { id: 'whiterum',   label: 'White Rum',     potency: 1.0,  alcohol: 0.85, color: '#eef2f5' },
   spirulina:  { id: 'spirulina',  label: 'Spirulina',     potency: 0.80, alcohol: 0,    color: '#1f8a4c' },
   rootstonic: { id: 'rootstonic', label: 'Roots Tonic',   potency: 0.50, alcohol: 0.10, color: '#7a4a22' },
+  // Di Politician sips top-shelf: cognac and wines, not sodas. Expensive beverages give a
+  // big boost, but the spirits leave him a touch tipsy (Henny most of all).
+  henny:      { id: 'henny',      label: 'Hennessy',      potency: 1.0,  alcohol: 0.85, color: '#b5651d' },
+  rose:       { id: 'rose',       label: 'Rosé',          potency: 0.60, alcohol: 0.35, color: '#e89aa6' },
+  whitewine:  { id: 'whitewine',  label: 'White Wine',    potency: 0.55, alcohol: 0.30, color: '#ece6b0' },
+  champagne:  { id: 'champagne',  label: 'Champagne',     potency: 0.75, alcohol: 0.30, color: '#f7d873' },
 };
 
 // Which drinks each character is eligible for
@@ -15,6 +21,7 @@ const ELIGIBLE = {
   yute:      ['ting', 'boom'],
   conductor: ['ting', 'boom', 'redstripe', 'whiterum'],
   rasta:     ['ting', 'boom', 'redstripe', 'whiterum', 'spirulina', 'rootstonic'],
+  politician: ['henny', 'rose', 'whitewine', 'champagne'],   // top-shelf only
 };
 
 // Spawn rarity weights per drink id. Kept deliberately low so a drink boost is an
@@ -26,6 +33,11 @@ const WEIGHTS = {
   rootstonic: 0.6,
   redstripe:  0.6,
   whiterum:   0.3,
+  // expensive bottles are a rarer treat
+  champagne:  0.5,
+  rose:       0.5,
+  whitewine:  0.5,
+  henny:      0.35,
 };
 
 /**

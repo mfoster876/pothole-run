@@ -36,6 +36,11 @@ export function drawEntity(ctx, type, sx, sy, size, seed = 0.137, value = 1) {
     case 'whiterum':   drinkBottle(ctx, sx, sy, s, '#eef2f5', '#b0bcc8', 'WR'); break;
     case 'spirulina':  drinkBottle(ctx, sx, sy, s, '#1f8a4c', '#0f5a2e', 'SP'); break;
     case 'rootstonic': drinkBottle(ctx, sx, sy, s, '#7a4a22', '#4a2a10', 'RT'); break;
+    // Di Politician's top-shelf bottles
+    case 'henny':      drinkBottle(ctx, sx, sy, s, '#b5651d', '#6e3a0e', 'HN'); break;
+    case 'rose':       drinkBottle(ctx, sx, sy, s, '#e89aa6', '#b35f6e', 'RO'); break;
+    case 'whitewine':  drinkBottle(ctx, sx, sy, s, '#ece6b0', '#b8b070', 'WW'); break;
+    case 'champagne':  drinkBottle(ctx, sx, sy, s, '#f7d873', '#c9a830', 'CH'); break;
     // Conductor bleach vanity items — dedicated, recognizable icons
     case 'cakesoap':    cakeSoap(ctx, sx, sy, s); break;
     case 'currypowder': curryPowderBag(ctx, sx, sy, s); break;

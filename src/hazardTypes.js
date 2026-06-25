@@ -43,6 +43,11 @@ export const HAZARD_TYPES = {
   whiterum:   { damage: 0, collectible: true, powerup: 'drink', drink: 'whiterum',   depth: 3, color: '#eef2f5', label: 'White Rum' },
   spirulina:  { damage: 0, collectible: true, powerup: 'drink', drink: 'spirulina',  depth: 3, color: '#1f8a4c', label: 'Spirulina' },
   rootstonic: { damage: 0, collectible: true, powerup: 'drink', drink: 'rootstonic', depth: 3, color: '#7a4a22', label: 'Roots Tonic' },
+  // Di Politician's top-shelf bottles (cognac + wines)
+  henny:      { damage: 0, collectible: true, powerup: 'drink', drink: 'henny',      depth: 3, color: '#b5651d', label: 'Hennessy' },
+  rose:       { damage: 0, collectible: true, powerup: 'drink', drink: 'rose',       depth: 3, color: '#e89aa6', label: 'Rosé' },
+  whitewine:  { damage: 0, collectible: true, powerup: 'drink', drink: 'whitewine',  depth: 3, color: '#ece6b0', label: 'White Wine' },
+  champagne:  { damage: 0, collectible: true, powerup: 'drink', drink: 'champagne',  depth: 3, color: '#f7d873', label: 'Champagne' },
   // (Conductor's cake soap / curry powder / toothpaste / sunlight are AVOID-hazards now —
   // generated below from negatives.js, not pickups.)
   // School-Yute-only wholesome items — steadiness / heal / refreshment dash

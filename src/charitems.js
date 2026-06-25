@@ -18,9 +18,9 @@ export const ITEMS = {
   lasco:      { id: 'lasco',      label: 'Lasco Shake',char: 'yute', heal: 18, boost: 1.8, color: '#f0d8a0' },
 
   // ── Di Politician — perks of power ──
-  // cash      = money GAINED (a private-sector backhander — corruption pays)
-  // cashDrain = money LOST (his vices cost him)
-  privatebribe: { id: 'privatebribe', label: 'Private-Sector Bribe', char: 'politician', cash: 200000, boost: 1.2, color: '#1f9a4c' },
+  // cashMin/cashMax = a backhander of a VARIABLE size, rolled on pickup (corruption pays
+  //   anywhere from $50k to $5M); cashDrain = money LOST (his vices cost him).
+  privatebribe: { id: 'privatebribe', label: 'Private-Sector Bribe', char: 'politician', cashMin: 50000, cashMax: 5000000, boost: 1.2, color: '#1f9a4c' },
   ladynight:    { id: 'ladynight',    label: 'Lady of di Night',     char: 'politician', heal: 25, boost: 2.0, cashDrain: 150000, color: '#c0306a' },
 };
 
@@ -38,6 +38,19 @@ const WEIGHTS = {
   books: 0.8, stationery: 0.8, bagjuice: 0.7, lasco: 0.5,
   privatebribe: 0.5, ladynight: 0.6,
 };
+
+/**
+ * The cash a money item pays out. A fixed `cash` pays exactly that; a `cashMin`/`cashMax`
+ * item (the private-sector bribe) rolls a variable backhander in that band, rounded to a
+ * tidy $50k step so the HUD reads cleanly. `rng` is injectable for deterministic tests.
+ */
+export function pickBribe(it, rng = Math.random) {
+  if (typeof it.cash === 'number') return it.cash;
+  const min = it.cashMin || 0, max = it.cashMax || min;
+  const step = 50000;
+  const raw = min + rng() * (max - min);
+  return Math.min(max, Math.max(min, Math.round(raw / step) * step));
+}
 
 /** True if the character (by id) may pick up the given item id. */
 export function canUseItem(character, id) {
@@ -70,7 +83,7 @@ export function applyItem(effects, cart, id, run) {
     effects.superMax = effects.super;
   }
   if (run) {
-    if (typeof it.cash === 'number')      run.coins += it.cash;       // a windfall
+    if (typeof it.cash === 'number' || it.cashMin != null) run.coins += pickBribe(it);  // a windfall (fixed or a $50k–$5M backhander)
     if (typeof it.cashDrain === 'number') chargeRun(run, cart, it.cashDrain);  // costly vice (floored for the debt-proof)
   }
 }
