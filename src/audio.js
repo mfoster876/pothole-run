@@ -17,6 +17,10 @@ export function createAudio() {
   let userUrls   = [];     // tracked for revocation
   let userIdx    = 0;      // current track index
 
+  // --- Live radio state (a separate element so the playlist logic stays untouched) ---
+  let radioEl  = null;     // reused HTMLAudioElement pointed at a live stream
+  let radioUrl = null;     // current station URL (kept for reconnect on a dropout)
+
   function unlock() {
     if (ctx) { if (ctx.state === 'suspended') ctx.resume(); return; }
     const AC = window.AudioContext || window.webkitAudioContext;
@@ -143,9 +147,47 @@ export function createAudio() {
     userIdx = 0;
   }
 
+  function stopRadio() {
+    if (radioEl) { radioEl.pause(); radioEl.src = ''; }
+    radioUrl = null;
+  }
+
   function stop() {
     if (loopTimer) { clearTimeout(loopTimer); loopTimer = null; }
     stopUserMusic();
+    stopRadio();
+  }
+
+  /**
+   * Tune into a live internet-radio stream (real Jamaican stations — see radio.js).
+   * Plays straight through a plain HTMLAudioElement: no Web Audio graph, so no CORS
+   * requirement, and any https audio stream works on the HTTPS build. A live stream
+   * shouldn't "end" — if it drops, we reconnect to the same station once it fires 'ended'.
+   */
+  function playRadio(url) {
+    if (loopTimer) { clearTimeout(loopTimer); loopTimer = null; }
+    stopUserMusic();
+    stopRadio();
+    if (!url) return;
+    radioUrl = url;
+    if (!radioEl) {
+      radioEl = new Audio();
+      radioEl.preload = 'none';
+      const reconnect = () => {
+        // A live stream shouldn't end; the CDN edge can also briefly 503. Reconnect to the
+        // CURRENT station ONCE per load (guarded), then leave it to the player to switch.
+        if (radioUrl && !muted && !radioEl._retried) {
+          radioEl._retried = true;
+          setTimeout(() => { if (radioUrl) { radioEl.src = radioUrl; radioEl.play().catch(() => {}); } }, 1500);
+        }
+      };
+      radioEl.addEventListener('ended', reconnect);
+      radioEl.addEventListener('error', reconnect);
+    }
+    radioEl._retried = false;     // fresh station load gets a fresh reconnect budget
+    radioEl.src = url;
+    radioEl.volume = 0.55;
+    if (!muted) radioEl.play().catch(() => { /* autoplay blocked — needs a user gesture */ });
   }
 
   // switch genre live — the running loop picks up the new pattern on the next bar
@@ -238,7 +280,12 @@ export function createAudio() {
         userEl.play().catch(() => {});
       }
     }
+    // …and the live radio stream
+    if (radioEl && radioUrl) {
+      if (v) radioEl.pause();
+      else radioEl.play().catch(() => {});
+    }
   }
 
-  return { unlock, playStage, playUserMusic, stop, sfx, setMuted, setGenre };
+  return { unlock, playStage, playUserMusic, playRadio, stop, sfx, setMuted, setGenre };
 }

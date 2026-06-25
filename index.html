@@ -13,8 +13,12 @@
 </head>
 <body>
   <canvas id="game"></canvas>
-  <!-- Hidden picker for the player's own driving soundtracks (files stay local). -->
-  <input type="file" id="music-upload" accept="audio/*" multiple style="display:none" />
+  <!-- Picker for the player's own driving soundtracks (files stay local). It is
+       visually hidden but MUST stay rendered (not display:none): iOS Safari refuses to
+       open a display:none file input via a programmatic .click(), which silently broke
+       the upload. Off-screen + 1px + opacity:0 keeps it invisible yet clickable. -->
+  <input type="file" id="music-upload" accept="audio/*" multiple
+         style="position:fixed;left:0;bottom:0;width:1px;height:1px;opacity:0;border:0;padding:0;" />
   <script type="module" src="src/main.js"></script>
 </body>
 </html>

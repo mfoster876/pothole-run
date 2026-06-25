@@ -41,9 +41,10 @@ import { blessingEffects, decayBlessing, offeringAmount, giveTithe, pray, readBi
 import { renderPortrait } from './portrait.js';
 import * as help from './screens/help.js';
 import { count as countMusic } from './usermusic.js';
+import { stationAt, stationCount } from './radio.js';
 
 const W = VIRTUAL.width, H = VIRTUAL.height;
-const GENRE_LABEL = { reggae: 'Reggae', ska: 'Ska', dancehall: 'Dancehall', hiphop: 'Hip-Hop', mymusic: 'My Music' };
+const GENRE_LABEL = { reggae: 'Reggae', ska: 'Ska', dancehall: 'Dancehall', hiphop: 'Hip-Hop', mymusic: 'My Music', radio: 'JA Radio' };
 
 // Menu hit-regions (virtual coords). One row each for driver, ride, stage, genre.
 const arrow = (xf, yf) => ({ x: W * xf, y: H * yf - 24, w: 48, h: 48 });
@@ -51,7 +52,7 @@ const BTN = {
   driverPrev: arrow(0.15, 0.225), driverNext: arrow(0.80, 0.225),
   stagePrev:  arrow(0.15, 0.61),  stageNext:  arrow(0.80, 0.61),
   genrePrev:  arrow(0.15, 0.70),  genreNext:  arrow(0.80, 0.70),
-  genreValue: { x: W * 0.30, y: H * 0.70 - 20, w: W * 0.40, h: 40 }, // tap to upload when "My Music"
+  genreValue: { x: W * 0.24, y: H * 0.665, w: W * 0.52, h: H * 0.09 }, // tap to upload when "My Music" (covers label + hint)
   start:      { x: W * 0.5 - 130, y: H * 0.795 - 28, w: 260, h: 54 },
   back:       { x: 24, y: 18, w: 80, h: 36 },
   legend:     { x: W - 150, y: 18, w: 122, h: 36 }   // per-driver legend (play screen)
@@ -142,9 +143,12 @@ export function createGame(audio) {
     camZ = 0; spawnZ = 600; steerLock = 10; squeakAccum = 0; hitShake = 0;
     state.mode = 'play';
     audio && audio.unlock();
-    // Play the player's own uploaded soundtrack if chosen (and any exist), else the stage riddim.
+    // Music source: the player's own uploads, a live Jamaican radio stream, or the
+    // procedural stage riddim (the fallback when neither is chosen/available).
     if (save.settings.genre === 'mymusic' && myMusicCount > 0) {
       audio && audio.playUserMusic();
+    } else if (save.settings.genre === 'radio' && stationCount() > 0) {
+      audio && audio.playRadio(stationAt(save.settings.radioStation || 0).url);
     } else {
       audio && audio.playStage(stage.musicId);
     }
@@ -433,10 +437,22 @@ export function createGame(audio) {
     menuChoice.stage = list[(list.indexOf(menuChoice.stage) + dir + list.length) % list.length];
   }
   function cycleGenre(dir) {
+    const wasRadio = menuChoice.genre === 'radio';
     const i = GENRES.indexOf(menuChoice.genre);
     const g = GENRES[(i + dir + GENRES.length) % GENRES.length];
     menuChoice.genre = g; save.settings.genre = g;
     audio && audio.setGenre(g); writeSave(save);
+    // Live-radio preview on the menu: tune in when you land on Radio, hush when you leave
+    // (the menu is otherwise silent, so we don't leave a stream running in the background).
+    if (g === 'radio') { if (audio && stationCount()) audio.playRadio(stationAt(save.settings.radioStation || 0).url); }
+    else if (wasRadio) { audio && audio.stop(); }
+  }
+  // Tap the station name (Radio riddim) to flick to the next live station and hear it now.
+  function cycleStation() {
+    const n = stationCount(); if (!n) return;
+    save.settings.radioStation = ((save.settings.radioStation || 0) + 1) % n;
+    writeSave(save);
+    audio && audio.playRadio(stationAt(save.settings.radioStation).url);
   }
   function driveVehicle(id) {
     selectVehicle(save, id);
@@ -509,6 +525,7 @@ export function createGame(audio) {
       else if (inRect(BTN.genrePrev, vx, vy)) cycleGenre(-1);
       else if (inRect(BTN.genreNext, vx, vy)) cycleGenre(1);
       else if (menuChoice.genre === 'mymusic' && inRect(BTN.genreValue, vx, vy)) triggerMusicUpload();
+      else if (menuChoice.genre === 'radio' && inRect(BTN.genreValue, vx, vy)) cycleStation();
       else if (inRect(BTN.start, vx, vy)) startRun(menuChoice.character, menuChoice.stage);
       return;
     }
@@ -769,6 +786,11 @@ export function createGame(audio) {
       ctx.fillText('My Music (' + myMusicCount + ')', W / 2, H * 0.70);
       ctx.fillStyle = '#9fb8a3'; ctx.font = '500 13px "Courier New", monospace';
       ctx.fillText(myMusicCount ? 'tap here to add more tracks' : 'tap here to upload your own tracks', W / 2, H * 0.735);
+    } else if (menuChoice.genre === 'radio') {
+      const st = stationCount() ? stationAt(save.settings.radioStation || 0) : null;
+      ctx.fillText(st ? st.name : 'JA Radio', W / 2, H * 0.70);
+      ctx.fillStyle = '#9fb8a3'; ctx.font = '500 13px "Courier New", monospace';
+      ctx.fillText(st ? 'live online · tap here to change station' : 'no stations available', W / 2, H * 0.735);
     } else {
       ctx.fillText(GENRE_LABEL[menuChoice.genre] || 'Reggae', W / 2, H * 0.70);
     }

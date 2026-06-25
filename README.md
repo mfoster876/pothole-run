@@ -62,6 +62,11 @@ it wears off if you neglect it.
 your own audio files and hear them while driving. Files are stored **locally** in your
 browser (IndexedDB) and never leave your device.
 
+**Live JA radio** — pick **"JA Radio"** as the riddim to tune into real Jamaican internet
+radio stations (IRIE FM, ZIP 103, FAME 95, LOVE 101, ROOTS 96, BESS FM, and more) and
+drive to live online radio. Tap the station name to flick to the next one. Streams play
+through a plain `<audio>` element over HTTPS, so no proxy and no app — just live radio.
+
 **Secret** — a title-screen tap-code (corners: top-left, top-left, top-right,
 bottom-left, bottom-right) unlocks a gold handcart skin.
 

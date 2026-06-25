@@ -1,7 +1,7 @@
 const KEY = 'pothole-run-save:v2';
 const KEY_V1 = 'pothole-run-save:v1';
 
-export const GENRES = ['reggae', 'ska', 'dancehall', 'hiphop', 'mymusic'];
+export const GENRES = ['reggae', 'ska', 'dancehall', 'hiphop', 'mymusic', 'radio'];
 
 // Upgrades are now a per-vehicle map. Migrate a legacy flat array (the old global rig
 // upgrades) onto the handcart, and sanitise any object form to arrays.
@@ -30,7 +30,7 @@ export function defaultSave() {
     upgrades: {},                 // per-vehicle owned upgrades: { [vehicleId]: [ids] } (see upgrades.js)
     seenCarTip: false,            // has the windscreen-youth pop-up been shown?
     unlocks: { characters: ['yute', 'rasta'], stages: ['fern-gully'] },
-    settings: { muted: false, genre: 'reggae' },
+    settings: { muted: false, genre: 'reggae', radioStation: 0 },
     lifetimeEarned: 0,
     wallet: 0,
     condition: 100,

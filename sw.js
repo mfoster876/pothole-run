@@ -1,4 +1,4 @@
-const CACHE = 'pothole-run-v27';
+const CACHE = 'pothole-run-v28';
 const ASSETS = [
   './', './index.html', './styles.css', './manifest.webmanifest',
   './src/main.js', './src/constants.js', './src/game.js', './src/road.js',
@@ -19,6 +19,7 @@ const ASSETS = [
   './src/tithes.js', './src/screens/tithes.js',  // Phase 2: variable tithe blessing
   './src/portrait.js',  // Phase 2: front-facing driver portraits
   './src/usermusic.js', './src/screens/help.js',  // Phase 2.1: custom soundtracks + help screen
+  './src/radio.js',     // live Jamaican internet radio (riddim option)
   './src/charitems.js',  // Phase 2.2: character-specific bleach / wholesome items
   './src/races.js', './src/screens/races.js',  // Phase 2.4: bank-gated street races
   // Phase 3: rebalance + negatives framework, police, politician mechanics, legend
