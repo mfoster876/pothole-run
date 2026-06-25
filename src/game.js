@@ -3,7 +3,7 @@ import { setLetterboxColors } from './main.js';
 import { drinkWeightsFor } from './drinks.js';
 import { itemWeightsFor } from './charitems.js';
 import { makeRoad, renderRoad, projectEntity, curveOffsetAt, CART_Z } from './road.js';
-import { createCart, steer, updateCart, onShoulder } from './cart.js';
+import { createCart, steer, updateCart, onShoulder, tipShoulder } from './cart.js';
 import { createField, spawn, advance, activeEntities } from './entities.js';
 import { spawnInterval, pickHazard, laneFor } from './spawner.js';
 import { createRun, resolveHits } from './run.js';
@@ -216,8 +216,12 @@ export function createGame(audio) {
     squeakAccum += dz;
     const shoulder = onShoulder(cart);
     if (squeakAccum >= (shoulder ? 120 : 215)) { squeakAccum -= (shoulder ? 120 : 215); audio && audio.sfx('squeak'); }
+    // Soft-shoulder tipping: lean grows while out there, recovers back on the road.
+    // Tip too far for too long and the cart topples — an instant wreck.
+    if (tipShoulder(cart, shoulder, dt)) { cart.toppled = true; endRun(); return; }
     if (shoulder) cart.condition = applyDamage(cart.condition, SHOULDER.drainPerSec * dt);
-    const reelTarget = shoulder ? (cart.laneIndex === 0 ? -1 : 1) * (0.17 + Math.sin(camZ * 0.06) * 0.05) : 0;
+    // The reel lean deepens with the tilt so the player can see how close to over it is.
+    const reelTarget = shoulder ? (cart.laneIndex === 0 ? -1 : 1) * (0.17 + 0.55 * (cart.tilt || 0) + Math.sin(camZ * 0.06) * 0.05) : 0;
     cart.reel = (cart.reel || 0) + (reelTarget - (cart.reel || 0)) * (1 - Math.exp(-9 * dt));
     if (hitShake > 0) hitShake = Math.max(0, hitShake - dt * 2.4);
 

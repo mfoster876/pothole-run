@@ -1,4 +1,4 @@
-import { CART_SLOTS, CART, PLAYER_HALF_WIDTH, FLOOR_CONDITION, IMPAIR, WEAR } from './constants.js';
+import { CART_SLOTS, CART, PLAYER_HALF_WIDTH, FLOOR_CONDITION, IMPAIR, WEAR, SHOULDER } from './constants.js';
 import { createCondition } from './wreck.js';
 import { getVehicle } from './vehicles.js';
 
@@ -30,8 +30,20 @@ export function createCart(character, vehicle = getVehicle('handcart'), stabilit
     condition: { value: startCondition(savedCondition), max: CART.maxCondition },
     jumpT: 0,         // seconds remaining airborne (set by sleeping-policeman hop)
     tipsy: 0,         // alcohol impairment magnitude 0..1 (set by applyDrink)
+    tilt: 0,          // soft-shoulder lean 0..1 (grows while on the shoulder; topples at 1)
+    toppled: false,   // set true the frame the cart tips over (a shoulder wreck)
     blessing: null    // { resist, invincExtend, startGrace } — set by game.js at run start
   };
+}
+
+// Riding the soft shoulder tips the cart progressively onto its side. The longer you
+// stay, the more it leans (the lean widens the gap to road hazards — easier to dodge);
+// pull back onto the road and it rights itself. Reach `toppleAt` and it goes over.
+// Returns true the moment the cart topples (the caller should end the run).
+export function tipShoulder(cart, onShoulderNow, dt) {
+  if (onShoulderNow) cart.tilt = Math.min(1, (cart.tilt || 0) + SHOULDER.tipRate * dt);
+  else               cart.tilt = Math.max(0, (cart.tilt || 0) - SHOULDER.tipRecover * dt);
+  return onShoulderNow && cart.tilt >= SHOULDER.toppleAt;
 }
 export function steer(cart, dir) {
   cart.laneIndex = Math.max(0, Math.min(CART_SLOTS.length - 1, cart.laneIndex + dir));
@@ -72,7 +84,12 @@ export function updateCart(cart, dt) {
   cart.x = Math.max(-1.1, Math.min(1.1, cart.x));
   // A loose rig won't hold a clean line: drift pulls the settle point off-slot, so a
   // wobbly handcart wanders and you must keep correcting. Steady rigs zero it out.
-  const targetX = CART_SLOTS[cart.laneIndex] + (cart.drift || 0);
+  let targetX = CART_SLOTS[cart.laneIndex] + (cart.drift || 0);
+  // On the soft shoulder the cart tips outward — the lean leans it off the road,
+  // settling further out so road hazards in the next lane have a wider gap to clear.
+  if (isShoulder(cart.laneIndex) && cart.tilt) {
+    targetX += (cart.laneIndex === 0 ? -1 : 1) * cart.tilt * SHOULDER.tipReach;
+  }
   // Square the handling spread, then let stability tighten (or loosen) the settle.
   const k = CART.laneLerp * Math.pow(effHandling(cart), 1.6) * (0.7 + 0.3 * stability);
   const t = 1 - Math.exp(-k * dt);

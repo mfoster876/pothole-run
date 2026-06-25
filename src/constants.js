@@ -27,9 +27,12 @@ export const DAMAGE = {
 // Windscreen youths cost you coins (a "forced wash") more than condition.
 export const WIPER = { coinLoss: 6 };
 
-// Riding the soft shoulder: hazard-free but bumpy — it bleeds this much condition
-// per second you stay out there.
-export const SHOULDER = { drainPerSec: 7 };
+// Riding the soft shoulder: hazard-free but bumpy — it bleeds condition per second,
+// AND the cart progressively tips onto its side. The lean (`tipReach` off-slot at full
+// tilt) widens the gap to road hazards — easier to escape — but reach `toppleAt` and
+// the cart goes over (a wreck). `tipRate`/`tipRecover` = tilt gained per second on the
+// shoulder / shed per second back on the road.
+export const SHOULDER = { drainPerSec: 7, tipRate: 0.34, tipRecover: 1.3, tipReach: 0.22, toppleAt: 1 };
 
 // Hazard spacing: wide gaps at the start (less cluttered, learnable), tightening
 // HARD as `distance` climbs and the ride gets faster — the frustration grows the
