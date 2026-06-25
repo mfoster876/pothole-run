@@ -1,4 +1,4 @@
-import { CART_SLOTS, CART, PLAYER_HALF_WIDTH, FLOOR_CONDITION, IMPAIR } from './constants.js';
+import { CART_SLOTS, CART, PLAYER_HALF_WIDTH, FLOOR_CONDITION, IMPAIR, WEAR } from './constants.js';
 import { createCondition } from './wreck.js';
 import { getVehicle } from './vehicles.js';
 
@@ -39,16 +39,28 @@ export function steer(cart, dir) {
 export function onShoulder(cart) {
   return isShoulder(cart.laneIndex);
 }
-// Effective stats combine the ride's capability with the driver's personality.
-function effSpeed(cart)    { return cart.character.topSpeed * cart.vehicle.speed; }
+// Vehicle wear: a fresh rig (condition 100%) drives at full capability; damage drags
+// it down toward `min`, and healing (tools / repairs) lifts it back toward like-new.
+// Exported so the simulation and tests can reason about felt performance directly.
+export function wearFactor(cart, min) {
+  const cond = cart.condition;
+  const frac = cond ? Math.max(0, Math.min(1, cond.value / cond.max)) : 1;
+  return min + (1 - min) * frac;
+}
+
+// Effective stats combine the ride's capability with the driver's personality AND
+// the current state of repair — a battered cart noticeably malfunctions.
+function effSpeed(cart) {
+  return cart.character.topSpeed * cart.vehicle.speed * wearFactor(cart, WEAR.minSpeed);
+}
 function effHandling(cart) {
-  const base = cart.character.handling * cart.vehicle.handling;
+  let h = cart.character.handling * cart.vehicle.handling * wearFactor(cart, WEAR.minHandling);
   if (cart.tipsy > 0) {
-    // Alcohol makes steering sluggish: reduce handling proportional to impairment,
-    // floored at 0.25 so the cart is sloppy but never completely frozen.
-    return Math.max(0.25, base * (1 - IMPAIR.handlingDrop * cart.tipsy));
+    // Alcohol makes steering sluggish: reduce handling proportional to impairment.
+    h *= (1 - IMPAIR.handlingDrop * cart.tipsy);
   }
-  return base;
+  // Floored so the cart is sloppy near a wreck but never completely frozen.
+  return Math.max(0.25, h);
 }
 
 export function updateCart(cart, dt) {

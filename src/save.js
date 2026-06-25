@@ -72,6 +72,9 @@ export function buyVehicle(state, vehicle) {
   if (state.wallet < vehicle.price) return false;
   state.wallet -= vehicle.price;
   state.garage.push(vehicle.id);
+  // A new ride rolls off the lot in perfect shape — it performs like new until the
+  // first pothole. (Condition is shared across the garage, so the buy resets it.)
+  state.condition = 100;
   return true;
 }
 export function selectVehicle(state, id) {

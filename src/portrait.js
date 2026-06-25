@@ -153,6 +153,18 @@ function _frame(ctx, size, bg, border1, border2) {
 }
 
 /**
+ * Clip subsequent drawing to the inner frame panel so the bust can never spill past
+ * the frame edge. No extra ctx.save() — the ctx.save() in renderPortrait owns the
+ * restore, which clears this clip when the portrait is done.
+ */
+function _clipPanel(ctx, size) {
+  const pad = size * 0.04;
+  const r   = size * 0.10;
+  rrect(ctx, pad, pad, size - pad * 2, size - pad * 2, r);
+  ctx.clip();
+}
+
+/**
  * Generic neck + shoulders block.
  * neckX/neckY — centre-bottom of the head (top of neck), in local coords.
  * shoulderW   — total shoulder span (half on each side).
@@ -526,199 +538,161 @@ function _drawRasta(ctx, size) {
 }
 
 // ─── CONDUCTOR — Bleachaz Conductor ───────────────────────────────────────────
+// Bleach reaches only the FACE & NECK; both arms / the bare chest stay natural dark
+// skin, the chest dusted with baby powder, hair styled in bantu knots. The whole
+// bust is laid out to sit INSIDE the frame (no spill off the bottom edge).
 function _drawConductor(ctx, size) {
   const s = size;
   const cx = s * 0.50;
 
   // frame: slate/urban dark, bright gold swagger
   _frame(ctx, s, P.frameSlateDim, P.frameGold, '#4a3808');
+  _clipPanel(ctx, s);
 
-  const neckBaseY = s * 0.90;
-  const neckW     = s * 0.148;
-  const neckH     = s * 0.080;
+  // ── vertical layout anchors (all inside the frame) ──
+  const headCY  = s * 0.47;
+  const headRX  = s * 0.180;
+  const headRY  = s * 0.205;
+  const chinY   = headCY + headRY * 0.92;
+  const neckW   = s * 0.135;
+  const neckTopY = chinY - headRY * 0.06;
+  const neckBotY = chinY + s * 0.085;
+  const shTopY  = neckBotY - s * 0.004;
+  const shBotY  = s * 0.955;            // just inside the frame bottom (panel ends ~0.96)
+  const shHalf  = s * 0.36;
 
-  // ── Body / Shoulders — RIGHT side is NATURAL dark skin (unbleached arm)
-  //    LEFT side (viewer left = conductor's right) is the shirt side
-  //    We draw the full shoulder block then overdraw the right shoulder in natural skin.
-
-  // Full shirt shoulder block first
-  const sw = s * 0.35;
-  const sy = neckBaseY + neckH;
-  const sh = s * 0.20;
-
-  // Shirt side (left — conductor's right): dark navy conductor shirt
-  ctx.fillStyle = '#1e2a3a';
-  ctx.beginPath();
-  ctx.moveTo(cx - neckW * 0.5, neckBaseY);
-  ctx.lineTo(cx, neckBaseY);
-  ctx.lineTo(cx, sy + sh);
-  ctx.lineTo(cx - sw, sy + sh);
-  ctx.closePath();
-  ctx.fill();
-  ctx.strokeStyle = P.outline; ctx.lineWidth = Math.max(1, s * 0.016); ctx.stroke();
-
-  // Natural dark arm (right side — conductor's left): bare brown arm, no bleach
+  // ── Bare dark-skin shoulders / chest — BOTH arms black ──
   ctx.fillStyle = P.skinDark;
   ctx.beginPath();
-  ctx.moveTo(cx, neckBaseY);
-  ctx.lineTo(cx + neckW * 0.5, neckBaseY);
-  ctx.lineTo(cx + sw, sy + sh);
-  ctx.lineTo(cx, sy + sh);
+  ctx.moveTo(cx - neckW * 0.5, neckBotY);
+  ctx.lineTo(cx + neckW * 0.5, neckBotY);
+  ctx.lineTo(cx + shHalf, shBotY);
+  ctx.lineTo(cx - shHalf, shBotY);
   ctx.closePath();
   ctx.fill();
   ctx.strokeStyle = P.outline; ctx.lineWidth = Math.max(1, s * 0.016); ctx.stroke();
 
-  // Shirt shadow on left shoulder
-  ctx.fillStyle = '#111a26';
+  // rounded-pec shading
+  ctx.fillStyle = '#2a1407';
   ctx.beginPath();
-  ctx.moveTo(cx - neckW * 0.4, neckBaseY + neckH * 0.3);
-  ctx.lineTo(cx - 2, neckBaseY + neckH * 0.3);
-  ctx.lineTo(cx - 2, sy + sh);
-  ctx.lineTo(cx - sw * 0.88, sy + sh);
+  ctx.moveTo(cx - shHalf * 0.86, shBotY);
+  ctx.quadraticCurveTo(cx, shTopY + (shBotY - shTopY) * 0.16, cx + shHalf * 0.86, shBotY);
   ctx.closePath();
   ctx.fill();
 
-  // Dividing line between bleached shirt side and natural skin arm (dramatic edge)
-  ctx.strokeStyle = 'rgba(0,0,0,0.55)'; ctx.lineWidth = Math.max(2, s * 0.022);
-  ctx.beginPath();
-  ctx.moveTo(cx, neckBaseY); ctx.lineTo(cx, sy + sh);
-  ctx.stroke();
+  // ── Baby-powder dusting across the chest (the signature look) ──
+  for (const [bx, by, brx, bry, a] of [
+    [cx - shHalf * 0.34, shTopY + s * 0.085, s * 0.092, s * 0.075, 0.85],
+    [cx + shHalf * 0.32, shTopY + s * 0.095, s * 0.086, s * 0.070, 0.85],
+    [cx,                 shTopY + s * 0.055, s * 0.072, s * 0.055, 0.80],
+    [cx - shHalf * 0.02, shTopY + s * 0.150, s * 0.130, s * 0.060, 0.70],
+  ]) {
+    const g = ctx.createRadialGradient(bx, by, 0, bx, by, Math.max(brx, bry));
+    g.addColorStop(0, `rgba(246,246,240,${a})`);
+    g.addColorStop(1, 'rgba(246,246,240,0)');
+    ctx.fillStyle = g;
+    ellipse(ctx, bx, by, brx, bry); ctx.fill();
+  }
+  // powder specks
+  ctx.fillStyle = 'rgba(246,246,240,0.9)';
+  for (const [px, py] of [
+    [cx - shHalf * 0.20, shTopY + s * 0.110], [cx + shHalf * 0.18, shTopY + s * 0.120],
+    [cx + shHalf * 0.02, shTopY + s * 0.070], [cx - shHalf * 0.42, shTopY + s * 0.135],
+    [cx + shHalf * 0.38, shTopY + s * 0.140],
+  ]) { ellipse(ctx, px, py, s * 0.006, s * 0.006); ctx.fill(); }
 
-  // Tattoos on natural-skin right side neck/shoulder area
-  // Two small simple ink marks
-  const tatX = cx + neckW * 0.75;
-  const tatY = neckBaseY - neckH * 0.5;
-  ctx.strokeStyle = P.tattooInk; ctx.lineWidth = Math.max(1, s * 0.014);
-  ctx.lineCap = 'round';
-  // Star-cross mark
+  // ── Gold chain (swagger) ──
+  ctx.strokeStyle = P.frameGold; ctx.lineWidth = Math.max(1.5, s * 0.013);
   ctx.beginPath();
-  ctx.moveTo(tatX - s * 0.022, tatY);
-  ctx.lineTo(tatX + s * 0.022, tatY);
-  ctx.moveTo(tatX, tatY - s * 0.022);
-  ctx.lineTo(tatX, tatY + s * 0.022);
+  ctx.moveTo(cx - neckW * 0.45, neckBotY);
+  ctx.quadraticCurveTo(cx, neckBotY + s * 0.055, cx + neckW * 0.45, neckBotY);
   ctx.stroke();
-  // Small curved line below — decorative tat
+  ctx.fillStyle = P.frameGold;
+  ellipse(ctx, cx, neckBotY + s * 0.050, s * 0.012, s * 0.014); ctx.fill();
+
+  // ── Tattoo on the viewer-right shoulder ──
+  const tatX = cx + shHalf * 0.42, tatY = shTopY + s * 0.085;
+  ctx.strokeStyle = P.tattooInk; ctx.lineWidth = Math.max(1, s * 0.012);
+  ctx.lineCap = 'round';
   ctx.beginPath();
-  ctx.arc(tatX + s * 0.006, tatY + s * 0.042, s * 0.016, Math.PI * 1.1, Math.PI * 1.9);
+  ctx.moveTo(tatX - s * 0.020, tatY); ctx.lineTo(tatX + s * 0.020, tatY);
+  ctx.moveTo(tatX, tatY - s * 0.020); ctx.lineTo(tatX, tatY + s * 0.020);
   ctx.stroke();
   ctx.lineCap = 'butt';
 
-  // ── Neck — bleached pale (with slight blotch at base where it meets natural shoulder) ──
+  // ── Bleached neck ──
   ctx.fillStyle = P.skinPale;
-  ctx.fillRect(cx - neckW * 0.5, neckBaseY - neckH, neckW, neckH);
+  ctx.fillRect(cx - neckW * 0.5, neckTopY, neckW, neckBotY - neckTopY);
   ctx.strokeStyle = P.outline; ctx.lineWidth = Math.max(1, s * 0.016);
-  ctx.strokeRect(cx - neckW * 0.5, neckBaseY - neckH, neckW, neckH);
-  // Blotch edge at lower neck where bleach is uneven (pinkish)
+  ctx.strokeRect(cx - neckW * 0.5, neckTopY, neckW, neckBotY - neckTopY);
+  // pinkish uneven blotch at the bleach line where it meets the dark chest
   ctx.fillStyle = P.skinBlotch;
-  ctx.beginPath();
-  ctx.ellipse(cx + neckW * 0.15, neckBaseY - neckH * 0.1, neckW * 0.28, neckH * 0.22, 0, 0, Math.PI * 2);
-  ctx.fill();
+  ellipse(ctx, cx + neckW * 0.12, neckBotY - s * 0.012, neckW * 0.30, s * 0.012); ctx.fill();
 
-  // ── Head ──
-  const headCY = s * 0.515;
-  const headRX  = s * 0.185;
-  const headRY  = s * 0.212;
-
-  // head shadow
+  // ── Head — bleached pale face ──
   ctx.fillStyle = 'rgba(0,0,0,0.30)';
-  ellipse(ctx, cx + s * 0.012, headCY + s * 0.012, headRX, headRY);
-  ctx.fill();
-
-  // Bleached face — unnaturally light, slightly pinkish
+  ellipse(ctx, cx + s * 0.012, headCY + s * 0.012, headRX, headRY); ctx.fill();
   ctx.fillStyle = P.skinPale;
-  ellipse(ctx, cx, headCY, headRX, headRY);
-  ctx.fill();
+  ellipse(ctx, cx, headCY, headRX, headRY); ctx.fill();
   ctx.strokeStyle = P.outline; ctx.lineWidth = Math.max(1.5, s * 0.022); ctx.stroke();
 
-  // Pink blotch on forehead / cheek edges — uneven bleach pattern
+  // uneven bleach blotches + forehead highlight
   ctx.fillStyle = P.skinBlotch;
-  ellipse(ctx, cx - headRX * 0.52, headCY - headRY * 0.08, headRX * 0.26, headRY * 0.20);
-  ctx.fill();
-  ellipse(ctx, cx + headRX * 0.44, headCY + headRY * 0.18, headRX * 0.20, headRY * 0.16);
-  ctx.fill();
-  // Slightly darker edge around jaw (transition zone)
-  ctx.strokeStyle = P.skinBlotch; ctx.lineWidth = Math.max(2, s * 0.020);
-  ctx.beginPath();
-  ctx.ellipse(cx, headCY, headRX * 0.96, headRY * 0.94, 0, Math.PI * 0.25, Math.PI * 0.85);
-  ctx.stroke();
+  ellipse(ctx, cx - headRX * 0.52, headCY - headRY * 0.04, headRX * 0.24, headRY * 0.18); ctx.fill();
+  ellipse(ctx, cx + headRX * 0.46, headCY + headRY * 0.20, headRX * 0.18, headRY * 0.15); ctx.fill();
+  ctx.fillStyle = 'rgba(255,240,220,0.30)';
+  ellipse(ctx, cx, headCY - headRY * 0.22, headRX * 0.48, headRY * 0.28); ctx.fill();
 
-  // Pale face highlight (centre forehead plane)
-  ctx.fillStyle = 'rgba(255,240,220,0.32)';
-  ellipse(ctx, cx, headCY - headRY * 0.28, headRX * 0.50, headRY * 0.32);
-  ctx.fill();
-
-  // Ears — natural skin tone (contrast: bleaching doesn't usually reach the ears)
+  // Ears — natural dark (bleach skips them)
   for (const sign of [-1, 1]) {
-    ctx.fillStyle = sign < 0 ? P.skinPale : P.skinDark; // left ear = bleached side, right = natural
-    ellipse(ctx, cx + sign * headRX * 0.95, headCY + headRY * 0.08,
-            headRX * 0.10, headRY * 0.13);
-    ctx.fill();
+    ctx.fillStyle = P.skinDark;
+    ellipse(ctx, cx + sign * headRX * 0.96, headCY + headRY * 0.06, headRX * 0.10, headRY * 0.13); ctx.fill();
     ctx.strokeStyle = P.outline; ctx.lineWidth = Math.max(1, s * 0.014); ctx.stroke();
   }
 
-  // ── Cap — peaked bus conductor's cap ──
-  const capBrimY = headCY - headRY * 0.50;
-  const capTopY  = headCY - headRY * 1.06;
-  const capW     = headRX * 1.12;
-
-  // Cap body
-  ctx.fillStyle = P.capNavy;
+  // ── Bantu knots ── close dark scalp cap, then knotted buns over the crown.
+  ctx.fillStyle = P.hairBlack;
   ctx.beginPath();
-  ctx.moveTo(cx - capW, capBrimY);
-  ctx.quadraticCurveTo(cx, capTopY, cx + capW, capBrimY);
-  ctx.closePath();
+  ctx.ellipse(cx, headCY - headRY * 0.06, headRX * 0.98, headRY * 0.70, 0, Math.PI, 2 * Math.PI);
   ctx.fill();
-  ctx.strokeStyle = P.outline; ctx.lineWidth = Math.max(1.5, s * 0.020); ctx.stroke();
 
-  // Cap band (gold trim)
-  ctx.fillStyle = P.frameGold;
-  ctx.fillRect(cx - capW * 0.94, capBrimY - s * 0.016, capW * 1.88, s * 0.016);
-
-  // Shading band mid-cap
-  ctx.fillStyle = P.capNavyMid;
-  ctx.beginPath();
-  ctx.moveTo(cx - capW * 0.86, capBrimY - s * 0.014);
-  ctx.quadraticCurveTo(cx, capBrimY + (capTopY - capBrimY) * 0.55, cx + capW * 0.86, capBrimY - s * 0.014);
-  ctx.quadraticCurveTo(cx, capBrimY + (capTopY - capBrimY) * 0.30, cx - capW * 0.86, capBrimY - s * 0.014);
-  ctx.closePath(); ctx.fill();
-
-  // Peak / brim
-  ctx.fillStyle = P.capBrim;
-  ctx.beginPath();
-  ctx.ellipse(cx - capW * 0.15, capBrimY, capW * 0.80, s * 0.040, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.strokeStyle = P.outline; ctx.lineWidth = Math.max(1, s * 0.016); ctx.stroke();
+  const knots = [
+    [-0.60, -0.66, 0.16], [0.00, -0.80, 0.17], [0.60, -0.66, 0.16],
+    [-0.34, -1.00, 0.14], [0.34, -1.00, 0.14],
+  ];
+  for (const [kx, ky, kr] of knots) {
+    const bx = cx + kx * headRX;
+    const by = headCY + ky * headRY;
+    const r  = kr * headRX;
+    ctx.fillStyle = '#0e0a05';                       // base ring
+    ellipse(ctx, bx, by + r * 0.35, r * 1.15, r * 0.70); ctx.fill();
+    ctx.fillStyle = P.hairBlack;                     // knot ball
+    ellipse(ctx, bx, by, r, r); ctx.fill();
+    ctx.strokeStyle = P.outline; ctx.lineWidth = Math.max(1, s * 0.010); ctx.stroke();
+    ctx.strokeStyle = 'rgba(0,0,0,0.6)'; ctx.lineWidth = Math.max(1, s * 0.008);
+    ctx.beginPath(); ctx.arc(bx, by, r * 0.6, Math.PI * 0.15, Math.PI * 0.85); ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,0.12)';        // sheen
+    ellipse(ctx, bx - r * 0.3, by - r * 0.3, r * 0.28, r * 0.22); ctx.fill();
+  }
 
   // ── Face features ──
-  const eyeY    = headCY + headRY * 0.02;
+  const eyeY    = headCY + headRY * 0.04;
   const eyeSpan = headRX * 0.84;
   const eyeR    = s * 0.042;
-
-  // Eyebrows — confident, slightly raised on one side (swagger)
   _eyebrows(ctx, cx, eyeY - eyeR * 1.5, eyeSpan, eyeR, '#3a2808', 0.4);
-
-  // Eyes — dark iris, direct and confident
   _eyes(ctx, cx, eyeY, eyeSpan, eyeR, '#2a1608');
-
-  // Nose
   _nose(ctx, cx, eyeY + eyeR * 2.2, s);
 
-  // Mouth — BLACK lips with pink centre (characteristic bleaching effect)
-  // Black outer lips
+  // Black lips with pink centre (characteristic)
+  const lipY = eyeY + eyeR * 4.0;
   ctx.fillStyle = P.blackLip;
-  ctx.beginPath();
-  ctx.ellipse(cx, eyeY + eyeR * 4.0 + s * 0.006, s * 0.082, s * 0.030, 0, 0, Math.PI * 2);
-  ctx.fill();
-  // Pink / rose centre of lips
+  ellipse(ctx, cx, lipY + s * 0.006, s * 0.078, s * 0.028); ctx.fill();
   ctx.fillStyle = P.pinkLipCtr;
+  ellipse(ctx, cx, lipY + s * 0.004, s * 0.052, s * 0.014); ctx.fill();
+  ctx.strokeStyle = P.blackLip; ctx.lineWidth = Math.max(1, s * 0.014);
   ctx.beginPath();
-  ctx.ellipse(cx, eyeY + eyeR * 4.0 + s * 0.004, s * 0.056, s * 0.016, 0, 0, Math.PI * 2);
-  ctx.fill();
-  // Lip line
-  ctx.strokeStyle = P.blackLip; ctx.lineWidth = Math.max(1, s * 0.016);
-  ctx.beginPath();
-  ctx.moveTo(cx - s * 0.070, eyeY + eyeR * 4.0);
-  ctx.quadraticCurveTo(cx, eyeY + eyeR * 4.0 + s * 0.010, cx + s * 0.070, eyeY + eyeR * 4.0);
+  ctx.moveTo(cx - s * 0.066, lipY);
+  ctx.quadraticCurveTo(cx, lipY + s * 0.010, cx + s * 0.066, lipY);
   ctx.stroke();
 
   // ── name label ──

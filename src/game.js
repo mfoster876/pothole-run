@@ -1,4 +1,4 @@
-import { VIRTUAL, SHOULDER, SUPERCHARGE, IMPAIR } from './constants.js';
+import { VIRTUAL, SHOULDER, SUPERCHARGE, IMPAIR, SPAWN_TUNE } from './constants.js';
 import { setLetterboxColors } from './main.js';
 import { drinkWeightsFor } from './drinks.js';
 import { makeRoad, renderRoad, projectEntity, curveOffsetAt, CART_Z } from './road.js';
@@ -109,7 +109,9 @@ export function createGame(audio) {
     activeWeights = (cart.vehicle.isCar
       ? stage.hazardWeights.concat([{ type: 'wiper', weight: 3 }])
       : stage.hazardWeights.slice()
-    ).concat(drinkWeightsFor(cart.character));
+    ).concat(drinkWeightsFor(cart.character))
+      // Repair tools are the in-run lifeline — spawn them 20% more often.
+      .map(w => w.type === 'tools' ? { type: 'tools', weight: w.weight * SPAWN_TUNE.toolMult } : w);
     // Faith upkeep resets each run — pray/read-bible become available again.
     save.prayedSinceRun = false;
     save.readBibleSinceRun = false;

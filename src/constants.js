@@ -53,6 +53,16 @@ export const SUPERCHARGE = { dur: 6, accel: 14, maxSpeed: 260, moneyMult: 1.5, c
 export const DRINK = { baseDur: 5, tipsyExtra: 3 };
 export const IMPAIR = { handlingDrop: 0.55, wander: 0.9 };
 
+// Spawn-rate tuning: drinks are an occasional treat (spawn 15% less); repair tools
+// are the lifeline (spawn 20% more) so a battered cart can claw its way back to 100%.
+export const SPAWN_TUNE = { drinkMult: 0.85, toolMult: 1.20 };
+
+// Vehicle wear → performance. A fresh rig (condition 100%) drives at full capability;
+// as it takes hits, handling and (less so) top speed degrade — a noticeable malfunction.
+// Picking up tools heals condition, so the cart visibly tightens back up toward like-new.
+// Floors keep a wrecked-but-rolling cart survivable (the fairness rule).
+export const WEAR = { minHandling: 0.55, minSpeed: 0.85 };
+
 export const MAX_DPR = 2;
 export const VIRTUAL = { width: 960, height: 540 };
 

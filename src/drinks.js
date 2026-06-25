@@ -1,5 +1,5 @@
 // src/drinks.js — drink power-up definitions + eligibility + effect application
-import { DRINK } from './constants.js';
+import { DRINK, SPAWN_TUNE } from './constants.js';
 
 export const DRINKS = {
   ting:       { id: 'ting',       label: 'Ting',          potency: 0.40, alcohol: 0,    color: '#7ec850' },
@@ -71,5 +71,6 @@ export function drinkWeightsFor(character) {
   if (!character) return [];
   const list = ELIGIBLE[character.id];
   if (!list) return [];
-  return list.map(id => ({ type: id, weight: WEIGHTS[id] }));
+  // Drinks spawn 15% less than their base weight — a treat, not a crutch.
+  return list.map(id => ({ type: id, weight: WEIGHTS[id] * SPAWN_TUNE.drinkMult }));
 }
