@@ -107,7 +107,10 @@ export function createGame(audio) {
 
   // --- input ---
   function onSteer(dir) {
-    if (state.mode === 'play' && steerLock === 0) { steer(cart, dir); audio && audio.sfx('creak'); }
+    if (state.mode !== 'play' || steerLock !== 0) return;
+    const before = cart.laneIndex;
+    steer(cart, dir);
+    if (cart.laneIndex !== before) audio && audio.sfx('creak'); // only when a real turn happens
   }
   function cycleDriver(dir) {
     const list = save.unlocks.characters;
