@@ -1,4 +1,5 @@
-const KEY = 'pothole-run-save:v1';
+const KEY = 'pothole-run-save:v2';
+const KEY_V1 = 'pothole-run-save:v1';
 
 export const GENRES = ['reggae', 'ska', 'dancehall', 'hiphop'];
 
@@ -12,17 +13,28 @@ export function defaultSave() {
     upgrades: [],                 // owned rig stability upgrades (see upgrades.js)
     seenCarTip: false,            // has the windscreen-youth pop-up been shown?
     unlocks: { characters: ['yute', 'rasta'], stages: ['fern-gully'] },
-    settings: { muted: false, genre: 'reggae' }
+    settings: { muted: false, genre: 'reggae' },
+    lifetimeEarned: 0,
+    wallet: 0,
+    condition: 100,
+    bounties: [],
+    aspirations: { achieved: [] },
   };
 }
 export function loadSave(storage = globalThis.localStorage) {
   try {
-    const raw = storage.getItem(KEY);
+    const raw = storage.getItem(KEY) ?? storage.getItem(KEY_V1);
     if (!raw) return defaultSave();
     const parsed = JSON.parse(raw);
     const base = defaultSave();
+    const seedCoins = Number.isFinite(parsed.coins) ? parsed.coins : 0;
     const save = {
       ...base, ...parsed,
+      wallet: Number.isFinite(parsed.wallet) ? parsed.wallet : seedCoins,
+      lifetimeEarned: Number.isFinite(parsed.lifetimeEarned) ? parsed.lifetimeEarned : seedCoins,
+      condition: Number.isFinite(parsed.condition) ? parsed.condition : 100,
+      bounties: Array.isArray(parsed.bounties) ? parsed.bounties : [],
+      aspirations: { achieved: Array.isArray(parsed.aspirations?.achieved) ? parsed.aspirations.achieved : [] },
       garage: Array.isArray(parsed.garage) && parsed.garage.length ? parsed.garage : base.garage,
       upgrades: Array.isArray(parsed.upgrades) ? parsed.upgrades : base.upgrades,
       unlocks: { ...base.unlocks, ...(parsed.unlocks || {}) },
