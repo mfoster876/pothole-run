@@ -21,7 +21,10 @@ export function advance(field, dz) {
   for (const e of field.pool) {
     if (!e.active) continue;
     e.z -= dz;
-    if (e.z < -e.depth - 2) e.active = false;
+    // Retire once well past the cart. The margin must exceed one frame's travel so
+    // an entity is never retired in the same frame it crosses the cart plane (which
+    // would let it slip past resolveHits unseen).
+    if (e.z < -40) e.active = false;
   }
 }
 export function activeEntities(field) {

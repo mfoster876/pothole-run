@@ -38,7 +38,7 @@ export function createGame(audio) {
     cart = createCart(getCharacter(characterId));
     field = createField();
     run = createRun();
-    camZ = 0; spawnZ = 320; steerLock = 10;
+    camZ = 0; spawnZ = 600; steerLock = 10;
     state.mode = 'play';
     audio && audio.unlock();
     audio && audio.playStage(stage.musicId);
@@ -69,8 +69,8 @@ export function createGame(audio) {
     advance(field, dz);
     spawnZ -= dz;
     if (spawnZ <= 0) {
-      spawn(field, pickHazard(stage.hazardWeights, rng), laneFor(rng, 3), 900);
-      spawnZ = spawnInterval(run.distance) * 6;
+      spawn(field, pickHazard(stage.hazardWeights, rng), laneFor(rng, 3), 5200);
+      spawnZ = spawnInterval(run.distance) * 8;
     }
     const coinsBefore = run.coins, condBefore = cart.condition.value;
     resolveHits(run, cart, field);
@@ -84,7 +84,7 @@ export function createGame(audio) {
     if (state.mode === 'gameover') return renderGameOver(ctx);
     renderRoad(ctx, road, stage.palette, camZ, W, H);
     for (const e of activeEntities(field).sort((a, b) => b.z - a.z)) {
-      const p = projectEntity(e.x, e.z, W, H);
+      const p = projectEntity(e.x, e.z + CART_Z, W, H);
       if (p.visible) drawEntity(ctx, e.type, p.x, p.y, p.size);
     }
     const cp = projectEntity(cart.x, CART_Z, W, H);
