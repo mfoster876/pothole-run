@@ -69,3 +69,7 @@ setRender((c) => {
   c.setTransform(viewport.scale, 0, 0, viewport.scale, 0, 0);
   game.render(c);
 });
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+}

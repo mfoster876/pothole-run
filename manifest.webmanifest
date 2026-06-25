@@ -1,0 +1,15 @@
+{
+  "name": "Pothole Run",
+  "short_name": "Pothole Run",
+  "description": "Dodge potholes down Jamaica's roads in a sound-system handcart.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#0e1a12",
+  "theme_color": "#0e1a12",
+  "icons": [
+    { "src": "assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
