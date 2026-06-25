@@ -390,90 +390,96 @@ function _drawRasta(ctx, size) {
 
   // frame: deep warm night, green border
   _frame(ctx, s, '#0e1a10', P.frameGreen, P.frameGreenDim);
+  _clipPanel(ctx, s);
 
-  // ── body / shirt (dark, relaxed) ──
-  const neckBaseY = s * 0.90;
-  const neckW     = s * 0.152;
-  const neckH     = s * 0.080;
+  // ── vertical layout anchors (all inside the frame) ──
+  const headCY  = s * 0.49;
+  const headRX  = s * 0.172;
+  const headRY  = s * 0.200;
+  const chinY   = headCY + headRY * 0.92;
+  const neckW   = s * 0.130;
+  const neckTopY = chinY - headRY * 0.05;
+  const neckBotY = chinY + s * 0.075;
+  const shTopY  = neckBotY - s * 0.004;
+  const shBotY  = s * 0.955;            // just inside the frame bottom
+  const shHalf  = s * 0.34;
 
-  _shoulders(ctx, cx, neckBaseY, neckW, neckH, s * 0.68, '#1a2e1e', '#0e1c12', s);
+  // ── Dreadlocks (behind everything) — hang down past the shoulders, in-frame ──
+  const lockColors = [P.hairBlack, P.hairBrown, P.hairBlack, '#241408', P.hairBlack, P.hairBrown];
+  const lockPositions = [-0.80, -0.48, -0.14, 0.30, 0.62, 0.88];
+  const lockY0  = headCY - headRY * 0.30;
+  const lockBot = s * 0.94;
+  for (let i = 0; i < lockPositions.length; i++) {
+    const lx = cx + lockPositions[i] * headRX * 1.25;
+    const lw = s * 0.034 + (i % 2) * s * 0.008;
+    ctx.fillStyle = lockColors[i % lockColors.length];
+    ctx.beginPath();
+    ctx.moveTo(lx - lw / 2, lockY0);
+    ctx.quadraticCurveTo(lx - lw * 0.9, (lockY0 + lockBot) / 2, lx - lw * 0.4, lockBot);
+    ctx.lineTo(lx + lw * 0.4, lockBot);
+    ctx.quadraticCurveTo(lx + lw * 0.9, (lockY0 + lockBot) / 2, lx + lw / 2, lockY0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.lineWidth = Math.max(1, s * 0.009); ctx.stroke();
+    // knot rings down the lock
+    ctx.strokeStyle = 'rgba(0,0,0,0.40)'; ctx.lineWidth = Math.max(1, s * 0.006);
+    for (const t of [0.35, 0.6, 0.85]) {
+      const ly = lockY0 + (lockBot - lockY0) * t;
+      ctx.beginPath(); ctx.moveTo(lx - lw * 0.5, ly); ctx.lineTo(lx + lw * 0.5, ly); ctx.stroke();
+    }
+  }
 
-  // Neck skin
-  ctx.fillStyle = P.skinDark;
-  ctx.fillRect(cx - neckW * 0.5, neckBaseY - neckH, neckW, neckH);
-  ctx.strokeStyle = P.outline; ctx.lineWidth = Math.max(1, s * 0.016);
-  ctx.strokeRect(cx - neckW * 0.5, neckBaseY - neckH, neckW, neckH);
-
-  // Light beard / goatee on the chin — wispy
-  const headCY = s * 0.50;
-  const headRX  = s * 0.185;
-  const headRY  = s * 0.215;
-  const chinY   = headCY + headRY * 0.90;
-
-  ctx.fillStyle = P.hairBlack;
+  // ── Shoulders / shirt (dark, relaxed) ──
+  ctx.fillStyle = '#1a2e1e';
   ctx.beginPath();
-  ctx.ellipse(cx, chinY + s * 0.018, headRX * 0.38, headRY * 0.22, 0, 0, Math.PI * 2);
+  ctx.moveTo(cx - neckW * 0.5, neckBotY);
+  ctx.lineTo(cx + neckW * 0.5, neckBotY);
+  ctx.lineTo(cx + shHalf, shBotY);
+  ctx.lineTo(cx - shHalf, shBotY);
+  ctx.closePath();
   ctx.fill();
+  ctx.strokeStyle = P.outline; ctx.lineWidth = Math.max(1, s * 0.016); ctx.stroke();
+  ctx.fillStyle = '#0e1c12';
+  ctx.beginPath();
+  ctx.moveTo(cx - shHalf * 0.85, shBotY);
+  ctx.quadraticCurveTo(cx, shTopY + (shBotY - shTopY) * 0.18, cx + shHalf * 0.85, shBotY);
+  ctx.closePath(); ctx.fill();
 
-  // ── head ──
-  // shadow
-  ctx.fillStyle = 'rgba(0,0,0,0.30)';
-  ellipse(ctx, cx + s * 0.012, headCY + s * 0.014, headRX, headRY);
-  ctx.fill();
-
+  // ── Neck ──
   ctx.fillStyle = P.skinDark;
-  ellipse(ctx, cx, headCY, headRX, headRY);
-  ctx.fill();
-  ctx.strokeStyle = P.outline; ctx.lineWidth = Math.max(1.5, s * 0.022); ctx.stroke();
+  ctx.fillRect(cx - neckW * 0.5, neckTopY, neckW, neckBotY - neckTopY);
+  ctx.strokeStyle = P.outline; ctx.lineWidth = Math.max(1, s * 0.016);
+  ctx.strokeRect(cx - neckW * 0.5, neckTopY, neckW, neckBotY - neckTopY);
 
-  // Face plane highlight (forehead)
+  // ── Goatee under the chin ──
+  ctx.fillStyle = P.hairBlack;
+  ellipse(ctx, cx, chinY + s * 0.012, headRX * 0.38, headRY * 0.22); ctx.fill();
+
+  // ── Head ──
+  ctx.fillStyle = 'rgba(0,0,0,0.30)';
+  ellipse(ctx, cx + s * 0.012, headCY + s * 0.012, headRX, headRY); ctx.fill();
+  ctx.fillStyle = P.skinDark;
+  ellipse(ctx, cx, headCY, headRX, headRY); ctx.fill();
+  ctx.strokeStyle = P.outline; ctx.lineWidth = Math.max(1.5, s * 0.022); ctx.stroke();
+  // forehead plane highlight
   ctx.fillStyle = '#4a2810';
-  ellipse(ctx, cx, headCY - headRY * 0.25, headRX * 0.62, headRY * 0.36);
-  ctx.fill();
+  ellipse(ctx, cx, headCY - headRY * 0.24, headRX * 0.60, headRY * 0.34); ctx.fill();
 
   // Ears
   for (const sign of [-1, 1]) {
     ctx.fillStyle = P.skinDark;
-    ellipse(ctx, cx + sign * headRX * 0.95, headCY + headRY * 0.08,
-            headRX * 0.10, headRY * 0.13);
-    ctx.fill();
+    ellipse(ctx, cx + sign * headRX * 0.95, headCY + headRY * 0.06, headRX * 0.10, headRY * 0.13); ctx.fill();
     ctx.strokeStyle = P.outline; ctx.lineWidth = Math.max(1, s * 0.014); ctx.stroke();
   }
 
-  // ── Dreadlocks ──
-  // Locks hang from behind the tam down to shoulder level.
-  // Painted BEHIND the shoulders, in front of the frame.
-  const lockColors = [P.hairBlack, P.hairBrown, P.hairBlack, '#241408', P.hairBlack];
-  const lockPositions = [-0.72, -0.42, -0.08, 0.28, 0.58]; // relative to headRX, left side
-  const lockY0 = headCY - headRY * 0.48;
-  const lockBot = neckBaseY + s * 0.08;
-  for (let i = 0; i < lockPositions.length; i++) {
-    const lx = cx + lockPositions[i] * headRX * 1.18;
-    const lw = s * 0.038 + (i % 2) * s * 0.008;
-    ctx.fillStyle = lockColors[i % lockColors.length];
-    ctx.beginPath();
-    ctx.moveTo(lx - lw / 2, lockY0);
-    ctx.quadraticCurveTo(lx - lw * 0.8, (lockY0 + lockBot) / 2, lx - lw * 0.4, lockBot);
-    ctx.lineTo(lx + lw * 0.4, lockBot);
-    ctx.quadraticCurveTo(lx + lw * 0.8, (lockY0 + lockBot) / 2, lx + lw / 2, lockY0);
-    ctx.closePath();
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.lineWidth = Math.max(1, s * 0.010); ctx.stroke();
-  }
-
-  // ── Rasta tam / crown ──
-  // Knitted crown of red, gold, green bands sitting high on the head.
-  const tamBotY = headCY - headRY * 0.40;
-  const tamTopY = headCY - headRY * 1.28;
-  const tamW    = headRX * 1.08;
-
-  // Main tam dome (green base)
+  // ── Rasta tam / crown — red/gold/green knit dome on top of the head ──
+  const tamBotY = headCY - headRY * 0.34;
+  const tamTopY = headCY - headRY * 1.18;
+  const tamW    = headRX * 1.12;
   ctx.fillStyle = P.rastGreen;
   ctx.beginPath();
   ctx.ellipse(cx, tamBotY, tamW, (tamBotY - tamTopY) * 0.55, 0, 0, Math.PI * 2);
   ctx.fill();
-
-  // Tam ribbing bands (red → gold → green from bottom to top)
   const bands = [
     { y0: 0.0, y1: 0.30, col: P.rastRed,   dark: P.rastRedDark },
     { y0: 0.30, y1: 0.60, col: P.rastGold,  dark: P.rastGoldDark },
@@ -487,45 +493,27 @@ function _drawRasta(ctx, size) {
     const bry = (by1 - by0) / 2;
     const brx = tamW * (0.60 + 0.40 * (1 - b.y0));
     ctx.fillStyle = b.col;
-    ctx.beginPath();
-    ctx.ellipse(cx, bcy, brx, bry, 0, 0, Math.PI * 2);
-    ctx.fill();
-    // rib shadow
+    ctx.beginPath(); ctx.ellipse(cx, bcy, brx, bry, 0, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = b.dark;
-    ctx.beginPath();
-    ctx.ellipse(cx, bcy + bry * 0.3, brx * 0.92, bry * 0.35, 0, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.beginPath(); ctx.ellipse(cx, bcy + bry * 0.3, brx * 0.92, bry * 0.35, 0, 0, Math.PI * 2); ctx.fill();
   }
-
-  // Tam brim fold (gold)
+  // brim fold + outline
   ctx.fillStyle = P.rastGold;
-  ctx.beginPath();
-  ctx.ellipse(cx, tamBotY, tamW, tamH * 0.12, 0, 0, Math.PI * 2);
-  ctx.fill();
+  ctx.beginPath(); ctx.ellipse(cx, tamBotY, tamW, tamH * 0.12, 0, 0, Math.PI * 2); ctx.fill();
   ctx.strokeStyle = P.outline; ctx.lineWidth = Math.max(1.5, s * 0.018); ctx.stroke();
-
-  // Tam outline
   ctx.strokeStyle = P.outline; ctx.lineWidth = Math.max(1.5, s * 0.022);
   ctx.beginPath();
   ctx.ellipse(cx, tamBotY, tamW, (tamBotY - tamTopY) * 0.55, 0, 0, Math.PI * 2);
   ctx.stroke();
 
   // ── face features ──
-  const eyeY    = headCY + headRY * 0.00;
+  const eyeY    = headCY + headRY * 0.04;
   const eyeSpan = headRX * 0.84;
-  const eyeR    = s * 0.042;
-
-  // eyebrows — calm, level (serenity)
+  const eyeR    = s * 0.040;
   _eyebrows(ctx, cx, eyeY - eyeR * 1.5, eyeSpan, eyeR, P.hairBlack, 0.15);
-
-  // Eyes — calm, half-lidded look (warm dark brown)
   _eyes(ctx, cx, eyeY, eyeSpan, eyeR, '#3a1a08');
-
-  // Nose (broad, gentle)
   _nose(ctx, cx, eyeY + eyeR * 2.2, s);
-
-  // Mouth — gentle closed-lip smile, warm
-  _mouth(ctx, cx, eyeY + eyeR * 4.0, s * 0.18, '#5a2a10', s * 0.012);
+  _mouth(ctx, cx, eyeY + eyeR * 3.9, s * 0.17, '#5a2a10', s * 0.012);
 
   // ── name label ──
   ctx.fillStyle = P.rastGreen;
