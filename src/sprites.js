@@ -9,10 +9,10 @@ export function drawEntity(ctx, type, sx, sy, size, seed = 0.137, value = 1) {
     case 'slick': slick(ctx, sx, sy, s, seed); break;
     case 'flood': slick(ctx, sx, sy, s * 1.3, seed, 'rgba(90,110,90,0.55)'); break;
     case 'bump': roundedBar(ctx, sx, sy, s * 1.4, s * 0.3, '#8a8a8a'); break;
-    case 'goat': blob(ctx, sx, sy, s * 0.6, '#d8c7b0', '#6b5a3a'); break;
-    case 'dog': blob(ctx, sx, sy, s * 0.5, '#9a7a4a', '#5a4326'); break;
-    case 'cat': blob(ctx, sx, sy, s * 0.34, '#5a5a5a', '#333333'); break;
-    case 'cattle': blob(ctx, sx, sy, s * 0.85, '#5a4636', '#2f261d'); break;
+    case 'goat': drawGoat(ctx, sx, sy, s * 0.6); break;
+    case 'dog': drawDog(ctx, sx, sy, s * 0.5); break;
+    case 'cat': drawCat(ctx, sx, sy, s * 0.34); break;
+    case 'cattle': drawCattle(ctx, sx, sy, s * 0.85); break;
     // route taxi: a white Probox-shape car with the tell-tale RED PP plate
     case 'taxi': carRear(ctx, sx, sy, s, '#eef0f2', '#c0392b'); break;
     case 'bus': vehicle(ctx, sx, sy, s * 1.35, '#e7c84a'); break;
@@ -97,6 +97,25 @@ function slick(ctx, x, y, size, seed, color = 'rgba(60,80,120,0.5)') {
 }
 
 // ---- shared shape helpers
+
+// Lighten (+) or darken (-) a hex colour by fraction (0..1)
+function shadeColor(hex, frac) {
+  const n = parseInt(hex.replace('#', ''), 16);
+  const r = Math.min(255, Math.max(0, Math.round(((n >> 16) & 0xff) + 255 * frac)));
+  const g = Math.min(255, Math.max(0, Math.round(((n >> 8) & 0xff) + 255 * frac)));
+  const b = Math.min(255, Math.max(0, Math.round((n & 0xff) + 255 * frac)));
+  return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
+}
+
+// ctx.roundRect polyfill for environments that lack it (falls back to rrect)
+function roundRectPath(ctx, x, y, w, h, r) {
+  if (typeof ctx.roundRect === 'function') {
+    ctx.beginPath(); ctx.roundRect(x, y, w, h, r);
+  } else {
+    rrect(ctx, x, y, w, h, r);
+  }
+}
+
 function mulberry32(a) {
   return function () {
     a |= 0; a = (a + 0x6D2B79F5) | 0;
@@ -155,7 +174,245 @@ function money(ctx, x, y, s, value) {
 function roundedBar(ctx, x, y, w, h, fill) {
   ctx.fillStyle = fill; ctx.fillRect(x - w / 2, y - h, w, h);
 }
+// ---- animal figures — 12-bit lift ----
+
+// Goat: pale tan, two thin legs, oval body, stubby neck+head, two horn nubs, chin tuft
+function drawGoat(ctx, x, y, r) {
+  const mid = '#d8c7b0', shadow = '#b09878', hi = '#f0e8d8', dark = '#6b5a3a';
+  const by = y - r * 0.18; // body centre y
+
+  // thin legs (two pairs, slightly splayed)
+  ctx.strokeStyle = dark; ctx.lineWidth = Math.max(1.5, r * 0.18); ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(x - r * 0.45, by + r * 0.28); ctx.lineTo(x - r * 0.42, y + r * 0.08);
+  ctx.moveTo(x - r * 0.15, by + r * 0.28); ctx.lineTo(x - r * 0.12, y + r * 0.08);
+  ctx.moveTo(x + r * 0.15, by + r * 0.28); ctx.lineTo(x + r * 0.18, y + r * 0.08);
+  ctx.moveTo(x + r * 0.45, by + r * 0.28); ctx.lineTo(x + r * 0.48, y + r * 0.08);
+  ctx.stroke();
+
+  // body — base fill
+  ctx.beginPath(); ctx.ellipse(x, by, r * 0.72, r * 0.38, 0, 0, Math.PI * 2);
+  ctx.fillStyle = mid; ctx.fill();
+  // shadow underside
+  ctx.beginPath(); ctx.ellipse(x, by + r * 0.12, r * 0.65, r * 0.2, 0, 0, Math.PI * 2);
+  ctx.fillStyle = shadow; ctx.fill();
+  // highlight top
+  ctx.beginPath(); ctx.ellipse(x - r * 0.1, by - r * 0.1, r * 0.38, r * 0.14, -0.3, 0, Math.PI * 2);
+  ctx.fillStyle = hi; ctx.fill();
+
+  // tail (short flick to the right)
+  ctx.strokeStyle = shadow; ctx.lineWidth = Math.max(1, r * 0.13);
+  ctx.beginPath(); ctx.moveTo(x + r * 0.68, by - r * 0.08);
+  ctx.quadraticCurveTo(x + r * 0.92, by - r * 0.32, x + r * 0.82, by - r * 0.46); ctx.stroke();
+
+  // neck + head
+  const hx = x - r * 0.55, hy = by - r * 0.55;
+  ctx.beginPath(); ctx.ellipse(hx, hy + r * 0.12, r * 0.18, r * 0.26, -0.4, 0, Math.PI * 2);
+  ctx.fillStyle = mid; ctx.fill();
+  ctx.beginPath(); ctx.arc(hx - r * 0.08, hy - r * 0.1, r * 0.22, 0, Math.PI * 2);
+  ctx.fillStyle = mid; ctx.fill();
+  // head shadow
+  ctx.beginPath(); ctx.arc(hx, hy - r * 0.02, r * 0.14, 0, Math.PI * 2);
+  ctx.fillStyle = shadow; ctx.fill();
+  // eye
+  ctx.beginPath(); ctx.arc(hx - r * 0.14, hy - r * 0.14, Math.max(1, r * 0.06), 0, Math.PI * 2);
+  ctx.fillStyle = '#1a1008'; ctx.fill();
+  // nostril
+  ctx.beginPath(); ctx.arc(hx - r * 0.24, hy - r * 0.06, Math.max(1, r * 0.04), 0, Math.PI * 2);
+  ctx.fillStyle = dark; ctx.fill();
+  // horns (two small nubs pointing back-up)
+  ctx.strokeStyle = '#9a8a60'; ctx.lineWidth = Math.max(1.5, r * 0.1);
+  ctx.beginPath();
+  ctx.moveTo(hx - r * 0.04, hy - r * 0.28); ctx.lineTo(hx + r * 0.06, hy - r * 0.48);
+  ctx.moveTo(hx + r * 0.1, hy - r * 0.26); ctx.lineTo(hx + r * 0.22, hy - r * 0.44);
+  ctx.stroke();
+  // chin tuft
+  ctx.strokeStyle = shadow; ctx.lineWidth = Math.max(1, r * 0.08);
+  ctx.beginPath(); ctx.moveTo(hx - r * 0.2, hy - r * 0.04); ctx.lineTo(hx - r * 0.24, hy + r * 0.1); ctx.stroke();
+}
+
+// Cattle: dark brown, wide body, broad head, short swept horns, large muzzle
+function drawCattle(ctx, x, y, r) {
+  const mid = '#6b4a30', shadow = '#3d2618', hi = '#9a6a48', muzzle = '#8a6050';
+  const by = y - r * 0.22;
+
+  // legs (stockier than goat)
+  ctx.strokeStyle = shadow; ctx.lineWidth = Math.max(2, r * 0.22); ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(x - r * 0.5, by + r * 0.32); ctx.lineTo(x - r * 0.48, y + r * 0.06);
+  ctx.moveTo(x - r * 0.18, by + r * 0.32); ctx.lineTo(x - r * 0.16, y + r * 0.06);
+  ctx.moveTo(x + r * 0.18, by + r * 0.32); ctx.lineTo(x + r * 0.2, y + r * 0.06);
+  ctx.moveTo(x + r * 0.5, by + r * 0.32); ctx.lineTo(x + r * 0.52, y + r * 0.06);
+  ctx.stroke();
+
+  // large body
+  ctx.beginPath(); ctx.ellipse(x, by, r * 0.82, r * 0.44, 0, 0, Math.PI * 2);
+  ctx.fillStyle = mid; ctx.fill();
+  // shadow belly
+  ctx.beginPath(); ctx.ellipse(x, by + r * 0.18, r * 0.72, r * 0.22, 0, 0, Math.PI * 2);
+  ctx.fillStyle = shadow; ctx.fill();
+  // highlight ridge top
+  ctx.beginPath(); ctx.ellipse(x - r * 0.05, by - r * 0.14, r * 0.45, r * 0.14, -0.2, 0, Math.PI * 2);
+  ctx.fillStyle = hi; ctx.fill();
+
+  // tail (long flick right)
+  ctx.strokeStyle = shadow; ctx.lineWidth = Math.max(1, r * 0.12);
+  ctx.beginPath(); ctx.moveTo(x + r * 0.78, by);
+  ctx.quadraticCurveTo(x + r * 1.08, by + r * 0.14, x + r * 1.0, by + r * 0.44); ctx.stroke();
+  ctx.beginPath(); ctx.arc(x + r * 1.0, by + r * 0.52, r * 0.1, 0, Math.PI * 2);
+  ctx.fillStyle = shadow; ctx.fill();
+
+  // neck + broad head
+  const hx = x - r * 0.72, hy = by - r * 0.46;
+  ctx.beginPath(); ctx.ellipse(hx + r * 0.12, hy + r * 0.24, r * 0.22, r * 0.3, -0.3, 0, Math.PI * 2);
+  ctx.fillStyle = mid; ctx.fill();
+  // head (wider oval)
+  ctx.beginPath(); ctx.ellipse(hx, hy, r * 0.3, r * 0.26, 0, 0, Math.PI * 2);
+  ctx.fillStyle = mid; ctx.fill();
+  // head shadow
+  ctx.beginPath(); ctx.ellipse(hx + r * 0.06, hy + r * 0.06, r * 0.2, r * 0.16, 0, 0, Math.PI * 2);
+  ctx.fillStyle = shadow; ctx.fill();
+  // muzzle block
+  ctx.beginPath(); ctx.ellipse(hx - r * 0.18, hy + r * 0.06, r * 0.16, r * 0.12, 0, 0, Math.PI * 2);
+  ctx.fillStyle = muzzle; ctx.fill();
+  // nostrils
+  ctx.fillStyle = shadow;
+  ctx.beginPath(); ctx.arc(hx - r * 0.24, hy + r * 0.04, Math.max(1, r * 0.05), 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(hx - r * 0.14, hy + r * 0.06, Math.max(1, r * 0.05), 0, Math.PI * 2); ctx.fill();
+  // eye
+  ctx.beginPath(); ctx.arc(hx - r * 0.08, hy - r * 0.12, Math.max(1.5, r * 0.08), 0, Math.PI * 2);
+  ctx.fillStyle = '#120a04'; ctx.fill();
+  ctx.beginPath(); ctx.arc(hx - r * 0.1, hy - r * 0.14, Math.max(0.5, r * 0.03), 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.fill();
+  // horns (swept outward)
+  ctx.strokeStyle = '#c8a870'; ctx.lineWidth = Math.max(1.5, r * 0.12); ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(hx + r * 0.06, hy - r * 0.22);
+  ctx.quadraticCurveTo(hx - r * 0.08, hy - r * 0.52, hx - r * 0.28, hy - r * 0.44);
+  ctx.moveTo(hx + r * 0.22, hy - r * 0.2);
+  ctx.quadraticCurveTo(hx + r * 0.36, hy - r * 0.5, hx + r * 0.54, hy - r * 0.42);
+  ctx.stroke();
+}
+
+// Dog: medium brown, floppy ear, wagging tail, four legs, alert head
+function drawDog(ctx, x, y, r) {
+  const mid = '#9a7a4a', shadow = '#5a3c20', hi = '#c8a870', nose = '#2a1a0a';
+  const by = y - r * 0.16;
+
+  // legs
+  ctx.strokeStyle = shadow; ctx.lineWidth = Math.max(1.5, r * 0.19); ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(x - r * 0.4, by + r * 0.26); ctx.lineTo(x - r * 0.38, y + r * 0.06);
+  ctx.moveTo(x - r * 0.12, by + r * 0.28); ctx.lineTo(x - r * 0.1, y + r * 0.06);
+  ctx.moveTo(x + r * 0.12, by + r * 0.26); ctx.lineTo(x + r * 0.14, y + r * 0.06);
+  ctx.moveTo(x + r * 0.38, by + r * 0.26); ctx.lineTo(x + r * 0.4, y + r * 0.06);
+  ctx.stroke();
+
+  // body
+  ctx.beginPath(); ctx.ellipse(x, by, r * 0.58, r * 0.34, 0, 0, Math.PI * 2);
+  ctx.fillStyle = mid; ctx.fill();
+  // belly shadow
+  ctx.beginPath(); ctx.ellipse(x, by + r * 0.12, r * 0.5, r * 0.16, 0, 0, Math.PI * 2);
+  ctx.fillStyle = shadow; ctx.fill();
+  // back highlight
+  ctx.beginPath(); ctx.ellipse(x - r * 0.08, by - r * 0.1, r * 0.3, r * 0.1, -0.2, 0, Math.PI * 2);
+  ctx.fillStyle = hi; ctx.fill();
+
+  // tail (curled upward to the right)
+  ctx.strokeStyle = mid; ctx.lineWidth = Math.max(1.5, r * 0.14); ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(x + r * 0.56, by - r * 0.06);
+  ctx.quadraticCurveTo(x + r * 0.84, by - r * 0.3, x + r * 0.72, by - r * 0.56); ctx.stroke();
+
+  // head
+  const hx = x - r * 0.5, hy = by - r * 0.48;
+  ctx.beginPath(); ctx.arc(hx, hy, r * 0.26, 0, Math.PI * 2);
+  ctx.fillStyle = mid; ctx.fill();
+  // head shadow side
+  ctx.beginPath(); ctx.arc(hx + r * 0.06, hy + r * 0.06, r * 0.16, 0, Math.PI * 2);
+  ctx.fillStyle = shadow; ctx.fill();
+  // head highlight
+  ctx.beginPath(); ctx.arc(hx - r * 0.1, hy - r * 0.1, r * 0.1, 0, Math.PI * 2);
+  ctx.fillStyle = hi; ctx.fill();
+  // floppy ear
+  ctx.beginPath();
+  ctx.ellipse(hx + r * 0.14, hy + r * 0.14, r * 0.13, r * 0.22, 0.5, 0, Math.PI * 2);
+  ctx.fillStyle = shadow; ctx.fill();
+  // muzzle / snout
+  ctx.beginPath(); ctx.ellipse(hx - r * 0.18, hy + r * 0.06, r * 0.15, r * 0.1, 0, 0, Math.PI * 2);
+  ctx.fillStyle = '#7a5a30'; ctx.fill();
+  // nose
+  ctx.beginPath(); ctx.arc(hx - r * 0.24, hy + r * 0.02, Math.max(1.5, r * 0.07), 0, Math.PI * 2);
+  ctx.fillStyle = nose; ctx.fill();
+  // eye
+  ctx.beginPath(); ctx.arc(hx - r * 0.1, hy - r * 0.1, Math.max(1.5, r * 0.07), 0, Math.PI * 2);
+  ctx.fillStyle = nose; ctx.fill();
+  ctx.beginPath(); ctx.arc(hx - r * 0.12, hy - r * 0.12, Math.max(0.5, r * 0.03), 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.fill();
+}
+
+// Cat: small grey, pointy ears, long tail, delicate limbs, slit eyes
+function drawCat(ctx, x, y, r) {
+  const mid = '#7a7a7a', shadow = '#3a3a3a', hi = '#b4b4b4', nose = '#c87080';
+  const by = y - r * 0.12;
+
+  // delicate legs
+  ctx.strokeStyle = shadow; ctx.lineWidth = Math.max(1, r * 0.15); ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(x - r * 0.35, by + r * 0.22); ctx.lineTo(x - r * 0.34, y + r * 0.06);
+  ctx.moveTo(x - r * 0.1, by + r * 0.24); ctx.lineTo(x - r * 0.09, y + r * 0.06);
+  ctx.moveTo(x + r * 0.1, by + r * 0.22); ctx.lineTo(x + r * 0.11, y + r * 0.06);
+  ctx.moveTo(x + r * 0.35, by + r * 0.22); ctx.lineTo(x + r * 0.36, y + r * 0.06);
+  ctx.stroke();
+
+  // body
+  ctx.beginPath(); ctx.ellipse(x, by, r * 0.44, r * 0.28, 0, 0, Math.PI * 2);
+  ctx.fillStyle = mid; ctx.fill();
+  // belly shadow
+  ctx.beginPath(); ctx.ellipse(x, by + r * 0.1, r * 0.36, r * 0.12, 0, 0, Math.PI * 2);
+  ctx.fillStyle = shadow; ctx.fill();
+  // back highlight
+  ctx.beginPath(); ctx.ellipse(x - r * 0.06, by - r * 0.08, r * 0.22, r * 0.08, -0.2, 0, Math.PI * 2);
+  ctx.fillStyle = hi; ctx.fill();
+
+  // long curving tail
+  ctx.strokeStyle = mid; ctx.lineWidth = Math.max(1, r * 0.12); ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(x + r * 0.42, by + r * 0.04);
+  ctx.bezierCurveTo(x + r * 0.72, by + r * 0.12, x + r * 0.84, by - r * 0.56, x + r * 0.58, by - r * 0.68);
+  ctx.stroke();
+
+  // head
+  const hx = x - r * 0.44, hy = by - r * 0.42;
+  ctx.beginPath(); ctx.arc(hx, hy, r * 0.24, 0, Math.PI * 2);
+  ctx.fillStyle = mid; ctx.fill();
+  // head shadow
+  ctx.beginPath(); ctx.arc(hx + r * 0.06, hy + r * 0.06, r * 0.14, 0, Math.PI * 2);
+  ctx.fillStyle = shadow; ctx.fill();
+  // head highlight
+  ctx.beginPath(); ctx.arc(hx - r * 0.08, hy - r * 0.1, r * 0.09, 0, Math.PI * 2);
+  ctx.fillStyle = hi; ctx.fill();
+  // pointy ears
+  ctx.fillStyle = mid;
+  ctx.beginPath(); ctx.moveTo(hx - r * 0.14, hy - r * 0.2); ctx.lineTo(hx - r * 0.22, hy - r * 0.44); ctx.lineTo(hx - r * 0.02, hy - r * 0.3); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(hx + r * 0.08, hy - r * 0.2); ctx.lineTo(hx + r * 0.12, hy - r * 0.42); ctx.lineTo(hx + r * 0.24, hy - r * 0.26); ctx.closePath(); ctx.fill();
+  // inner ear pink
+  ctx.fillStyle = '#c87090';
+  ctx.beginPath(); ctx.moveTo(hx - r * 0.13, hy - r * 0.23); ctx.lineTo(hx - r * 0.18, hy - r * 0.36); ctx.lineTo(hx - r * 0.05, hy - r * 0.28); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(hx + r * 0.1, hy - r * 0.22); ctx.lineTo(hx + r * 0.13, hy - r * 0.34); ctx.lineTo(hx + r * 0.2, hy - r * 0.28); ctx.closePath(); ctx.fill();
+  // nose (small pink triangle)
+  ctx.fillStyle = nose;
+  ctx.beginPath(); ctx.moveTo(hx - r * 0.18, hy + r * 0.05); ctx.lineTo(hx - r * 0.22, hy + r * 0.12); ctx.lineTo(hx - r * 0.14, hy + r * 0.12); ctx.closePath(); ctx.fill();
+  // slit eyes
+  ctx.fillStyle = '#1a1a1a';
+  ctx.beginPath(); ctx.ellipse(hx - r * 0.08, hy - r * 0.08, r * 0.07, r * 0.04, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(hx + r * 0.08, hy - r * 0.06, r * 0.07, r * 0.04, 0, 0, Math.PI * 2); ctx.fill();
+  // eye shine
+  ctx.fillStyle = 'rgba(255,255,255,0.55)';
+  ctx.beginPath(); ctx.arc(hx - r * 0.06, hy - r * 0.1, Math.max(0.5, r * 0.03), 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(hx + r * 0.1, hy - r * 0.08, Math.max(0.5, r * 0.03), 0, Math.PI * 2); ctx.fill();
+}
+
 function blob(ctx, x, y, r, body, leg) {
+  // legacy fallback — no longer used for named types
   ctx.fillStyle = leg; ctx.fillRect(x - r * 0.5, y - r * 0.5, r, r * 0.6);
   ctx.beginPath(); ctx.ellipse(x, y - r * 0.6, r, r * 0.6, 0, 0, Math.PI * 2);
   ctx.fillStyle = body; ctx.fill();
@@ -194,24 +451,132 @@ function rrect(ctx, x, y, w, h, r) {
   ctx.arcTo(x, y, x + w, y, r);
   ctx.closePath();
 }
+// Person (jaywalker / hustler) — 12-bit lift: rounded head, visible torso/legs/arms
 function person(ctx, x, y, s, color) {
-  ctx.fillStyle = color; ctx.fillRect(x - s * 0.2, y - s, s * 0.4, s * 0.8);
-  ctx.beginPath(); ctx.arc(x, y - s, s * 0.22, 0, Math.PI * 2);
-  ctx.fillStyle = '#6b4a2a'; ctx.fill();
+  const skin = '#7a5030', skinHi = '#a87050', skinShadow = '#4a2e14';
+  const shade = shadeColor(color, -0.35), hi = shadeColor(color, 0.3);
+
+  // legs (two distinct columns, slightly apart)
+  ctx.fillStyle = shade;
+  ctx.fillRect(x - s * 0.16, y - s * 0.38, s * 0.12, s * 0.38);
+  ctx.fillRect(x + s * 0.04, y - s * 0.38, s * 0.12, s * 0.38);
+  // trouser highlight
+  ctx.fillStyle = color;
+  ctx.fillRect(x - s * 0.14, y - s * 0.37, s * 0.04, s * 0.3);
+  ctx.fillRect(x + s * 0.06, y - s * 0.37, s * 0.04, s * 0.3);
+
+  // torso — base
+  ctx.fillStyle = color;
+  ctx.beginPath(); ctx.roundRect(x - s * 0.2, y - s * 0.88, s * 0.4, s * 0.52, s * 0.06); ctx.fill();
+  // torso shadow (right side)
+  ctx.fillStyle = shade;
+  ctx.beginPath(); ctx.roundRect(x + s * 0.04, y - s * 0.86, s * 0.14, s * 0.48, s * 0.04); ctx.fill();
+  // torso highlight (left edge)
+  ctx.fillStyle = hi;
+  ctx.beginPath(); ctx.roundRect(x - s * 0.18, y - s * 0.86, s * 0.08, s * 0.44, s * 0.04); ctx.fill();
+
+  // arms (dangling to each side, slightly bent)
+  ctx.strokeStyle = skin; ctx.lineWidth = Math.max(2, s * 0.1); ctx.lineCap = 'round';
+  // left arm
+  ctx.beginPath();
+  ctx.moveTo(x - s * 0.18, y - s * 0.82);
+  ctx.quadraticCurveTo(x - s * 0.36, y - s * 0.6, x - s * 0.28, y - s * 0.42);
+  ctx.stroke();
+  // right arm
+  ctx.beginPath();
+  ctx.moveTo(x + s * 0.18, y - s * 0.82);
+  ctx.quadraticCurveTo(x + s * 0.36, y - s * 0.6, x + s * 0.28, y - s * 0.42);
+  ctx.stroke();
+
+  // neck
+  ctx.fillStyle = skin;
+  ctx.fillRect(x - s * 0.07, y - s * 1.02, s * 0.14, s * 0.18);
+
+  // head (round)
+  ctx.beginPath(); ctx.arc(x, y - s * 1.08, s * 0.22, 0, Math.PI * 2);
+  ctx.fillStyle = skin; ctx.fill();
+  // head highlight
+  ctx.beginPath(); ctx.arc(x - s * 0.07, y - s * 1.14, s * 0.1, 0, Math.PI * 2);
+  ctx.fillStyle = skinHi; ctx.fill();
+  // head shadow
+  ctx.beginPath(); ctx.arc(x + s * 0.07, y - s * 1.04, s * 0.1, 0, Math.PI * 2);
+  ctx.fillStyle = skinShadow; ctx.fill();
+  // eyes (two small dots)
+  ctx.fillStyle = '#1a0a04';
+  ctx.beginPath(); ctx.arc(x - s * 0.08, y - s * 1.1, Math.max(1, s * 0.04), 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(x + s * 0.04, y - s * 1.1, Math.max(1, s * 0.04), 0, Math.PI * 2); ctx.fill();
 }
 // Windscreen youth: stands in the road, raised arm, soapy can throwing a misty
 // spray of droplets overhead — the "forced wash" hustle at the stop-light.
+// 12-bit lift: shaded torso, visible legs, shorts, arm anatomy kept, spray preserved.
 function wiperYouth(ctx, x, y, s, seed) {
   const rnd = mulberry32(Math.floor((seed || 0.3) * 2147483647) ^ 0x71c5);
-  // body + head
-  ctx.fillStyle = '#3f8aa8'; ctx.fillRect(x - s * 0.2, y - s, s * 0.4, s * 0.8);
-  ctx.fillStyle = '#2a2a2a'; ctx.fillRect(x - s * 0.18, y - s * 0.25, s * 0.36, s * 0.3); // shorts
-  ctx.beginPath(); ctx.arc(x, y - s, s * 0.22, 0, Math.PI * 2); ctx.fillStyle = '#6b4a2a'; ctx.fill();
-  // raised arm + soapy can
-  ctx.strokeStyle = '#6b4a2a'; ctx.lineWidth = s * 0.12; ctx.lineCap = 'round';
-  ctx.beginPath(); ctx.moveTo(x + s * 0.12, y - s * 0.85); ctx.lineTo(x + s * 0.4, y - s * 1.25); ctx.stroke();
-  ctx.fillStyle = '#b9c2c8'; ctx.fillRect(x + s * 0.34, y - s * 1.38, s * 0.16, s * 0.22); // can
-  // misty soapy spray fanning above
+  const shirt = '#3f8aa8', shirtShadow = '#1f5a70', shirtHi = '#7ac0d8';
+  const shorts = '#2a2a2a', shortsShadow = '#161616';
+  const skin = '#7a5030', skinHi = '#a87050', skinShadow = '#4a2e14';
+
+  // legs (bare — short shorts)
+  ctx.fillStyle = skin;
+  ctx.fillRect(x - s * 0.14, y - s * 0.32, s * 0.1, s * 0.32);
+  ctx.fillRect(x + s * 0.04, y - s * 0.32, s * 0.1, s * 0.32);
+  // leg shadow inward
+  ctx.fillStyle = skinShadow;
+  ctx.fillRect(x - s * 0.04, y - s * 0.3, s * 0.04, s * 0.28);
+  ctx.fillRect(x + s * 0.1, y - s * 0.3, s * 0.04, s * 0.28);
+
+  // shorts
+  ctx.fillStyle = shorts;
+  ctx.beginPath(); ctx.roundRect(x - s * 0.18, y - s * 0.36, s * 0.36, s * 0.14, s * 0.04); ctx.fill();
+  ctx.fillStyle = shortsShadow;
+  ctx.fillRect(x + s * 0.04, y - s * 0.35, s * 0.12, s * 0.1);
+
+  // torso / shirt — base
+  ctx.fillStyle = shirt;
+  ctx.beginPath(); ctx.roundRect(x - s * 0.2, y - s * 0.88, s * 0.4, s * 0.54, s * 0.06); ctx.fill();
+  // shirt shadow right
+  ctx.fillStyle = shirtShadow;
+  ctx.beginPath(); ctx.roundRect(x + s * 0.04, y - s * 0.86, s * 0.14, s * 0.5, s * 0.04); ctx.fill();
+  // shirt highlight left
+  ctx.fillStyle = shirtHi;
+  ctx.beginPath(); ctx.roundRect(x - s * 0.17, y - s * 0.86, s * 0.08, s * 0.46, s * 0.04); ctx.fill();
+
+  // lowered left arm (loose, at side)
+  ctx.strokeStyle = skin; ctx.lineWidth = Math.max(2, s * 0.1); ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(x - s * 0.17, y - s * 0.8);
+  ctx.quadraticCurveTo(x - s * 0.3, y - s * 0.56, x - s * 0.22, y - s * 0.4);
+  ctx.stroke();
+
+  // raised right arm holding can
+  ctx.strokeStyle = skin; ctx.lineWidth = Math.max(2, s * 0.11);
+  ctx.beginPath();
+  ctx.moveTo(x + s * 0.14, y - s * 0.82);
+  ctx.quadraticCurveTo(x + s * 0.34, y - s * 1.0, x + s * 0.42, y - s * 1.28);
+  ctx.stroke();
+
+  // soapy can (grey cylinder)
+  ctx.fillStyle = '#c0c8d0';
+  ctx.beginPath(); ctx.roundRect(x + s * 0.34, y - s * 1.44, s * 0.17, s * 0.24, s * 0.04); ctx.fill();
+  ctx.fillStyle = '#8a9aa8'; ctx.fillRect(x + s * 0.34, y - s * 1.34, s * 0.17, s * 0.1);
+  ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fillRect(x + s * 0.36, y - s * 1.42, s * 0.04, s * 0.18);
+
+  // neck
+  ctx.fillStyle = skin;
+  ctx.fillRect(x - s * 0.07, y - s * 1.02, s * 0.14, s * 0.18);
+
+  // head (round)
+  ctx.beginPath(); ctx.arc(x, y - s * 1.08, s * 0.22, 0, Math.PI * 2);
+  ctx.fillStyle = skin; ctx.fill();
+  ctx.beginPath(); ctx.arc(x - s * 0.07, y - s * 1.14, s * 0.1, 0, Math.PI * 2);
+  ctx.fillStyle = skinHi; ctx.fill();
+  ctx.beginPath(); ctx.arc(x + s * 0.07, y - s * 1.04, s * 0.1, 0, Math.PI * 2);
+  ctx.fillStyle = skinShadow; ctx.fill();
+  // eyes
+  ctx.fillStyle = '#1a0a04';
+  ctx.beginPath(); ctx.arc(x - s * 0.08, y - s * 1.1, Math.max(1, s * 0.04), 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(x + s * 0.04, y - s * 1.1, Math.max(1, s * 0.04), 0, Math.PI * 2); ctx.fill();
+
+  // misty soapy spray fanning above the can
   ctx.fillStyle = 'rgba(220,235,245,0.8)';
   for (let i = 0; i < 9; i++) {
     const dx = (rnd() - 0.5) * s * 0.9, dy = -s * (1.3 + rnd() * 0.7);

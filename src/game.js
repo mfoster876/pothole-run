@@ -33,6 +33,7 @@ import { purchaseAspiration, canBuy } from './aspirations.js';
 import { playCashPot } from './cashpot.js';
 import * as tithesScreen from './screens/tithes.js';
 import { blessingEffects, decayBlessing, offeringAmount, giveTithe } from './tithes.js';
+import { renderPortrait } from './portrait.js';
 
 const W = VIRTUAL.width, H = VIRTUAL.height;
 const GENRE_LABEL = { reggae: 'Reggae', ska: 'Ska', dancehall: 'Dancehall', hiphop: 'Hip-Hop' };
@@ -529,6 +530,9 @@ export function createGame(audio) {
     ctx.fillStyle = '#9fb8a3'; ctx.font = '500 14px "Courier New", monospace';
     ctx.fillText('ride: ' + veh.name + '  (change in Car Dealer)', W / 2, H * 0.345);
 
+    // Front-facing portrait of the selected driver (faces are never seen rear-view in play)
+    renderPortrait(ctx, menuChoice.character, W / 2, H * 0.475, 120);
+
     // STAGE
     button(ctx, BTN.stagePrev, '‹'); button(ctx, BTN.stageNext, '›');
     ctx.fillStyle = '#f4f1e6'; ctx.font = '700 26px "Courier New", monospace';
@@ -566,8 +570,10 @@ export function createGame(audio) {
   function renderGameOver(ctx) {
     ctx.fillStyle = '#0e1a12'; ctx.fillRect(0, 0, W, H);
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    // Front-facing portrait of the driver who just ran
+    renderPortrait(ctx, cart.character.id, W / 2, H * 0.15, 104);
     ctx.fillStyle = '#c0382c'; ctx.font = '700 60px "Courier New", monospace';
-    ctx.fillText('CART MASH UP!', W / 2, H * 0.3);
+    ctx.fillText('CART MASH UP!', W / 2, H * 0.32);
     ctx.fillStyle = '#cbe7cf'; ctx.font = '500 30px "Courier New", monospace';
     ctx.fillText(Math.floor(run.distance) + ' m   •   ' + formatMoney(run.coins), W / 2, H * 0.46);
     ctx.fillText('best: ' + (save.bests[stage.id] || 0) + ' m', W / 2, H * 0.54);
