@@ -1,19 +1,22 @@
 // src/screens/aspirations.js
-// The nine "outs" — the social-mobility ladder. Wave 1 stub: shows all aspirations
-// locked/coming soon with prices; purchase wired in Wave 2.
+// The nine "outs" — the social-mobility ladder.
+// ASPIRATIONS data lives in src/aspirations.js (no duplication here).
 import { formatMoney } from '../money.js';
+import { ASPIRATIONS, isAchieved, canBuy } from '../aspirations.js';
 
-export const ASPIRATIONS = [
-  { id: 'tithes',   name: 'Tithes & Offerings', price: 1500000,   blurb: 'Give faithful, build community.' },
-  { id: 'school',   name: 'Education',          price: 3000000,   blurb: 'A degree — the long road up.' },
-  { id: 'artist',   name: 'Visual Artist',      price: 4000000,   blurb: 'Studio, materials, first show.' },
-  { id: 'business', name: 'Open a Business',     price: 5000000,   blurb: 'Yuh own likkle shop.' },
-  { id: 'music',    name: 'Musician / Studio',   price: 6000000,   blurb: 'Book the studio, cut the riddim.' },
-  { id: 'migrate',  name: 'Migrate / Fly Weh',   price: 7000000,   blurb: 'Visa, ticket, a new start farin.' },
-  { id: 'farm',     name: 'Agriculture',         price: 10000000,  blurb: 'Land, seed, and sweat.' },
-  { id: 'hills',    name: 'House inna di Hills',  price: 50000000,  blurb: 'Uptown, gate and all.' },
-  { id: 'hotel',    name: 'Hotel / Beachfront',  price: 250000000, blurb: 'Sea in front, yours.' }
-];
+// Vignettes: bittersweet, 1–2 lines, Jamaican patois voice. Earned, a little
+// melancholy. Dramatise inequality — dignity, not mockery.
+const VIGNETTES = {
+  tithes:   'Yuh drop it in di plate knowing di roof still leak.\nGod see di struggle — yuh give anyway.',
+  school:   'Di pickney make it through. Graduation day fine.\nBut yuh still counting every dollar come August.',
+  artist:   'Dem spin yuh song pon radio Tuesday morning.\nRent still due Friday. Yuh smile anyway.',
+  business: 'Di sign lean against di wall, people call yuh Mr. now.\nBut yuh remember when yuh never know where supper coming from.',
+  music:    'Di riddim reach far — England, New York, somewhere cold.\nRoyalties letter come. It never quite reach yuh, but it reach.',
+  migrate:  'Ticket in yuh hand. Yard behind yuh getting smaller.\nYuh going, yes. But something — always, always — staying.',
+  farm:     'Di land produce. Table full fi di first time in a long while.\nYuh sit quiet. Yuh earn dis.',
+  hills:    'Yuh reach di heights. Di view pretty, yes.\nBut it remind yuh who never make it up here with yuh.',
+  hotel:    'Guests smile at di sea. Dem never know.\nYuh build dis place with blistered hands, one block at a time.'
+};
 
 function inRect(r, x, y) { return x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h; }
 
@@ -34,21 +37,20 @@ export function render(ctx, { save, W, H }) {
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillText('‹ HUB', back.x + back.w / 2, back.y + back.h / 2);
 
-  // List aspirations — scrollable if they overflow; for now lay them out vertically
+  // List aspirations — scrollable if they overflow; lay out vertically
   const rowH = (H * 0.78) / ASPIRATIONS.length;
   const startY = H * 0.195;
-  const achieved = (save.aspirations && save.aspirations.achieved) || [];
 
   for (let i = 0; i < ASPIRATIONS.length; i++) {
     const a = ASPIRATIONS[i];
-    const done = achieved.includes(a.id);
+    const done = isAchieved(save, a.id);
+    const affordable = canBuy(save, a.id);
     const ry = startY + i * rowH;
-    const canAfford = save.wallet >= a.price;
     const rx = W * 0.06, rw = W * 0.88, rh = rowH - 6;
 
-    ctx.fillStyle = done ? 'rgba(63,174,84,0.12)' : 'rgba(244,241,230,0.04)';
+    ctx.fillStyle = done ? 'rgba(63,174,84,0.12)' : affordable ? 'rgba(240,192,32,0.07)' : 'rgba(244,241,230,0.04)';
     ctx.fillRect(rx, ry, rw, rh);
-    ctx.strokeStyle = done ? '#3fae54' : '#3a4a3e'; ctx.lineWidth = 1;
+    ctx.strokeStyle = done ? '#3fae54' : affordable ? '#f0c020' : '#3a4a3e'; ctx.lineWidth = 1;
     ctx.strokeRect(rx, ry, rw, rh);
 
     // Name
@@ -66,12 +68,17 @@ export function render(ctx, { save, W, H }) {
     if (done) {
       ctx.fillStyle = '#3fae54'; ctx.font = '700 15px "Courier New", monospace';
       ctx.fillText('ACHIEVED ✓', rx + rw - 10, ry + rh / 2);
+    } else if (affordable) {
+      ctx.fillStyle = '#f0c020'; ctx.font = '700 15px "Courier New", monospace';
+      ctx.fillText(formatMoney(a.price), rx + rw - 10, ry + rh / 2 - 8);
+      ctx.fillStyle = '#f0c020'; ctx.font = '500 11px "Courier New", monospace';
+      ctx.fillText('BUY', rx + rw - 10, ry + rh / 2 + 8);
     } else {
-      ctx.fillStyle = canAfford ? '#f0c020' : '#5a7a5e';
+      ctx.fillStyle = '#5a7a5e';
       ctx.font = '700 15px "Courier New", monospace';
       ctx.fillText(formatMoney(a.price), rx + rw - 10, ry + rh / 2 - 8);
       ctx.fillStyle = '#5a6a5e'; ctx.font = '500 11px "Courier New", monospace';
-      ctx.fillText('coming soon', rx + rw - 10, ry + rh / 2 + 8);
+      ctx.fillText('need more', rx + rw - 10, ry + rh / 2 + 8);
     }
   }
 }
@@ -79,5 +86,21 @@ export function render(ctx, { save, W, H }) {
 export function hit(x, y, { W, H }) {
   const back = { x: 24, y: 18, w: 80, h: 36 };
   if (inRect(back, x, y)) return 'back';
-  return null; // All aspiration rows are locked in Wave 1
+
+  // Check aspiration rows — only affordable, unachieved ones are tappable
+  const rowH = (H * 0.78) / ASPIRATIONS.length;
+  const startY = H * 0.195;
+  const rx = W * 0.06, rw = W * 0.88;
+  for (let i = 0; i < ASPIRATIONS.length; i++) {
+    const a = ASPIRATIONS[i];
+    const ry = startY + i * rowH;
+    const rh = rowH - 6;
+    if (inRect({ x: rx, y: ry, w: rw, h: rh }, x, y)) {
+      // We can't check canBuy here without save; return the id and let game.js decide
+      return 'row:' + a.id;
+    }
+  }
+  return null;
 }
+
+export { VIGNETTES };
