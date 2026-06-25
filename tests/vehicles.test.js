@@ -16,17 +16,17 @@ test('vehicle ladder rises in price and the handcart is the free default', () =>
   assert.ok(!getVehicle('handcart').isCar && !getVehicle('bicycle').isCar && !getVehicle('yengyeng').isCar);
 });
 
-test('buying deducts coins, grants the ride, and refuses when too poor or owned', () => {
+test('buying deducts wallet, grants the ride, and refuses when too poor or owned', () => {
   const save = defaultSave();
   const probox = getVehicle('probox');
-  save.coins = probox.price - 1;
+  save.wallet = probox.price - 1;
   assert.equal(buyVehicle(save, probox), false, 'cannot afford');
-  save.coins = probox.price + 50;
+  save.wallet = probox.price + 50;
   assert.equal(buyVehicle(save, probox), true);
-  assert.equal(save.coins, 50);
+  assert.equal(save.wallet, 50);
   assert.ok(save.garage.includes('probox'));
   assert.equal(buyVehicle(save, probox), false, 'already owned, no double charge');
-  assert.equal(save.coins, 50);
+  assert.equal(save.wallet, 50);
 });
 
 test('selectVehicle only switches to an owned ride', () => {

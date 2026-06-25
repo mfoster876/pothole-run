@@ -14,14 +14,14 @@ test('stabilityBonus sums owned upgrades; nextUpgrade walks the ladder', () => {
   assert.equal(nextUpgrade(all), null); // fully upgraded
 });
 
-test('buyUpgrade deducts, grants, and refuses when poor or owned', () => {
+test('buyUpgrade deducts wallet, grants, and refuses when poor or owned', () => {
   const save = defaultSave();
   const u = STABILITY_UPGRADES[0];
-  save.coins = u.price - 1;
+  save.wallet = u.price - 1;
   assert.equal(buyUpgrade(save, u), false);
-  save.coins = u.price + 100;
+  save.wallet = u.price + 100;
   assert.equal(buyUpgrade(save, u), true);
-  assert.equal(save.coins, 100);
+  assert.equal(save.wallet, 100);
   assert.ok(save.upgrades.includes(u.id));
   assert.equal(buyUpgrade(save, u), false); // no double-buy
 });
