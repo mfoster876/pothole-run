@@ -809,13 +809,20 @@ In `src/run.js`: `createRun()` returns `{ distance: 0, coins: 0, combo: 0 }`. Im
       continue;
     }
 ```
-In the collectible branch, multiply by the combo:
+In the collectible branch, multiply by the combo. Replace the **entire** collectible
+block (keep `pickupValue` and the sliver-heal — only the value calc changes):
 ```js
+    if (info.collectible) {
       const mult = 1 + run.combo * COMBO.bonusPer;
       const value = Math.round((e.value || 1) * mult);
       run.coins += value;
+      cart.pickupValue = value;
+      cart.condition = repair(cart.condition, DAMAGE.repairPerCoin);
+    } else if (e.type === 'bump') {
 ```
-In the damage branch, reset: add `run.combo = 0;` after applying damage.
+(Task 16 later inserts a power-up routing line inside this same collectible block — do
+NOT add it now; `applyPowerup`/`effects` don't exist yet at Task 9.)
+In the damage branch, reset the combo: add `run.combo = 0;` after the `applyDamage` line.
 
 - [ ] **Step 4: Run it to verify it passes**
 
