@@ -114,7 +114,7 @@ export const NEGATIVE = { impairSecs: 4 };
 
 // Politician road tuning: his motorcade rolls on freshly-paved roads, so potholes and
 // manholes SPAWN far less (×potholeMult). They still hit at full damage when they do.
-// `cashBillChance` = odds each of his notes is the coveted $5000 (else a big note).
+// (His money is the mega-bill ladder — see pickPoliticianMoney in money.js.)
 // `bribe` — what the politician slips a cop on contact (never stopped, but it's a REAL
 // hit on his huge economy — can put even him in debt). `clearRoadsDur` — seconds the
 // bribed cop then clears the road ahead of all traffic/obstacles for him.
