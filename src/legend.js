@@ -47,8 +47,8 @@ const TRAITS = {
     cons:  ['Fragile cart, poor handling', 'Twitchy — wanders pon di road', 'Cash rare & hard to grab', 'Bleaching disfigures + burns yuh'],
   },
   politician: {
-    perks: ['Police wave yuh through (bribe)', 'Immune to people & roadkill', 'Paved roads — few potholes', 'Mega-bills $20k–$500k', 'Bottomless reserves — never debt'],
-    cons:  ['Potholes/manholes wreck yuh full force', 'Responsibilities drain yuh millions', 'Dodge di bills (voters, contractors)'],
+    perks: ['Police wave yuh through (bribe)', 'Immune to people & roadkill', 'Paved roads — few potholes', 'Mega-bills $20k–$500k', 'Best money draw — rakes it in'],
+    cons:  ['Potholes/manholes wreck yuh full force', 'Responsibilities drain yuh millions', 'Big bribes & bills CAN debt yuh', 'Dodge di bills (voters, contractors)'],
   },
   taximan: {
     perks: ['Most dexterous — top handling', 'Fast, high score ceiling', 'Bigger notes'],

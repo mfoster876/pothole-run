@@ -45,5 +45,5 @@ test('the Politician has his own perks: a cash bribe and a draining vice', () =>
   applyItem(fx, cart2, 'ladynight', run2);
   assert.ok(cart2.condition.value > 50, 'a boost to vitality');
   assert.ok(fx.super > 0, 'a quick energy boost');
-  assert.equal(run2.coins, 0, 'it drains his cash to zero — but his reserves never go into the red');
+  assert.equal(run2.coins, -ITEMS.ladynight.cashDrain, 'but it drains his money — into the red');
 });

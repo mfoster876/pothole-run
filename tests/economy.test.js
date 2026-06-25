@@ -27,10 +27,11 @@ test('chargeRun lets an ordinary driver go into the red (debt)', () => {
 });
 
 test('chargeRun floors a debt-proof driver at zero (never red)', () => {
-  for (const id of ['politician', 'yute']) {
+  // The protected School Yute is the debt-proof one (the Politician now goes red like
+  // everyone else). The mechanism itself is gated purely on the debtProof flag.
+  for (const cart of [{ character: { id: 'yute', debtProof: true } }, { character: { debtProof: true } }]) {
     const run = { coins: 100 };
-    const cart = { character: { id, debtProof: true } };
-    assert.equal(chargeRun(run, cart, 500000), 0, `${id} floors at zero`);
+    assert.equal(chargeRun(run, cart, 500000), 0, 'floors at zero');
     assert.equal(run.coins, 0);
   }
 });

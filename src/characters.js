@@ -26,7 +26,7 @@ export const CHARACTERS = [
   // potholes/manholes stay "equally devastating" (fullDamageCats ignores his toughness).
   // Money is almost all $5000 (handled in game.js).
   { id: 'politician', name: 'Di Politician', topSpeed: 1.15, handling: 1.1, toughness: 1.4, coinDraw: 1.6, scoreMult: 1.2, sway: 0.8, cashFind: 1.0, billBias: 0,
-    immune: ['pedestrian', 'animal'], fullDamageCats: ['road'], debtProof: true, locked: true },
+    immune: ['pedestrian', 'animal'], fullDamageCats: ['road'], locked: true },
   // The Taxi Man: the MOST reckless driver but the MOST dexterous swerver — twitchy and
   // fragile, yet whips through gaps like no one else (top handling). High reward ceiling,
   // hard-to-collect cash. Police trouble him more than most.

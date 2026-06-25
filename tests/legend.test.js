@@ -25,8 +25,9 @@ test('the Taxi Man (added late) is fully covered — note, perks, cons, people',
 
 test("perks/cons reflect each driver's real identity", () => {
   const pol = legendFor(getCharacter('politician'));
-  assert.ok(pol.perks.some(p => /never debt|reserves/i.test(p)), 'politician never goes into debt');
+  assert.ok(pol.perks.some(p => /bribe|immune|mega/i.test(p)), 'politician is untouchable & filthy rich');
   assert.ok(pol.cons.some(c => /pothole|manhole/i.test(c)), 'but potholes/manholes wreck him');
+  assert.ok(pol.cons.some(c => /debt/i.test(c)), 'and he can now go into debt like everyone else');
   assert.ok(!/\$5000\b/.test(pol.note), 'note is not the stale "$5000" line');
 
   const rasta = legendFor(getCharacter('rasta'));

@@ -52,7 +52,7 @@ test('the Politician bribes police (never stopped) and the road clears', () => {
   spawn(field, 'police', 1, 0);
   resolveHits(run, cart, field, fx);
   assert.ok(run.coins < 10000, 'he greased the palm (a bribe)');
-  assert.equal(run.coins, 0, 'the bribe eats his take to zero — but his reserves never go red');
+  assert.ok(run.coins < 0, 'a big bribe can drag even the politician into the red');
   assert.equal(cart.condition.value, 100, 'never stopped, never damaged by the cop');
   assert.ok(fx.clearRoads > 0, 'the bribed cop clears the road ahead for him');
   assert.equal(cart.bribed, true, 'flagged for the HUD toast');

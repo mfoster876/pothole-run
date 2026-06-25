@@ -58,10 +58,10 @@ test('a PERCENTAGE drain can never push coins negative', () => {
   assert.equal(run.coins, 0);
 });
 
-test("a politician's responsibility eats his take to zero but never into debt", () => {
+test("a politician's responsibility CAN plunge him into debt (like everyone else)", () => {
   const { effects, cart, run } = fxCart(1000, 100, getCharacter('politician'));
   applyNegative(effects, cart, run, 'roadfix');   // $500k road repairs
-  assert.equal(run.coins, 0, 'the bill floors at zero — his bottomless reserves never go red');
+  assert.ok(run.coins < 0, 'a road bill far beyond his cash leaves even the politician in the red');
 });
 
 test('a debt-capable driver IS plunged into debt by a flat-cost negative', () => {
@@ -84,13 +84,12 @@ test('pork costs the Rasta his blessing resilience', () => {
   assert.ok(cart.condition.value < 100, 'and a condition hit');
 });
 
-test("the politician's responsibilities only drain money (no condition damage, never debt)", () => {
+test("the politician's responsibilities only drain money (no condition damage)", () => {
   for (const id of negativesFor(getCharacter('politician')).map(n => n.type)) {
     const { effects, cart, run } = fxCart(10000, 100, getCharacter('politician'));
     applyNegative(effects, cart, run, id);
     assert.equal(cart.condition.value, 100, `${id} leaves condition untouched`);
     assert.ok(run.coins < 10000, `${id} drains some cash`);
-    assert.ok(run.coins >= 0, `${id} never plunges the politician into the red`);
   }
 });
 
