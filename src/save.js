@@ -19,6 +19,7 @@ export function defaultSave() {
     condition: 100,
     bounties: [],
     aspirations: { achieved: [] },
+    goldHandcart: false,
   };
 }
 export function loadSave(storage = globalThis.localStorage) {

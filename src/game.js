@@ -15,6 +15,7 @@ import { VEHICLES, getVehicle } from './vehicles.js';
 import { STABILITY_UPGRADES, stabilityBonus, nextUpgrade } from './upgrades.js';
 import { pickMoney, formatMoney } from './money.js';
 import { loadSave, writeSave, recordBest, addCoins, buyVehicle, selectVehicle, buyUpgrade, GENRES } from './save.js';
+import { emptyState as tapcodeEmpty, feedTap } from './tapcode.js';
 import { bankRun } from './economy.js';
 import { createEffects, tickEffects, effectActive, applyPowerup } from './powerups.js';
 import { rollBounties, progressBounties, refresh as refreshBounties, BOUNTY_DEFS } from './bounties.js';
@@ -62,10 +63,12 @@ export function createGame(audio) {
   const menuChoice = { character: 'yute', stage: 'fern-gully', vehicle: save.vehicle, genre: save.settings.genre };
   let road, stage, cart, field, run, camZ, spawnZ, steerLock = 0, activeWeights = [];
   let squeakAccum = 0, hitShake = 0;
+  let tapcodeState = tapcodeEmpty(); // secret tap-code progress
   // Power-up effects + car dealer display index
   let effects = createEffects();
   let dealerIdx = 0;
   let endingId = null; // tracks which aspiration's ending is showing
+  let goldToast = 0;  // frames remaining to show GOLD CART UNLOCK toast
   let cashpotResult = null; // last result from playCashPot
   const rng = Math.random;
 
@@ -73,6 +76,7 @@ export function createGame(audio) {
     road = makeRoad();
     stage = getStage(stageId);
     cart = createCart(getCharacter(characterId), getVehicle(save.vehicle), stabilityBonus(save.upgrades), save.condition);
+    cart.goldHandcart = !!(save.goldHandcart && save.vehicle === 'handcart');
     field = createField();
     run = createRun();
     effects = createEffects();
@@ -112,6 +116,7 @@ export function createGame(audio) {
   }
 
   function update(dt) {
+    if (goldToast > 0) goldToast--;
     if (state.mode !== 'play') return;
     if (steerLock > 0) steerLock--;
     // Loose-rig wander: a slow, mean-reverting drift that pulls the cart off its line.
@@ -277,6 +282,16 @@ export function createGame(audio) {
       const action = hub.hit(vx, vy, { W, H });
       if (action === 'play') { router.go('play'); return; }
       if (action) { router.go(action); return; }
+      // Corner tap secret code — only fires when no hub button was hit
+      const corner = (vx < W * 0.5 ? 'L' : 'R');
+      const token = (vy < H * 0.5 ? 'T' : 'B') + corner;
+      const tc = feedTap(tapcodeState, token);
+      tapcodeState = tc.state;
+      if (tc.matched) {
+        save.goldHandcart = true;
+        writeSave(save);
+        goldToast = 180; // ~3 s at 60 fps
+      }
       return;
     }
 
@@ -403,6 +418,16 @@ export function createGame(audio) {
     const screen = router.current;
     if (screen === 'hub') {
       hub.render(ctx, { save, W, H });
+      if (goldToast > 0) {
+        const alpha = Math.min(1, goldToast / 30);
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#d8b020';
+        ctx.font = '700 28px "Courier New", monospace';
+        ctx.fillText('★ GOLD CART UNLOCK ★', W / 2, H * 0.88);
+        ctx.restore();
+      }
       if (state.popup) renderPopup(ctx, state.popup);
       return;
     }

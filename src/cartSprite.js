@@ -24,7 +24,7 @@ export function drawCart(ctx, cart, cx, cy, s) {
     case 'pickup':     drawCar(ctx, cart, s, { roof: 0.90, taper: 0.04, light: '#d23a2a', tray: true }); break;
     case 'jetour':     drawCar(ctx, cart, s, { roof: 1.10, taper: 0.05, light: '#37e0c8', suv: true, ev: true }); break;
     case 'cybertruck': drawCyber(ctx, cart, s); break;
-    default:           drawHandcart(ctx, cart, s, tier); break;
+    default:           drawHandcart(ctx, cart, s, tier, cart.goldHandcart); break;
   }
   // shared damage hint for non-handcart rides (handcart draws its own)
   if (veh.sprite !== 'handcart' && tier !== 'good') {
@@ -37,26 +37,33 @@ export function drawCart(ctx, cart, cx, cy, s) {
 }
 
 // ============ the signature sound-system handcart (unchanged behaviour) ============
-function drawHandcart(ctx, cart, s, tier) {
-  wheel(ctx, -s * 0.8, s * 0.35, s * 0.32);
-  wheel(ctx, s * 0.8, s * 0.35, s * 0.32);
-  ctx.fillStyle = '#7a4a22';
+// gold=true: recolors body and rims to gold while keeping all proportions identical.
+function drawHandcart(ctx, cart, s, tier, gold = false) {
+  const bodyColor  = gold ? '#d8b020' : '#7a4a22';
+  const rimColor   = gold ? '#f0d040' : '#8a8a8a';
+  const strokeBody = gold ? '#a07808' : '#5c3413';
+  const strutColor = gold ? '#c09010' : '#9a9a9a';
+  const wheelRim   = gold ? '#f0d040' : '#c9c9c9';
+
+  wheel(ctx, -s * 0.8, s * 0.35, s * 0.32, rimColor);
+  wheel(ctx, s * 0.8, s * 0.35, s * 0.32, rimColor);
+  ctx.fillStyle = bodyColor;
   ctx.fillRect(-s * 0.95, -s * 0.2, s * 1.9, s * 0.42);
-  ctx.strokeStyle = '#5c3413'; ctx.lineWidth = 3;
+  ctx.strokeStyle = strokeBody; ctx.lineWidth = 3;
   ctx.strokeRect(-s * 0.95, -s * 0.2, s * 1.9, s * 0.42);
   for (let i = -2; i <= 2; i++) { ctx.beginPath(); ctx.moveTo(i * s * 0.38, -s * 0.2); ctx.lineTo(i * s * 0.38, s * 0.22); ctx.stroke(); }
   drawDriver(ctx, cart.character, s);
-  // sound-system box
+  // sound-system box (always dark — it's electronics)
   ctx.fillStyle = '#222226';
   ctx.fillRect(-s * 0.5, -s * 0.85, s, s * 0.7);
   ctx.strokeStyle = '#0e0e10'; ctx.strokeRect(-s * 0.5, -s * 0.85, s, s * 0.7);
   ctx.beginPath(); ctx.arc(-s * 0.16, -s * 0.5, s * 0.2, 0, Math.PI * 2); ctx.fillStyle = '#3a3a40'; ctx.fill();
   ctx.beginPath(); ctx.arc(-s * 0.16, -s * 0.5, s * 0.1, 0, Math.PI * 2); ctx.fillStyle = '#15151a'; ctx.fill();
   // mopstick-iron steering rod + car-rim wheel
-  ctx.strokeStyle = '#9a9a9a'; ctx.lineWidth = s * 0.08;
+  ctx.strokeStyle = strutColor; ctx.lineWidth = s * 0.08;
   ctx.beginPath(); ctx.moveTo(s * 0.1, -s * 0.2); ctx.lineTo(s * 0.2, -s * 0.95); ctx.stroke();
   ctx.beginPath(); ctx.arc(s * 0.22, -s * 1.02, s * 0.18, 0, Math.PI * 2);
-  ctx.strokeStyle = '#c9c9c9'; ctx.lineWidth = s * 0.06; ctx.stroke();
+  ctx.strokeStyle = wheelRim; ctx.lineWidth = s * 0.06; ctx.stroke();
   if (tier !== 'good') {
     ctx.strokeStyle = tier === 'critical' ? '#2a160a' : '#3a2412'; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.moveTo(-s * 0.3, -s * 0.1); ctx.lineTo(-s * 0.1, s * 0.15); ctx.lineTo(s * 0.1, -s * 0.05); ctx.stroke();
@@ -245,9 +252,9 @@ function shirtColor(ch) {
   return { yute: '#dfe3ea', rasta: '#3f7a3a', conductor: '#d8a23a', police: '#27407a',
     taxi: '#9a3b2c', business: '#b04a78', jonkonnu: '#c0392b' }[id] || '#cfae6a';
 }
-function wheel(ctx, x, y, r) {
+function wheel(ctx, x, y, r, hubColor = '#8a8a8a') {
   ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fillStyle = '#1c1c1c'; ctx.fill();
-  ctx.beginPath(); ctx.arc(x, y, r * 0.35, 0, Math.PI * 2); ctx.fillStyle = '#8a8a8a'; ctx.fill();
+  ctx.beginPath(); ctx.arc(x, y, r * 0.35, 0, Math.PI * 2); ctx.fillStyle = hubColor; ctx.fill();
 }
 function spoke(ctx, x, y, r) {
   ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.stroke();
