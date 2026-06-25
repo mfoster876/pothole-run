@@ -15,19 +15,27 @@ export const ITEMS = {
   stationery: { id: 'stationery', label: 'Stationery', char: 'yute', steady: 3.0, heal: 6,  color: '#1f9ad9' },
   bagjuice:   { id: 'bagjuice',   label: 'Bag Juice',  char: 'yute', heal: 12, boost: 1.4, color: '#e23f7a' },
   lasco:      { id: 'lasco',      label: 'Lasco Shake',char: 'yute', heal: 18, boost: 1.8, color: '#f0d8a0' },
+
+  // ── Di Politician — perks of power ──
+  // cash      = money GAINED (a private-sector backhander — corruption pays)
+  // cashDrain = money LOST (his vices cost him)
+  privatebribe: { id: 'privatebribe', label: 'Private-Sector Bribe', char: 'politician', cash: 200000, boost: 1.2, color: '#1f9a4c' },
+  ladynight:    { id: 'ladynight',    label: 'Lady of di Night',     char: 'politician', heal: 25, boost: 2.0, cashDrain: 150000, color: '#c0306a' },
 };
 
 // Eligibility list per character id.
 const ELIGIBLE = {
-  yute:      ['books', 'stationery', 'bagjuice', 'lasco'],
+  yute:       ['books', 'stationery', 'bagjuice', 'lasco'],
+  politician: ['privatebribe', 'ladynight'],
   // Rasta keeps his edge in the drinks pool; Conductor's "items" are now avoid-hazards.
-  conductor: [],
-  rasta:     [],
+  conductor:  [],
+  rasta:      [],
 };
 
 // Spawn rarity weights. Kept modest so these stay a treat, not a constant crutch.
 const WEIGHTS = {
   books: 0.8, stationery: 0.8, bagjuice: 0.7, lasco: 0.5,
+  privatebribe: 0.5, ladynight: 0.6,
 };
 
 /** True if the character (by id) may pick up the given item id. */
@@ -38,13 +46,13 @@ export function canUseItem(character, id) {
 }
 
 /**
- * Apply an item's effect to `effects` and `cart`.
- *  - Bleach items: set `effects.super` (boost) + `effects.burn` (sloppy tail) and
- *    `cart.tipsy` (the steering-impair magnitude the sim already understands).
+ * Apply an item's effect to `effects`, `cart`, and (for money items) `run`.
  *  - Yute items: heal condition, raise steadiness, and/or a brief `super` dash.
+ *  - Politician items: a `cash` windfall (private-sector bribe) or a `cashDrain` vice
+ *    (lady of di night — boosts vitality but costs him).
  * A blessing's invincExtend lengthens any boost, same as drinks/water.
  */
-export function applyItem(effects, cart, id) {
+export function applyItem(effects, cart, id, run) {
   const it = ITEMS[id];
   if (!it) return;
   const ext = 1 + ((cart.blessing && cart.blessing.invincExtend) || 0);
@@ -60,12 +68,9 @@ export function applyItem(effects, cart, id) {
     effects.super = Math.max(effects.super || 0, dur);
     effects.superMax = effects.super;
   }
-  if (typeof it.burn === 'number') {
-    // The boost first (invincible + fast), then the bleach "burn": sloppy steering.
-    cart.tipsy   = it.burn;
-    effects.burn = it.boost * ext + it.tail;
-    // Each bleach item disfigures him one stage worse — black → … → peeling → skull.
-    cart.bleachLevel = Math.min(BLEACH.maxLevel, (cart.bleachLevel || 0) + 1);
+  if (run) {
+    if (typeof it.cash === 'number')      run.coins += it.cash;       // a windfall
+    if (typeof it.cashDrain === 'number') run.coins -= it.cashDrain;  // a costly vice (debt-capable)
   }
 }
 

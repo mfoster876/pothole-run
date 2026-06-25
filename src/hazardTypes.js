@@ -46,6 +46,9 @@ export const HAZARD_TYPES = {
   // (Conductor's cake soap / curry powder / toothpaste / sunlight are AVOID-hazards now —
   // generated below from negatives.js, not pickups.)
   // School-Yute-only wholesome items — steadiness / heal / refreshment dash
+  // Politician perks — private-sector bribe (cash) + lady of di night (boost, drains cash)
+  privatebribe: { damage: 0, collectible: true, powerup: 'charitem', item: 'privatebribe', depth: 3, color: '#1f9a4c', label: 'Private-Sector Bribe' },
+  ladynight:    { damage: 0, collectible: true, powerup: 'charitem', item: 'ladynight',    depth: 3, color: '#c0306a', label: 'Lady of di Night' },
   books:      { damage: 0, collectible: true, powerup: 'charitem', item: 'books',      depth: 3, color: '#c0451f', label: 'Books' },
   stationery: { damage: 0, collectible: true, powerup: 'charitem', item: 'stationery', depth: 3, color: '#1f9ad9', label: 'Stationery' },
   bagjuice:   { damage: 0, collectible: true, powerup: 'charitem', item: 'bagjuice',   depth: 3, color: '#e23f7a', label: 'Bag Juice' },

@@ -32,7 +32,7 @@ export function applyPowerup(fx, cart, run, kind, distance, info) {
   } else if (kind === 'drink') {
     applyDrink(fx, cart, info && info.drink);
   } else if (kind === 'charitem') {
-    applyItem(fx, cart, info && info.item);
+    applyItem(fx, cart, info && info.item, run);
   }
 }
 export function toolSpriteFor(vehicle) { return vehicle && vehicle.isCar ? 'socket' : 'spanner'; }

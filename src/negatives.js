@@ -37,13 +37,14 @@ export const NEGATIVES = {
   toothpaste:  { id: 'toothpaste',  label: 'Toothpaste',   char: 'conductor', damage: 6,  cashBurn: 800,  bleach: true, color: '#e8f2f5' },
   sunlight:    { id: 'sunlight',    label: 'Sunlight',     char: 'conductor', damage: 12, bleach: true, color: '#f0c020' },
 
-  // ── Politician — "responsibilities" that cost him money (drain only) ──
-  roadfix:      { id: 'roadfix',      label: 'Road Repairs',   char: 'politician', drainPct: 0.25, color: '#e8821e' },
-  constituent:  { id: 'constituent',  label: 'Constituent',    char: 'politician', drainPct: 0.15, color: '#b04a3c' },
-  lightpole:    { id: 'lightpole',    label: 'Fallen Pole',    char: 'politician', drainPct: 0.20, color: '#8a8f96' },
-  hustlerlunch: { id: 'hustlerlunch', label: 'Buy a Lunch',    char: 'politician', drainPct: 0.08, color: '#d06a30' },
-  voter:        { id: 'voter',        label: 'Bribe a Voter',  char: 'politician', drainPct: 0.10, color: '#2a7f7f' },
-  contractor:   { id: 'contractor',   label: 'Contractor',     char: 'politician', drainPct: 0.30, color: '#e8c84a' },
+  // ── Politician — "responsibilities" that cost RIDICULOUS fixed sums (he earns huge,
+  //    so doing his job bleeds huge — these can plunge him into deep debt). ──
+  roadfix:      { id: 'roadfix',      label: 'Road Repairs',   char: 'politician', cashBurn: 500000, color: '#e8821e' },
+  contractor:   { id: 'contractor',   label: 'Contractor',     char: 'politician', cashBurn: 750000, color: '#e8c84a' },
+  lightpole:    { id: 'lightpole',    label: 'Fallen Pole',    char: 'politician', cashBurn: 400000, color: '#8a8f96' },
+  constituent:  { id: 'constituent',  label: 'Constituent',    char: 'politician', cashBurn: 250000, color: '#b04a3c' },
+  voter:        { id: 'voter',        label: 'Bribe a Voter',  char: 'politician', cashBurn: 150000, color: '#2a7f7f' },
+  hustlerlunch: { id: 'hustlerlunch', label: 'Buy a Lunch',    char: 'politician', cashBurn: 100000, color: '#d06a30' },
 };
 
 // Which negatives spawn for which driver (in display/spawn order).

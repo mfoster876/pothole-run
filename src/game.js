@@ -17,7 +17,7 @@ import { getCharacter } from './characters.js';
 import { getStage } from './stages.js';
 import { VEHICLES, getVehicle } from './vehicles.js';
 import { upgradesForVehicle, stabilityBonus } from './upgrades.js';
-import { pickMoney, nextBill, biasBill, formatMoney } from './money.js';
+import { pickMoney, pickPoliticianMoney, nextBill, biasBill, formatMoney } from './money.js';
 import { loadSave, writeSave, recordBest, addCoins, buyVehicle, selectVehicle, buyUpgrade, ownedUpgrades, GENRES } from './save.js';
 import { emptyState as tapcodeEmpty, feedTap } from './tapcode.js';
 import { bankRun } from './economy.js';
@@ -278,11 +278,11 @@ export function createGame(audio) {
       const lane = type === 'bus' ? 0 : laneFor(rng, 3); // JUTC buses overtake on the left
       const e = spawn(field, type, lane, 5200);
       if (type === 'coin') {
-        if (inCoffeeWindow) {
+        if (cart.character.id === 'politician') {
+          // The Politician deals in RIDICULOUS notes — $20k/$50k/$100k/$500k.
+          e.value = pickPoliticianMoney(run.distance, rng);
+        } else if (inCoffeeWindow) {
           e.value = 5000;                                  // coffee window floods $5000 notes
-        } else if (cart.character.id === 'politician') {
-          // The Politician deals almost exclusively in $5000 notes (else a big note).
-          e.value = (supercharged || rng() < POLITICIAN.cashBillChance) ? 5000 : 2000;
         } else {
           let v = pickMoney(run.distance, rng);
           if (supercharged) v = nextBill(v);               // supercharge fattens each note a tier
@@ -579,7 +579,7 @@ export function createGame(audio) {
 
     // Faith & Offerings — pray, read the Bible, or tithe to sustain the blessing
     if (screen === 'tithes') {
-      const action = tithesScreen.hit(vx, vy, { W, H });
+      const action = tithesScreen.hit(vx, vy, { W, H, save });   // hit() needs save (prayed flags + offering amounts)
       if (action === 'back') { router.go('aspirations'); return; }
       if (action === 'pray') { if (pray(save)) { audio && audio.sfx('coin'); writeSave(save); } return; }
       if (action === 'bible') { if (readBible(save)) { audio && audio.sfx('coin'); writeSave(save); } return; }

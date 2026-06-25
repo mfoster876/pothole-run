@@ -57,11 +57,14 @@ export function drawEntity(ctx, type, sx, sy, size, seed = 0.137, value = 1) {
     case 'jw':         jwTract(ctx, sx, sy, s); break;
     // Politician "responsibility" obstacles (money pits to dodge)
     case 'roadfix':      roadworkSign(ctx, sx, sy, s); break;
-    case 'constituent':  angryCitizen(ctx, sx, sy, s); break;
+    case 'constituent':  angryCitizen(ctx, sx, sy, s, seed); break;
     case 'lightpole':    fallenPole(ctx, sx, sy, s); break;
     case 'hustlerlunch': boxLunchHustler(ctx, sx, sy, s); break;
     case 'voter':        ballotVoter(ctx, sx, sy, s); break;
     case 'contractor':   hardHatContractor(ctx, sx, sy, s); break;
+    // Politician GOOD money pickups
+    case 'privatebribe': drawPrivateBribe(ctx, sx, sy, s); break;
+    case 'ladynight':    drawLadyNight(ctx, sx, sy, s); break;
     default: crater(ctx, sx, sy, s, seed);
   }
 }
@@ -176,8 +179,18 @@ function disc(ctx, x, y, r, fill, stroke) {
 // Money pickup: a coin for loose change ($1–$20), a banknote for paper money,
 // with the rare $5000 note gilded to feel coveted.
 const COIN_COLOR = { 1: ['#b87333', '#7a4a1e'], 5: ['#c9cbce', '#8a8c8f'], 10: ['#f0c020', '#9a7a10'], 20: ['#f7d44a', '#a07e12'] };
-const BILL = { 100: '#c0392b', 500: '#2a7fa0', 1000: '#6f3aa0', 5000: '#1f9a5a' };
-const BILL_LABEL = { 100: '100', 500: '500', 1000: '1K', 5000: '5K' };
+const BILL = {
+  100: '#c0392b', 500: '#2a7fa0', 1000: '#6f3aa0', 5000: '#1f9a5a',
+  // mega-bills — the politician deals in huge notes (rich, distinct colours)
+  20000: '#4a2a8a',   // deep purple
+  50000: '#1f8a8a',   // teal
+  100000: '#a01f3a',  // crimson
+  500000: '#a07a18',  // regal gold
+};
+const BILL_LABEL = {
+  100: '100', 500: '500', 1000: '1K', 5000: '5K',
+  20000: '20K', 50000: '50K', 100000: '100K', 500000: '500K',
+};
 function money(ctx, x, y, s, value) {
   if (value <= 20) {
     const [fill, stroke] = COIN_COLOR[value] || COIN_COLOR[10];
@@ -196,10 +209,14 @@ function money(ctx, x, y, s, value) {
   ctx.fillStyle = 'rgba(255,255,255,0.85)';
   ctx.beginPath(); ctx.ellipse(x, cy, w * 0.18, h * 0.32, 0, 0, Math.PI * 2); ctx.fill();
   if (s >= 14) {
+    const label = BILL_LABEL[value] || String(value);
+    // shrink the type a touch for longer labels (e.g. "100K"/"500K") so fat
+    // mega-notes still read cleanly without the text overflowing the note
+    const fontScale = label.length >= 4 ? 0.24 : 0.34;
     ctx.fillStyle = gilt ? '#f7d44a' : '#ffffff';
-    ctx.font = '700 ' + Math.round(s * 0.34) + 'px "Courier New", monospace';
+    ctx.font = '700 ' + Math.round(s * fontScale) + 'px "Courier New", monospace';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(BILL_LABEL[value] || String(value), x, cy);
+    ctx.fillText(label, x, cy);
   }
 }
 function roundedBar(ctx, x, y, w, h, fill) {
@@ -1312,9 +1329,13 @@ function roadworkSign(ctx, x, y, s) {
   ctx.fillStyle = dark; rrectSprite(ctx, x - s * 0.4, baseY - s * 0.02, s * 0.8, s * 0.12, s * 0.04); ctx.fill();
 }
 
-// ---- constituent: an angry citizen with a raised placard ----
-function angryCitizen(ctx, x, y, s) {
-  person(ctx, x, y, s, '#b04a3c');
+// ---- constituent: an angry citizen with a raised placard, wearing party
+// colours — GREEN (#1f9a44, JLP) or ORANGE (#e8821e, PNP). A seed-based coin
+// flip picks the colour per spawn so a mix appears on the road.
+function angryCitizen(ctx, x, y, s, seed) {
+  const flip = mulberry32(Math.floor((seed || 0.137) * 2147483647) ^ 0x9c0a)();
+  const shirt = flip < 0.5 ? '#1f9a44' : '#e8821e';
+  person(ctx, x, y, s, shirt);
   // raised placard on a stick (right hand up)
   ctx.strokeStyle = '#6a4a2a'; ctx.lineWidth = Math.max(1.5, s * 0.05); ctx.lineCap = 'round';
   ctx.beginPath(); ctx.moveTo(x + s * 0.28, y - s * 0.42); ctx.lineTo(x + s * 0.34, y - s * 1.3); ctx.stroke();
@@ -1775,4 +1796,215 @@ function drawSunlight(ctx, x, y, s, seed) {
       ctx.moveTo(px, py - s * gl); ctx.lineTo(px, py + s * gl); ctx.stroke();
     }
   }
+}
+
+// ============================================================================
+// Politician GOOD money pickups (Private-Sector Bribe, Lady of di Night)
+// ============================================================================
+
+// ---- privatebribe: an open briefcase STUFFED with banded cash bundles — a
+// shady backhander. Brown leather case (#6a4a2a) packed with green banknotes
+// (#1f9a4c), a $ hint, and a subtle gold glint to read as a coveted money pickup.
+function drawPrivateBribe(ctx, x, y, s) {
+  const cash = '#1f9a4c', cashHi = shadeColor('#1f9a4c', 0.22), cashShade = shadeColor('#1f9a4c', -0.3);
+  const leather = '#6a4a2a', leatherShade = shadeColor('#6a4a2a', -0.3), leatherHi = shadeColor('#6a4a2a', 0.2);
+  const band = '#e8d8a0';
+  const cw = s * 1.04, ch = s * 0.6, cbx = x - cw * 0.5, cby = y - ch * 0.92;
+
+  // ground shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.24)';
+  ellipsePath(ctx, x, cby + ch + s * 0.06, cw * 0.52, s * 0.1); ctx.fill();
+
+  // ---- open lid standing up behind the case ----
+  ctx.save();
+  ctx.translate(cbx + cw * 0.5, cby);
+  ctx.rotate(-0.16);
+  rrectSprite(ctx, -cw * 0.5, -ch * 0.78, cw, ch * 0.78, s * 0.06);
+  ctx.fillStyle = leatherShade; ctx.fill();
+  ctx.strokeStyle = leather; ctx.lineWidth = Math.max(1, s * 0.04); ctx.stroke();
+  // soft satin lining inside the lid
+  ctx.fillStyle = leatherHi;
+  rrectSprite(ctx, -cw * 0.42, -ch * 0.68, cw * 0.84, ch * 0.56, s * 0.05); ctx.fill();
+  ctx.restore();
+
+  // ---- lower case shell (the open box holding the cash) ----
+  rrectSprite(ctx, cbx, cby, cw, ch, s * 0.07);
+  ctx.fillStyle = leather; ctx.fill();
+  ctx.strokeStyle = leatherShade; ctx.lineWidth = Math.max(1, s * 0.045); ctx.stroke();
+  // darker inner well
+  ctx.fillStyle = leatherShade;
+  rrectSprite(ctx, cbx + cw * 0.05, cby + ch * 0.08, cw * 0.9, ch * 0.84, s * 0.05); ctx.fill();
+
+  // ---- bundles of banded banknotes packed into the case ----
+  const bundleW = cw * 0.26, bundleH = ch * 0.66, gap = cw * 0.04;
+  const startX = cbx + cw * 0.10;
+  for (let i = 0; i < 3; i++) {
+    const bx = startX + i * (bundleW + gap);
+    const lift = (i === 1 ? s * 0.06 : 0);   // middle bundle sits a touch higher
+    const byTop = cby + ch * 0.16 - lift;
+    // bundle body
+    rrectSprite(ctx, bx, byTop, bundleW, bundleH, s * 0.02);
+    ctx.fillStyle = cash; ctx.fill();
+    // top note edge highlight + lower shade so it reads as a thick stack
+    ctx.fillStyle = cashHi; ctx.fillRect(bx, byTop, bundleW, bundleH * 0.18);
+    ctx.fillStyle = cashShade; ctx.fillRect(bx, byTop + bundleH * 0.82, bundleW, bundleH * 0.18);
+    // stacked-note striations
+    ctx.strokeStyle = cashShade; ctx.lineWidth = Math.max(0.6, s * 0.014);
+    for (let k = 1; k < 4; k++) {
+      const ly = byTop + bundleH * (0.18 + k * 0.16);
+      ctx.beginPath(); ctx.moveTo(bx + bundleW * 0.06, ly); ctx.lineTo(bx + bundleW * 0.94, ly); ctx.stroke();
+    }
+    // paper currency band across the middle
+    ctx.fillStyle = band;
+    ctx.fillRect(bx, byTop + bundleH * 0.40, bundleW, bundleH * 0.22);
+    ctx.strokeStyle = shadeColor(band, -0.3); ctx.lineWidth = Math.max(0.6, s * 0.012);
+    ctx.strokeRect(bx, byTop + bundleH * 0.40, bundleW, bundleH * 0.22);
+    // a $ hint on the middle bundle's band when big enough
+    if (i === 1 && s >= 14) {
+      ctx.fillStyle = '#2a6a3a'; ctx.font = '700 ' + Math.round(s * 0.18) + 'px "Courier New", monospace';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('$', bx + bundleW * 0.5, byTop + bundleH * 0.51);
+    }
+  }
+
+  // handle on the front of the case
+  ctx.strokeStyle = leatherHi; ctx.lineWidth = Math.max(1.5, s * 0.05); ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(x - cw * 0.16, cby + ch * 0.98);
+  ctx.quadraticCurveTo(x, cby + ch * 1.16, x + cw * 0.16, cby + ch * 0.98);
+  ctx.stroke();
+  ctx.lineCap = 'butt';
+
+  // subtle gold glint — coveted-money signal
+  ctx.strokeStyle = 'rgba(247,212,74,0.8)'; ctx.lineWidth = Math.max(1, s * 0.045); ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(cbx + cw * 0.18, cby - ch * 0.06); ctx.lineTo(cbx + cw * 0.30, cby - ch * 0.18);
+  ctx.moveTo(cbx + cw * 0.24, cby - ch * 0.04); ctx.lineTo(cbx + cw * 0.24, cby - ch * 0.2);
+  ctx.stroke();
+  ctx.lineCap = 'butt';
+}
+
+// ---- ladynight: "Lady of di Night" — a TASTEFUL, non-explicit film-noir
+// silhouette. A streetlamp casts a warm pool of light (#f0c060), and an elegant
+// standing woman in a dress (magenta/red accent #c0306a) waits beneath it with a
+// small clutch. Classy, suggestive only by setting — nothing lewd.
+function drawLadyNight(ctx, x, y, s) {
+  const glow = '#f0c060', dress = '#c0306a', dressShade = shadeColor('#c0306a', -0.3);
+  const dressHi = shadeColor('#c0306a', 0.22);
+  const skin = '#caa07c', skinShade = '#9a7050';
+  const lamp = '#3a3f46', lampHi = '#9aa0a6';
+  const hair = '#1c140e';
+
+  // lamppost stands to the viewer-right of the figure
+  const poleX = x + s * 0.62;
+
+  // ---- warm pool of lamplight cast on the road under everything ----
+  ctx.save();
+  ctx.beginPath(); ctx.ellipse(x + s * 0.18, y - s * 0.02, s * 0.95, s * 0.3, 0, 0, Math.PI * 2);
+  ctx.clip();
+  // layered radial-ish bloom (brightest near the lamp side)
+  ctx.fillStyle = 'rgba(240,192,96,0.30)';
+  ctx.beginPath(); ctx.ellipse(x + s * 0.18, y - s * 0.02, s * 0.95, s * 0.3, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = 'rgba(255,224,150,0.30)';
+  ctx.beginPath(); ctx.ellipse(x + s * 0.3, y - s * 0.04, s * 0.6, s * 0.2, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+
+  // ---- the lamppost ----
+  // base
+  ctx.fillStyle = lamp;
+  rrectSprite(ctx, poleX - s * 0.08, y - s * 0.18, s * 0.16, s * 0.18, s * 0.03); ctx.fill();
+  // tall pole
+  ctx.fillStyle = lamp;
+  ctx.fillRect(poleX - s * 0.04, y - s * 1.5, s * 0.08, s * 1.34);
+  ctx.fillStyle = lampHi;
+  ctx.fillRect(poleX - s * 0.04, y - s * 1.5, s * 0.025, s * 1.34);
+  // curved arm reaching back over the lady
+  ctx.strokeStyle = lamp; ctx.lineWidth = Math.max(2, s * 0.07); ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(poleX, y - s * 1.5);
+  ctx.quadraticCurveTo(poleX - s * 0.2, y - s * 1.66, poleX - s * 0.44, y - s * 1.6);
+  ctx.stroke();
+  ctx.lineCap = 'butt';
+  // lamp head + glowing globe at the end of the arm
+  const headX = poleX - s * 0.46, headY = y - s * 1.58;
+  ctx.fillStyle = lamp;
+  rrectSprite(ctx, headX - s * 0.1, headY - s * 0.12, s * 0.2, s * 0.1, s * 0.03); ctx.fill();
+  // halo around the bulb
+  ctx.fillStyle = 'rgba(240,192,96,0.5)';
+  ctx.beginPath(); ctx.arc(headX, headY + s * 0.04, s * 0.16, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = glow;
+  ctx.beginPath(); ctx.arc(headX, headY + s * 0.04, s * 0.09, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#fff6da';
+  ctx.beginPath(); ctx.arc(headX, headY + s * 0.04, s * 0.045, 0, Math.PI * 2); ctx.fill();
+
+  // ---- the elegant standing figure (under the light, lit from her right) ----
+  // long flowing dress — a tapering A-line from waist to the road
+  ctx.fillStyle = dress;
+  ctx.beginPath();
+  ctx.moveTo(x - s * 0.1, y - s * 0.72);            // left waist
+  ctx.lineTo(x + s * 0.1, y - s * 0.72);            // right waist
+  ctx.quadraticCurveTo(x + s * 0.26, y - s * 0.34, x + s * 0.22, y);  // right hem flare
+  ctx.lineTo(x - s * 0.22, y);                       // hem
+  ctx.quadraticCurveTo(x - s * 0.26, y - s * 0.34, x - s * 0.1, y - s * 0.72); // left flare
+  ctx.closePath(); ctx.fill();
+  // dress shade (left, away from the lamp) + lit highlight (right, toward lamp)
+  ctx.fillStyle = dressShade;
+  ctx.beginPath();
+  ctx.moveTo(x - s * 0.1, y - s * 0.72);
+  ctx.quadraticCurveTo(x - s * 0.26, y - s * 0.34, x - s * 0.22, y);
+  ctx.lineTo(x - s * 0.04, y);
+  ctx.lineTo(x - s * 0.02, y - s * 0.72); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = dressHi;
+  ctx.fillRect(x + s * 0.05, y - s * 0.66, s * 0.05, s * 0.6);
+
+  // slim torso / bodice up to the shoulders
+  ctx.fillStyle = dress;
+  rrectSprite(ctx, x - s * 0.12, y - s * 1.02, s * 0.24, s * 0.34, s * 0.06); ctx.fill();
+  ctx.fillStyle = dressHi;
+  rrectSprite(ctx, x + s * 0.04, y - s * 1.0, s * 0.06, s * 0.3, s * 0.03); ctx.fill();
+
+  // arm resting at her side, hand holding a small clutch on the lamp side
+  ctx.strokeStyle = skin; ctx.lineWidth = Math.max(1.5, s * 0.07); ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(x + s * 0.1, y - s * 0.96);
+  ctx.quadraticCurveTo(x + s * 0.2, y - s * 0.8, x + s * 0.16, y - s * 0.62);
+  ctx.stroke();
+  // far arm (shaded, tucked)
+  ctx.strokeStyle = skinShade;
+  ctx.beginPath();
+  ctx.moveTo(x - s * 0.1, y - s * 0.96);
+  ctx.quadraticCurveTo(x - s * 0.18, y - s * 0.8, x - s * 0.14, y - s * 0.64);
+  ctx.stroke();
+  ctx.lineCap = 'butt';
+  // small clutch purse at the near hand
+  ctx.fillStyle = shadeColor(dress, -0.15);
+  rrectSprite(ctx, x + s * 0.1, y - s * 0.66, s * 0.16, s * 0.1, s * 0.03); ctx.fill();
+  ctx.strokeStyle = glow; ctx.lineWidth = Math.max(0.8, s * 0.02);
+  rrectSprite(ctx, x + s * 0.1, y - s * 0.66, s * 0.16, s * 0.1, s * 0.03); ctx.stroke();
+  // a small gold clasp dot
+  ctx.fillStyle = glow;
+  ctx.beginPath(); ctx.arc(x + s * 0.18, y - s * 0.61, Math.max(0.8, s * 0.02), 0, Math.PI * 2); ctx.fill();
+
+  // neck + head, tilted slightly toward the lamplight
+  ctx.fillStyle = skin;
+  ctx.fillRect(x - s * 0.04, y - s * 1.12, s * 0.08, s * 0.12);
+  ctx.beginPath(); ctx.arc(x + s * 0.01, y - s * 1.2, s * 0.13, 0, Math.PI * 2);
+  ctx.fillStyle = skin; ctx.fill();
+  // lit cheek (lamp side) + shaded far cheek
+  ctx.fillStyle = shadeColor(skin, 0.18);
+  ctx.beginPath(); ctx.arc(x + s * 0.05, y - s * 1.22, s * 0.06, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = skinShade;
+  ctx.beginPath(); ctx.arc(x - s * 0.05, y - s * 1.16, s * 0.05, 0, Math.PI * 2); ctx.fill();
+
+  // styled hair — a soft sweep falling to one shoulder
+  ctx.fillStyle = hair;
+  ctx.beginPath();
+  ctx.arc(x + s * 0.01, y - s * 1.24, s * 0.15, Math.PI * 0.95, Math.PI * 2.15);
+  ctx.fill();
+  // hair sweeping down the far side past the shoulder
+  ctx.beginPath();
+  ctx.moveTo(x - s * 0.12, y - s * 1.22);
+  ctx.quadraticCurveTo(x - s * 0.2, y - s * 1.02, x - s * 0.12, y - s * 0.86);
+  ctx.quadraticCurveTo(x - s * 0.05, y - s * 1.0, x - s * 0.04, y - s * 1.18);
+  ctx.closePath(); ctx.fill();
 }

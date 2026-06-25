@@ -10,6 +10,23 @@ export const MONEY = [
   { value: 5000, weight: 1, from: 2800, until: null }
 ];
 
+// The Politician deals in RIDICULOUS notes — $20k/$50k/$100k/$500k — fattening with
+// distance. (His responsibilities cost just as ridiculously; see negatives.js.)
+export const POLI_MONEY = [
+  { value: 20000,  weight: 5, from: 0 },
+  { value: 50000,  weight: 3, from: 600 },
+  { value: 100000, weight: 2, from: 1400 },
+  { value: 500000, weight: 1, from: 2400 },
+];
+export function pickPoliticianMoney(distance, rng) {
+  const pool = POLI_MONEY.filter(m => distance >= m.from);
+  const live = pool.length ? pool : [POLI_MONEY[0]];
+  const total = live.reduce((s, m) => s + m.weight, 0);
+  let r = rng() * total;
+  for (const m of live) { r -= m.weight; if (r < 0) return m.value; }
+  return live[live.length - 1].value;
+}
+
 // Pick a denomination appropriate to how far you've travelled.
 export function pickMoney(distance, rng) {
   const pool = MONEY.filter(m => distance >= m.from && (m.until == null || distance < m.until));

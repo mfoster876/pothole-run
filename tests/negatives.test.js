@@ -52,10 +52,16 @@ test('the sweetheart drains almost all the money (and dents condition)', () => {
   assert.ok(cart.condition.value < 100, 'some condition damage too');
 });
 
-test('a money drain can never push coins negative', () => {
+test('a PERCENTAGE drain can never push coins negative', () => {
   const { effects, cart, run } = fxCart(0);
-  applyNegative(effects, cart, run, 'contractor');
+  applyNegative(effects, cart, run, 'teensex');   // drainPct — only takes what you have
   assert.equal(run.coins, 0);
+});
+
+test("a politician's fixed-cost responsibility CAN plunge him into debt", () => {
+  const { effects, cart, run } = fxCart(1000);
+  applyNegative(effects, cart, run, 'roadfix');   // $500k road repairs
+  assert.ok(run.coins < 0, 'a road bill far beyond his cash leaves him in the red');
 });
 
 test('an impairing negative makes the steering sloppy for a while', () => {
@@ -81,11 +87,11 @@ test("the politician's responsibilities only drain money (no condition damage)",
   }
 });
 
-test('drain is proportional to current earnings (a % of the pot)', () => {
-  const big = fxCart(100000); applyNegative(big.effects, big.cart, big.run, 'contractor');
-  const small = fxCart(1000);  applyNegative(small.effects, small.cart, small.run, 'contractor');
+test('a percentage drain scales with current earnings (a % of the pot)', () => {
+  const big = fxCart(100000); applyNegative(big.effects, big.cart, big.run, 'teensex');
+  const small = fxCart(1000);  applyNegative(small.effects, small.cart, small.run, 'teensex');
   const bigLoss = 100000 - big.run.coins, smallLoss = 1000 - small.run.coins;
-  assert.ok(bigLoss > smallLoss * 10, 'richer politician loses far more in absolute terms');
+  assert.ok(bigLoss > smallLoss * 10, 'a richer pot loses far more in absolute terms');
 });
 
 test('eligibleNegatives feeds the legend with id + label pairs', () => {
