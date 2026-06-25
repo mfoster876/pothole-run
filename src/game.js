@@ -24,8 +24,10 @@ import * as mechshop from './screens/mechshop.js';
 import * as cardealer from './screens/cardealer.js';
 import * as aspirations from './screens/aspirations.js';
 import * as ending from './screens/ending.js';
+import * as cashpotScreen from './screens/cashpot.js';
 import { rankFor } from './ranks.js';
 import { purchaseAspiration, canBuy } from './aspirations.js';
+import { playCashPot } from './cashpot.js';
 
 const W = VIRTUAL.width, H = VIRTUAL.height;
 const GENRE_LABEL = { reggae: 'Reggae', ska: 'Ska', dancehall: 'Dancehall', hiphop: 'Hip-Hop' };
@@ -64,6 +66,7 @@ export function createGame(audio) {
   let effects = createEffects();
   let dealerIdx = 0;
   let endingId = null; // tracks which aspiration's ending is showing
+  let cashpotResult = null; // last result from playCashPot
   const rng = Math.random;
 
   function startRun(characterId, stageId) {
@@ -310,10 +313,11 @@ export function createGame(audio) {
       return;
     }
 
-    // Aspirations — row taps try to purchase; Back returns to hub
+    // Aspirations — row taps try to purchase; Back returns to hub; Cash Pot pill
     if (screen === 'aspirations') {
       const action = aspirations.hit(vx, vy, { W, H });
       if (action === 'back') { router.go('hub'); return; }
+      if (action === 'cashpot') { cashpotResult = null; router.go('cashpot'); return; }
       if (action && action.startsWith('row:')) {
         const id = action.slice(4);
         if (canBuy(save, id)) {
@@ -324,6 +328,18 @@ export function createGame(audio) {
             router.go('ending');
           }
         }
+        return;
+      }
+      return;
+    }
+
+    // Cash Pot mini-game
+    if (screen === 'cashpot') {
+      const action = cashpotScreen.hit(vx, vy, { W, H });
+      if (action === 'back') { router.go('aspirations'); return; }
+      if (action === 'play') {
+        cashpotResult = playCashPot(save, Math.random);
+        writeSave(save);
         return;
       }
       return;
@@ -359,6 +375,10 @@ export function createGame(audio) {
     }
     if (screen === 'mechshop' || screen === 'cardealer' || screen === 'aspirations') {
       if (key === 'Escape') router.go('hub');
+      return;
+    }
+    if (screen === 'cashpot') {
+      if (key === 'Escape') router.go('aspirations');
       return;
     }
     if (screen === 'ending') {
@@ -398,6 +418,11 @@ export function createGame(audio) {
     }
     if (screen === 'aspirations') {
       aspirations.render(ctx, { save, W, H });
+      if (state.popup) renderPopup(ctx, state.popup);
+      return;
+    }
+    if (screen === 'cashpot') {
+      cashpotScreen.render(ctx, { save, lastResult: cashpotResult, W, H });
       if (state.popup) renderPopup(ctx, state.popup);
       return;
     }

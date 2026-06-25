@@ -20,6 +20,12 @@ const VIGNETTES = {
 
 function inRect(r, x, y) { return x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h; }
 
+// Cash Pot pill button dimensions (reused in render + hit)
+function cashPotRect(W, H) {
+  const bw = 160, bh = 36;
+  return { x: W - bw - 24, y: 18, w: bw, h: bh };
+}
+
 export function render(ctx, { save, W, H }) {
   ctx.fillStyle = '#0e1a12'; ctx.fillRect(0, 0, W, H);
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -36,6 +42,14 @@ export function render(ctx, { save, W, H }) {
   ctx.fillStyle = '#9fb8a3'; ctx.font = '700 18px "Courier New", monospace';
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillText('‹ HUB', back.x + back.w / 2, back.y + back.h / 2);
+
+  // Cash Pot pill (top-right corner)
+  const cp = cashPotRect(W, H);
+  ctx.fillStyle = 'rgba(240,192,32,0.10)'; ctx.fillRect(cp.x, cp.y, cp.w, cp.h);
+  ctx.strokeStyle = '#f0c020'; ctx.lineWidth = 2; ctx.strokeRect(cp.x, cp.y, cp.w, cp.h);
+  ctx.fillStyle = '#f0c020'; ctx.font = '700 15px "Courier New", monospace';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText('CASH POT 🎰', cp.x + cp.w / 2, cp.y + cp.h / 2);
 
   // List aspirations — scrollable if they overflow; lay out vertically
   const rowH = (H * 0.78) / ASPIRATIONS.length;
@@ -86,6 +100,7 @@ export function render(ctx, { save, W, H }) {
 export function hit(x, y, { W, H }) {
   const back = { x: 24, y: 18, w: 80, h: 36 };
   if (inRect(back, x, y)) return 'back';
+  if (inRect(cashPotRect(W, H), x, y)) return 'cashpot';
 
   // Check aspiration rows — only affordable, unachieved ones are tappable
   const rowH = (H * 0.78) / ASPIRATIONS.length;
