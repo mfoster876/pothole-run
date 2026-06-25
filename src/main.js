@@ -38,3 +38,25 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
+
+import { makeRoad, renderRoad } from './road.js';
+import { createCart, steer, updateCart } from './cart.js';
+import { createInput } from './input.js';
+import { getCharacter } from './characters.js';
+import { getStage } from './stages.js';
+
+const road = makeRoad();
+const stage = getStage('fern-gully');
+const cart = createCart(getCharacter('yute'));
+const input = createInput(canvas, { onSteer: (d) => steer(cart, d) });
+let camZ = 0;
+
+setUpdate((dt) => {
+  input.update(dt);
+  updateCart(cart, dt);
+  camZ += cart.speed * dt * 4;
+});
+setRender((c) => {
+  c.setTransform(viewport.scale, 0, 0, viewport.scale, 0, 0);
+  renderRoad(c, road, stage.palette, camZ, cart.x, VIRTUAL.width, VIRTUAL.height);
+});
