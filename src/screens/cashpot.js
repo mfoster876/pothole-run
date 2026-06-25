@@ -1,7 +1,7 @@
 // src/screens/cashpot.js
 // Cash Pot lottery screen — play $100, win (or lose) based on OUTCOMES table.
 import { formatMoney } from '../money.js';
-import { STAKE, OUTCOMES } from '../cashpot.js';
+import { STAKE, OUTCOMES, expectedValue } from '../cashpot.js';
 
 function inRect(r, x, y) { return x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h; }
 
@@ -71,7 +71,9 @@ export function render(ctx, { save, lastResult, W, H }) {
     // probability
     ctx.fillStyle = '#5a7a5e'; ctx.font = '500 12px "Courier New", monospace';
     ctx.textAlign = 'right';
-    ctx.fillText(Math.round(o.p * 100) + '%', colX2, ry);
+    // Show a decimal for sub-1% odds so the column reads true (and sums to 100%).
+    const pct = o.p * 100;
+    ctx.fillText((Number.isInteger(pct) ? pct : pct.toFixed(1)) + '%', colX2, ry);
   }
 
   // Last result
@@ -113,7 +115,7 @@ export function render(ctx, { save, lastResult, W, H }) {
   // Sub-label under play button
   ctx.fillStyle = '#5a7a5e'; ctx.font = '500 13px "Courier New", monospace';
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillText('EV ≈ $74 per play   (di house always eat)', W / 2, H * 0.78 + 36);
+  ctx.fillText('EV ≈ ' + formatMoney(Math.round(expectedValue() * STAKE)) + ' per play   (di house always eat)', W / 2, H * 0.78 + 36);
 }
 
 export function hit(x, y, { W, H }) {
