@@ -1,10 +1,10 @@
 import { laneOverlap } from './collision.js';
 import { applyDamage, repair } from './wreck.js';
 import { hazardInfo } from './hazardTypes.js';
-import { DAMAGE, GUST, WIPER, HOP } from './constants.js';
+import { DAMAGE, GUST, WIPER, HOP, COMBO } from './constants.js';
 
 export function createRun() {
-  return { distance: 0, coins: 0 };
+  return { distance: 0, coins: 0, combo: 0 };
 }
 
 // Crossing-based resolution: an entity's z is its distance ahead of the cart and
@@ -19,6 +19,13 @@ export function resolveHits(run, cart, field) {
     const info = hazardInfo(e.type);
     const magnet = info.collectible ? cart.character.coinDraw : 1;
     if (!laneOverlap(cart.x, cart.halfWidth * magnet, e.x, e.halfWidth)) {
+      if (!info.collectible) {
+        const gap = Math.abs(cart.x - e.x) - (cart.halfWidth + e.halfWidth);
+        if (gap >= 0 && gap <= COMBO.nearBand) {
+          run.combo = Math.min(COMBO.max, run.combo + COMBO.step);
+          cart.nearMiss = true;
+        }
+      }
       // dodged — but a passing vehicle's wake still shoves the cart sideways
       if (e.gust && Math.abs(cart.x - e.x) < GUST.range) {
         const dir = cart.x >= e.x ? 1 : -1; // pushed away from the vehicle
@@ -29,7 +36,8 @@ export function resolveHits(run, cart, field) {
     }
     e.active = false;
     if (info.collectible) {
-      const value = e.value || 1;
+      const mult = 1 + run.combo * COMBO.bonusPer;
+      const value = Math.round((e.value || 1) * mult);
       run.coins += value;
       cart.pickupValue = value;     // game.js picks the coin vs cash sound
       cart.condition = repair(cart.condition, DAMAGE.repairPerCoin);
@@ -45,6 +53,7 @@ export function resolveHits(run, cart, field) {
     } else {
       const tough = cart.character.toughness * (cart.vehicle ? cart.vehicle.toughness : 1);
       cart.condition = applyDamage(cart.condition, info.damage / tough);
+      run.combo = 0;
       // windscreen youth: forced "wash" skims coins off your fare
       if (info.coinLoss) { run.coins = Math.max(0, run.coins - WIPER.coinLoss); cart.washed = true; }
     }
