@@ -16,7 +16,7 @@ copy patois and comedic throughout.
 
 ## The shakedown — "Right or left, driva?"  (DECISION: right/left = RISK vs BRIBE)
 The officer barks **"Right or left, driva?"** — and the two sides ARE the choice
-(Milton's clarification): one side = **BRIBE**, the other = **RISK**. (Pick a fixed
+(the owner's clarification): one side = **BRIBE**, the other = **RISK**. (Pick a fixed
 mapping and label it on the buttons so it's never ambiguous, e.g. LEFT = bribe him a
 lunch, RIGHT = risk it.)
 
@@ -52,6 +52,6 @@ $5000** (see `money.js` `BILLS`). No in-between amounts anywhere player-facing.
 3. **Wiring:** police road entity + spawn weight; contact → `state.mode='stop'`;
    `passDay` at run start; warrant gate on PLAY; politician immunity; SW precache + bump.
 
-## Open/tunable (sensible defaults, Milton can adjust on sight)
+## Open/tunable (sensible defaults, the owner can adjust on sight)
 - Bribe ≈ $500, squad ×3–5; car fines $1000–$5000; bail ≈ outstanding × 1.5; warrant at
   ~3 unpaid days or fines > ~$5000; police spawn weight ~1.5 (rural/town vary later).

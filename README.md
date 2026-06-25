@@ -8,7 +8,7 @@ quiet theme: the long, real-priced grind toward "a way out" of inequality — th
 road is brutal but **always survivable with enough skill**, and making it is
 bittersweet.
 
-- **Play:** https://mfoster876.github.io/pothole-run/
+- **Play:** _(hosted build — see **Deploy** below)_
 - **Built with:** vanilla HTML5 Canvas 2D + ES modules. **No build step, no dependencies.**
 - **Tests:** `node --test` (pure-logic modules are unit-tested)
 
@@ -101,8 +101,15 @@ python3 -m http.server          # then open http://localhost:8000
 node --test
 ```
 
-**Deploy:** the repo is served by GitHub Pages from `main` / root — pushing to `main`
-publishes. The service worker is **network-first**; after any deploy, bump the `CACHE`
+**Deploy:** the game is fully static (no build step), so it deploys as a plain folder.
+The simplest anonymous host is **Cloudflare Pages — Direct Upload**, which needs no Git
+link (the public sees only a `*.pages.dev` URL):
+
+```bash
+npx wrangler pages deploy .        # uploads the current folder; prints the live URL
+```
+
+The service worker is **network-first**; after any deploy, bump the `CACHE`
 string in `sw.js` so clients pick up the new code (and precache any new modules).
 
 **Save format:** `localStorage` key `pothole-run-save:v2`; `loadSave()` merges over

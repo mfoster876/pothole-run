@@ -1,7 +1,7 @@
 # Pothole Run — Phase 2: feel, drinks, tithes-blessing, environment lift
 
 **Date:** 2026-06-25
-**Driver:** Milton's batch ("I want it all now", phase 2 approved, reference-gated work unblocked: "use what you have").
+**Driver:** the owner's batch ("I want it all now", phase 2 approved, reference-gated work unblocked: "use what you have").
 **Method:** parallel Sonnet subagents owning *disjoint* files; controller (Opus) owns `game.js`/`router.js`/`sw.js` and final integration + preview verification. Net-new-file modules built first, then wired in. Honours [[feedback-parallel-build-superpowers]], [[feedback-self-review]], [[feedback-ground-truth]].
 
 Ground-truth code map captured this session (powerups/cart/run/constants/spawner/stages/characters/screens/aspirations/viewport/hud/audio/save) + authenticity notes from `docs/superpowers/research/2026-06-24-jamaica-environment-research.md`.
@@ -36,7 +36,7 @@ Ground-truth code map captured this session (powerups/cart/run/constants/spawner
 ### Push 4 — Portraits + environment (reference-gated, unblocked)
 - New `portrait.js`: `renderPortrait(ctx, characterId, x, y, size)` — **front-facing** procedural portraits. `yute` schoolchild (uniform); `rasta` locks + red-gold-green tam + beard, calm; **`conductor` per spec §11 — bleached white face, black lips w/ pink centre, neck tattoos, one un-bleached (black) arm, conductor cap; rendered with warmth + dignity, NOT caricature**. Shown on character-select (PLAY) + game-over card via `game.js`.
 - `scenery.js`: New Kingston landmarks as recognisable roadside silhouettes for the `new-kingston` stage — **Redemption Song** statue (two tall bronze figures + fountain, rendered respectfully), Jamaica Tourist Board, Island Grill, patty shop (Tastee/Juici), bank towers (NCB/Scotia), BPO call-centre, café; richer prop layering across stages; **12-bit figure lift** (smoother silhouettes, more shading bands on drivers/pedestrians/animals).
-- All from Milton's own named list + documented photo-grounded look notes; nothing invented from web research.
+- All from the owner's own named list + documented photo-grounded look notes; nothing invented from web research.
 
 ---
 
@@ -52,4 +52,4 @@ Ground-truth code map captured this session (powerups/cart/run/constants/spawner
 `node --test` green throughout. New: `drinks` (eligibility, potency→durations, alcohol→tipsy), `tithes` (offering amounts, blessing top-up/cap/decay, effects scaling), `powerups` (water→super invincibility+money, no heal-only), `run` (invincible skips damage, blessing resist reduces damage), `constants`-direction. Rendering/responsive verified in preview (super glow+timer, hop arc, tipsy wobble, portraits, New Kingston landmarks, Android letterbox fill via `preview_resize` to a phone aspect). Bump SW `CACHE` per push.
 
 ## Self-review
-Simplicity guards: tipsy impairment is continuous (sluggish+wander), never input-dropping, so it never reads as a bug. Android fix keeps contain-fit for gameplay (zero crop risk) and only repaints the bars — low-risk. Drinks are spawn-filtered per character so a minor never sees rum. Water-super invincibility is bounded by a visible timer so it can't feel cheap. Blessing decays so it stays a *temptation-to-keep-giving*, matching the inequality theme. Environment art is from Milton's named list + his documented look notes, honouring the authenticity bar.
+Simplicity guards: tipsy impairment is continuous (sluggish+wander), never input-dropping, so it never reads as a bug. Android fix keeps contain-fit for gameplay (zero crop risk) and only repaints the bars — low-risk. Drinks are spawn-filtered per character so a minor never sees rum. Water-super invincibility is bounded by a visible timer so it can't feel cheap. Blessing decays so it stays a *temptation-to-keep-giving*, matching the inequality theme. Environment art is from the owner's named list + his documented look notes, honouring the authenticity bar.

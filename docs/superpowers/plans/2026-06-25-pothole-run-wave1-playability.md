@@ -4,7 +4,7 @@
 
 **Goal:** Make Pothole Run genuinely playable — fairer difficulty, real healing via power-ups, persistent stakes with a safety floor, a decluttered hub of focused screens, and a landscape/portrait-correct viewport — without wiping any existing save.
 
-**Architecture:** Pure-logic modules (`economy`, `powerups`, `bounties`, `solvability`) are added beside the existing ones and unit-tested with `node:test`; they are wired into the existing fixed-timestep loop (`game.js`) and crossing-based collision (`run.js`). The single canvas menu in `game.js` is split into a small screen router plus one module per screen. Rendering/responsive changes are verified in the preview, not unit-tested. Conductor and environment art are built against Milton's reference photos and iterated in the preview.
+**Architecture:** Pure-logic modules (`economy`, `powerups`, `bounties`, `solvability`) are added beside the existing ones and unit-tested with `node:test`; they are wired into the existing fixed-timestep loop (`game.js`) and crossing-based collision (`run.js`). The single canvas menu in `game.js` is split into a small screen router plus one module per screen. Rendering/responsive changes are verified in the preview, not unit-tested. Conductor and environment art are built against the owner's reference photos and iterated in the preview.
 
 **Tech Stack:** Vanilla ES modules, HTML5 Canvas 2D, `node:test` (run with `node --test`), Web Audio, localStorage, PWA service worker. No build, no deps.
 
@@ -948,7 +948,7 @@ git commit -m "feat(hooks): rotating bounty missions"
 
 > **Reference-driven / preview-verified.** This task restructures the menu UI. Build it,
 > then verify in the preview per the workflow at the end of this plan. Iterate layout
-> with Milton.
+> with the owner.
 
 - [ ] **Step 1: Define the router**
 
@@ -984,7 +984,7 @@ Task 8 wiring).
 - [ ] **Step 4: Preview-verify**
 
 Start the preview, clear SW+caches+localStorage, confirm the hub shows four buttons + the
-rank/lifetime/wallet banner, and that PLAY still starts a run. Screenshot for Milton.
+rank/lifetime/wallet banner, and that PLAY still starts a run. Screenshot for the owner.
 
 - [ ] **Step 5: Commit**
 
@@ -1103,7 +1103,7 @@ from the start menu (it now lives here).
 - [ ] **Step 3: Preview-verify**
 
 Confirm the turntable spins, prices show, buying debits the wallet, selecting changes the
-active ride. Screenshot for Milton.
+active ride. Screenshot for the owner.
 
 - [ ] **Step 4: Commit**
 
@@ -1251,10 +1251,10 @@ git commit -m "feat(powerups): spawn + draw water/tools/coffee; wire into collec
 
 **Files:**
 - Modify: `src/cartSprite.js` and/or `src/sprites.js` (the conductor head/arm)
-- Verify: preview + Milton's reference photos
+- Verify: preview + the owner's reference photos
 
 > **Reference-driven, authenticity-critical.** Render the real skin-bleaching phenomenon
-> with dignity, not caricature (per the project authenticity bar). Build to Milton's
+> with dignity, not caricature (per the project authenticity bar). Build to the owner's
 > reference photos; do not invent from web research.
 
 - [ ] **Step 1: Locate the conductor draw code**
@@ -1268,9 +1268,9 @@ White/bleached **face**; **black lips with a pink centre**; **tattoos on the lig
 neck**; one **black (un-bleached) arm** — the contrast that makes the bleaching legible.
 Keep the same proportion/animation as the other personas.
 
-- [ ] **Step 3: Preview-verify with Milton**
+- [ ] **Step 3: Preview-verify with the owner**
 
-Show the conductor at the wheel in the preview; iterate on Milton's notes/reference until
+Show the conductor at the wheel in the preview; iterate on the owner's notes/reference until
 he signs off. Screenshot.
 
 - [ ] **Step 4: Commit**
@@ -1339,7 +1339,7 @@ new build.
 
 Start the preview; clear SW + caches + localStorage; play through: hub → play → wreck →
 bank → mech shop repair → car dealer buy → aspirations view; verify landscape + portrait.
-Screenshots for Milton.
+Screenshots for the owner.
 
 - [ ] **Step 4: Push (pre-approved)**
 

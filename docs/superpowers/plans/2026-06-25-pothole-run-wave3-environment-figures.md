@@ -2,7 +2,7 @@
 
 **Date:** 2026-06-25
 **Status:** Split build. Part A (objective, no aesthetic sign-off needed) built overnight.
-Part B (reference-gated JA look/feel) is documented here and **awaits Milton's reference
+Part B (reference-gated JA look/feel) is documented here and **awaits the owner's reference
 photos / sign-off** per his non-negotiable authenticity bar.
 
 Spec: §13 of `2026-06-25-pothole-run-social-mobility-redesign.md`.
@@ -11,7 +11,7 @@ Spec: §13 of `2026-06-25-pothole-run-social-mobility-redesign.md`.
 
 ## Why this wave is split
 
-Milton's standing, repeated, non-negotiable rule: **the Jamaican look & feel is built
+the owner's standing, repeated, non-negotiable rule: **the Jamaican look & feel is built
 from his reference photos, not invented by an agent.** Past corrections (narrow 2-lane
 roads, marl-white crater interiors, Negril sea-on-right, driver-visible) all came from
 him supplying ground truth. Wave 3 is almost entirely that kind of work. Building it
@@ -44,9 +44,9 @@ So Wave 3 is split:
 
 ---
 
-## Part B — REFERENCE-GATED (awaits Milton's photos / sign-off — do NOT invent)
+## Part B — REFERENCE-GATED (awaits the owner's photos / sign-off — do NOT invent)
 
-Each item below needs Milton's reference images or explicit aesthetic direction before
+Each item below needs the owner's reference images or explicit aesthetic direction before
 building, per his authenticity bar. Listed so he can hand over references fast.
 
 ### B1. New Kingston landmarks (recognisable roadside silhouettes)

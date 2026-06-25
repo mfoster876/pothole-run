@@ -1,6 +1,6 @@
-# Jamaica Environment Design Doc (Milton-provided reference)
+# Jamaica Environment Design Doc (the owner-provided reference)
 
-> Provided by Milton on 2026-06-25 from real media. Canon reference for topography,
+> Provided by the owner on 2026-06-25 from real media. Canon reference for topography,
 > road types, traffic and props. Feeds stage palettes, scenery, traffic and hazards.
 
 ## Gameplay intent (his words)
