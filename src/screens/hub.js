@@ -2,6 +2,7 @@
 // The main menu hub: four big buttons leading to the four sub-screens.
 // Render style matches the existing canvas/monospace house style in game.js.
 import { formatMoney } from '../money.js';
+import { rankFor, nextRank } from '../ranks.js';
 
 // Lazy-built button rects — recalculated each render for the current W/H.
 function hubRects(W, H) {
@@ -35,11 +36,16 @@ export function render(ctx, { save, W, H }) {
   ctx.fillText('POTHOLE RUN', W / 2, H * 0.10);
 
   // Rank + lifetime + wallet banner
-  const rank = 'Cart Bwoy'; // Wave 2 will wire real ranks
+  const rank = rankFor(save.lifetimeEarned);
+  const next = nextRank(save.lifetimeEarned);
   ctx.fillStyle = '#3fae54'; ctx.font = '700 22px "Courier New", monospace';
-  ctx.fillText(rank, W / 2, H * 0.195);
+  ctx.fillText(rank.label, W / 2, H * 0.195);
   ctx.fillStyle = '#9fb8a3'; ctx.font = '500 16px "Courier New", monospace';
-  ctx.fillText('lifetime: ' + formatMoney(save.lifetimeEarned) + '   wallet: ' + formatMoney(save.wallet), W / 2, H * 0.255);
+  ctx.fillText('lifetime: ' + formatMoney(save.lifetimeEarned) + '   wallet: ' + formatMoney(save.wallet), W / 2, H * 0.235);
+  if (next) {
+    ctx.fillStyle = '#5a7a5e'; ctx.font = '500 13px "Courier New", monospace';
+    ctx.fillText('next: ' + next.label + ' — ' + formatMoney(next.min - save.lifetimeEarned) + ' to go', W / 2, H * 0.27);
+  }
 
   const R = hubRects(W, H);
   btn(ctx, R.play,        'PLAY',         { stroke: '#f0c020', text: '#f0c020', font: '700 34px "Courier New", monospace' });

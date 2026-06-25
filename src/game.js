@@ -23,6 +23,9 @@ import * as hub from './screens/hub.js';
 import * as mechshop from './screens/mechshop.js';
 import * as cardealer from './screens/cardealer.js';
 import * as aspirations from './screens/aspirations.js';
+import * as ending from './screens/ending.js';
+import { rankFor } from './ranks.js';
+import { purchaseAspiration, canBuy } from './aspirations.js';
 
 const W = VIRTUAL.width, H = VIRTUAL.height;
 const GENRE_LABEL = { reggae: 'Reggae', ska: 'Ska', dancehall: 'Dancehall', hiphop: 'Hip-Hop' };
@@ -60,6 +63,7 @@ export function createGame(audio) {
   // Power-up effects + car dealer display index
   let effects = createEffects();
   let dealerIdx = 0;
+  let endingId = null; // tracks which aspiration's ending is showing
   const rng = Math.random;
 
   function startRun(characterId, stageId) {
@@ -306,10 +310,29 @@ export function createGame(audio) {
       return;
     }
 
-    // Aspirations (Wave 1 stub — only Back is live)
+    // Aspirations — row taps try to purchase; Back returns to hub
     if (screen === 'aspirations') {
       const action = aspirations.hit(vx, vy, { W, H });
       if (action === 'back') { router.go('hub'); return; }
+      if (action && action.startsWith('row:')) {
+        const id = action.slice(4);
+        if (canBuy(save, id)) {
+          const ok = purchaseAspiration(save, id);
+          if (ok) {
+            writeSave(save);
+            endingId = id;
+            router.go('ending');
+          }
+        }
+        return;
+      }
+      return;
+    }
+
+    // Ending vignette — CONTINUE returns to hub
+    if (screen === 'ending') {
+      const action = ending.hit(vx, vy, { W, H });
+      if (action === 'continue') { endingId = null; router.go('hub'); return; }
       return;
     }
   }
@@ -336,6 +359,10 @@ export function createGame(audio) {
     }
     if (screen === 'mechshop' || screen === 'cardealer' || screen === 'aspirations') {
       if (key === 'Escape') router.go('hub');
+      return;
+    }
+    if (screen === 'ending') {
+      if (key === 'Escape' || key === 'Enter' || key === ' ') { endingId = null; router.go('hub'); }
       return;
     }
   }
@@ -372,6 +399,10 @@ export function createGame(audio) {
     if (screen === 'aspirations') {
       aspirations.render(ctx, { save, W, H });
       if (state.popup) renderPopup(ctx, state.popup);
+      return;
+    }
+    if (screen === 'ending') {
+      ending.render(ctx, { aspirationId: endingId, W, H });
       return;
     }
     // 'play' screen — existing driver/stage/genre pickers
@@ -442,12 +473,15 @@ export function createGame(audio) {
     ctx.fillStyle = '#c0382c'; ctx.font = '700 60px "Courier New", monospace';
     ctx.fillText('CART MASH UP!', W / 2, H * 0.3);
     ctx.fillStyle = '#cbe7cf'; ctx.font = '500 30px "Courier New", monospace';
-    ctx.fillText(Math.floor(run.distance) + ' m   •   ' + formatMoney(run.coins), W / 2, H * 0.48);
-    ctx.fillText('best: ' + (save.bests[stage.id] || 0) + ' m', W / 2, H * 0.56);
+    ctx.fillText(Math.floor(run.distance) + ' m   •   ' + formatMoney(run.coins), W / 2, H * 0.46);
+    ctx.fillText('best: ' + (save.bests[stage.id] || 0) + ' m', W / 2, H * 0.54);
     ctx.fillStyle = '#9fb8a3'; ctx.font = '500 20px "Courier New", monospace';
-    ctx.fillText('wallet: ' + formatMoney(save.wallet), W / 2, H * 0.63);
+    ctx.fillText('wallet: ' + formatMoney(save.wallet), W / 2, H * 0.61);
+    // Rank display on gameover
+    ctx.fillStyle = '#3fae54'; ctx.font = '700 20px "Courier New", monospace';
+    ctx.fillText('rank: ' + rankFor(save.lifetimeEarned).label, W / 2, H * 0.68);
     ctx.fillStyle = '#f0c020'; ctx.font = '700 26px "Courier New", monospace';
-    ctx.fillText('TAP / PRESS TO CONTINUE', W / 2, H * 0.74);
+    ctx.fillText('TAP / PRESS TO CONTINUE', W / 2, H * 0.78);
   }
 
   return { state, update, render, onSteer, menuPoint, menuKey, toggleMute, menuChoice };
