@@ -1,6 +1,7 @@
 // src/powerups.js
 import { repair } from './wreck.js';
 import { CART, POWERUP, SUPERCHARGE } from './constants.js';
+import { applyDrink } from './drinks.js';
 
 export const POWERUPS = {
   water:  { rarity: 'rare' },
@@ -12,7 +13,7 @@ export function effectActive(fx, name) { return (fx[name] || 0) > 0; }
 export function tickEffects(fx, dt) {
   for (const k of Object.keys(fx)) { fx[k] -= dt; if (fx[k] <= 0) delete fx[k]; }
 }
-export function applyPowerup(fx, cart, run, kind, distance) {
+export function applyPowerup(fx, cart, run, kind, distance, info) {
   if (kind === 'water') {
     fx.super = SUPERCHARGE.dur;   // invincibility + speed burst + money flood
   } else if (kind === 'tools') {
@@ -20,6 +21,8 @@ export function applyPowerup(fx, cart, run, kind, distance) {
     fx.steady = POWERUP.steady;
   } else if (kind === 'coffee') {
     run.coffeeUntilDist = (run.distance || distance) + POWERUP.coffeeDist;
+  } else if (kind === 'drink') {
+    applyDrink(fx, cart, info && info.drink);
   }
 }
 export function toolSpriteFor(vehicle) { return vehicle && vehicle.isCar ? 'socket' : 'spanner'; }

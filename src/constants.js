@@ -50,6 +50,8 @@ export const POWERUP = {
 // accel/maxSpeed: consumed by game.js to temporarily override CART values.
 // moneyMult/coinWeightBonus: consumed by game.js to flood coin value during the window.
 export const SUPERCHARGE = { dur: 6, accel: 14, maxSpeed: 260, moneyMult: 1.5, coinWeightBonus: 6 };
+export const DRINK = { baseDur: 5, tipsyExtra: 3 };
+export const IMPAIR = { handlingDrop: 0.55, wander: 0.9 };
 
 export const MAX_DPR = 2;
 export const VIRTUAL = { width: 960, height: 540 };

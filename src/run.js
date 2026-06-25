@@ -42,7 +42,7 @@ export function resolveHits(run, cart, field, effects = cart._effects || {}) {
       run.coins += value;
       cart.pickupValue = value;     // game.js picks the coin vs cash sound
       cart.condition = repair(cart.condition, DAMAGE.repairPerCoin);
-      if (info.powerup) { applyPowerup(effects, cart, run, info.powerup, run.distance); }
+      if (info.powerup) { applyPowerup(effects, cart, run, info.powerup, run.distance, info); }
     } else if (e.type === 'bump') {
       cart.jumpT = HOP.air;          // launch — the bump itself never damages
       cart.bumped = true;

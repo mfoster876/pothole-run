@@ -1,4 +1,4 @@
-import { CART_SLOTS, CART, PLAYER_HALF_WIDTH, FLOOR_CONDITION } from './constants.js';
+import { CART_SLOTS, CART, PLAYER_HALF_WIDTH, FLOOR_CONDITION, IMPAIR } from './constants.js';
 import { createCondition } from './wreck.js';
 import { getVehicle } from './vehicles.js';
 
@@ -28,7 +28,8 @@ export function createCart(character, vehicle = getVehicle('handcart'), stabilit
     drift: 0,         // slow off-line wander (game.update evolves it; low stability = more)
     stability: (vehicle.stability || 1) + stabilityBonus, // higher = steadier
     condition: { value: startCondition(savedCondition), max: CART.maxCondition },
-    jumpT: 0          // seconds remaining airborne (set by sleeping-policeman hop)
+    jumpT: 0,         // seconds remaining airborne (set by sleeping-policeman hop)
+    tipsy: 0          // alcohol impairment magnitude 0..1 (set by applyDrink)
   };
 }
 export function steer(cart, dir) {
@@ -39,7 +40,15 @@ export function onShoulder(cart) {
 }
 // Effective stats combine the ride's capability with the driver's personality.
 function effSpeed(cart)    { return cart.character.topSpeed * cart.vehicle.speed; }
-function effHandling(cart) { return cart.character.handling * cart.vehicle.handling; }
+function effHandling(cart) {
+  const base = cart.character.handling * cart.vehicle.handling;
+  if (cart.tipsy > 0) {
+    // Alcohol makes steering sluggish: reduce handling proportional to impairment,
+    // floored at 0.25 so the cart is sloppy but never completely frozen.
+    return Math.max(0.25, base * (1 - IMPAIR.handlingDrop * cart.tipsy));
+  }
+  return base;
+}
 
 export function updateCart(cart, dt) {
   if (cart.jumpT > 0) cart.jumpT = Math.max(0, cart.jumpT - dt);

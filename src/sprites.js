@@ -24,6 +24,13 @@ export function drawEntity(ctx, type, sx, sy, size, seed = 0.137, value = 1) {
     case 'water':  waterBottle(ctx, sx, sy, s); break;
     case 'tools':  hardwareTools(ctx, sx, sy, s, seed); break;
     case 'coffee': coffeeBag(ctx, sx, sy, s); break;
+    // Drink pickups — soda cans vs spirit bottles by alcohol content
+    case 'ting':       drinkCan(ctx, sx, sy, s, '#7ec850', '#5a9e30', 'T'); break;
+    case 'boom':       drinkCan(ctx, sx, sy, s, '#1f78d1', '#0a4e9a', 'B'); break;
+    case 'redstripe':  drinkBottle(ctx, sx, sy, s, '#d12b1f', '#8a0f08', 'RS'); break;
+    case 'whiterum':   drinkBottle(ctx, sx, sy, s, '#eef2f5', '#b0bcc8', 'WR'); break;
+    case 'spirulina':  drinkBottle(ctx, sx, sy, s, '#1f8a4c', '#0f5a2e', 'SP'); break;
+    case 'rootstonic': drinkBottle(ctx, sx, sy, s, '#7a4a22', '#4a2a10', 'RT'); break;
     default: crater(ctx, sx, sy, s, seed);
   }
 }
@@ -299,4 +306,60 @@ function rrectSprite(ctx, x, y, w, h, r) {
   ctx.arcTo(x, y + h, x, y, r);
   ctx.arcTo(x, y, x + w, y, r);
   ctx.closePath();
+}
+
+// ---- drink can (sodas: Ting, Boom) — cylindrical can shape ----
+function drinkCan(ctx, x, y, s, bodyColor, shadowColor, label) {
+  const w = s * 0.46, h = s * 0.88, cx = x - w * 0.5, cy = y - h;
+  // drop shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.22)'; ellipsePath(ctx, x + s * 0.04, y + s * 0.05, w * 0.52, s * 0.09); ctx.fill();
+  // can body
+  rrectSprite(ctx, cx, cy, w, h, w * 0.22);
+  ctx.fillStyle = bodyColor; ctx.fill();
+  ctx.strokeStyle = shadowColor; ctx.lineWidth = Math.max(1, s * 0.05); ctx.stroke();
+  // label band (lighter centre strip)
+  ctx.fillStyle = 'rgba(255,255,255,0.18)';
+  ctx.fillRect(cx, cy + h * 0.25, w, h * 0.45);
+  // top rim (silver lid)
+  ctx.fillStyle = '#d0d4d8';
+  rrectSprite(ctx, cx + w * 0.06, cy, w * 0.88, h * 0.1, w * 0.2); ctx.fill();
+  // bottom rim
+  ctx.fillStyle = '#b0b4b8';
+  rrectSprite(ctx, cx + w * 0.06, cy + h * 0.9, w * 0.88, h * 0.1, w * 0.2); ctx.fill();
+  // label text when big enough
+  if (s >= 14) {
+    ctx.fillStyle = '#ffffff'; ctx.font = '700 ' + Math.round(s * 0.2) + 'px "Courier New", monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(label, x, cy + h * 0.48);
+  }
+  // light sheen
+  ctx.fillStyle = 'rgba(255,255,255,0.28)'; ctx.fillRect(cx + w * 0.1, cy + h * 0.12, w * 0.14, h * 0.65);
+}
+
+// ---- drink bottle (spirits/health: Red Stripe, White Rum, Spirulina, Roots Tonic) ----
+function drinkBottle(ctx, x, y, s, bodyColor, shadowColor, label) {
+  const w = s * 0.40, h = s * 1.05, neck = w * 0.48, neckH = h * 0.22;
+  const bx = x - w * 0.5, by = y - h;
+  // drop shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.22)'; ellipsePath(ctx, x + s * 0.04, y + s * 0.05, w * 0.52, s * 0.09); ctx.fill();
+  // bottle body
+  rrectSprite(ctx, bx, by + neckH, w, h - neckH, w * 0.18);
+  ctx.fillStyle = bodyColor; ctx.fill();
+  ctx.strokeStyle = shadowColor; ctx.lineWidth = Math.max(1, s * 0.05); ctx.stroke();
+  // bottle neck (narrower)
+  ctx.fillStyle = bodyColor;
+  rrectSprite(ctx, x - neck * 0.5, by, neck, neckH + w * 0.1, neck * 0.2); ctx.fill();
+  ctx.strokeStyle = shadowColor; ctx.lineWidth = Math.max(1, s * 0.04); ctx.stroke();
+  // cap (dark, distinctive)
+  ctx.fillStyle = shadowColor;
+  rrectSprite(ctx, x - neck * 0.55, by - s * 0.07, neck * 1.1, s * 0.1, neck * 0.15); ctx.fill();
+  // label band across body
+  ctx.fillStyle = 'rgba(255,255,255,0.22)';
+  ctx.fillRect(bx, by + neckH + (h - neckH) * 0.22, w, (h - neckH) * 0.44);
+  // label text
+  if (s >= 14) {
+    ctx.fillStyle = '#ffffff'; ctx.font = '700 ' + Math.round(s * 0.17) + 'px "Courier New", monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(label, x, by + neckH + (h - neckH) * 0.44);
+  }
+  // light sheen on shoulder of bottle
+  ctx.fillStyle = 'rgba(255,255,255,0.3)'; ctx.fillRect(bx + w * 0.1, by + neckH + s * 0.05, w * 0.12, (h - neckH) * 0.55);
 }

@@ -25,7 +25,14 @@ export const HAZARD_TYPES = {
   // Power-up collectibles — fully heal, boost, or open a money window
   water:    { damage: 0, collectible: true, powerup: 'water',  depth: 3, color: '#8fd3ff', label: 'water' },
   tools:    { damage: 0, collectible: true, powerup: 'tools',  depth: 3, color: '#c9c9c9', label: 'hardware tools' },
-  coffee:   { damage: 0, collectible: true, powerup: 'coffee', depth: 3, color: '#5b3a1a', label: 'Blue Mountain coffee' }
+  coffee:   { damage: 0, collectible: true, powerup: 'coffee', depth: 3, color: '#5b3a1a', label: 'Blue Mountain coffee' },
+  // Drink collectibles — character-gated; routed to applyDrink via powerup:'drink'
+  ting:       { damage: 0, collectible: true, powerup: 'drink', drink: 'ting',       depth: 3, color: '#7ec850', label: 'Ting' },
+  boom:       { damage: 0, collectible: true, powerup: 'drink', drink: 'boom',       depth: 3, color: '#1f78d1', label: 'Boom' },
+  redstripe:  { damage: 0, collectible: true, powerup: 'drink', drink: 'redstripe',  depth: 3, color: '#d12b1f', label: 'Red Stripe' },
+  whiterum:   { damage: 0, collectible: true, powerup: 'drink', drink: 'whiterum',   depth: 3, color: '#eef2f5', label: 'White Rum' },
+  spirulina:  { damage: 0, collectible: true, powerup: 'drink', drink: 'spirulina',  depth: 3, color: '#1f8a4c', label: 'Spirulina' },
+  rootstonic: { damage: 0, collectible: true, powerup: 'drink', drink: 'rootstonic', depth: 3, color: '#7a4a22', label: 'Roots Tonic' },
 };
 export function hazardInfo(type) {
   return HAZARD_TYPES[type] ?? HAZARD_TYPES.pothole;

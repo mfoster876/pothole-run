@@ -1,5 +1,6 @@
-import { VIRTUAL, SHOULDER, SUPERCHARGE } from './constants.js';
+import { VIRTUAL, SHOULDER, SUPERCHARGE, IMPAIR } from './constants.js';
 import { setLetterboxColors } from './main.js';
+import { drinkWeightsFor } from './drinks.js';
 import { makeRoad, renderRoad, projectEntity, curveOffsetAt, CART_Z } from './road.js';
 import { createCart, steer, updateCart, onShoulder } from './cart.js';
 import { createField, spawn, advance, activeEntities } from './entities.js';
@@ -87,10 +88,13 @@ export function createGame(audio) {
     if (!save.bounties || save.bounties.length === 0) {
       save.bounties = rollBounties(rng, 3);
     }
-    // windscreen youths only appear when you drive a car (a windscreen to wash)
-    activeWeights = cart.vehicle.isCar
+    // windscreen youths only appear when you drive a car (a windscreen to wash);
+    // drinks the current driver is allowed to pick up are mixed into the spawn pool
+    // (a School Yute, a minor, only ever sees sodas — never rum).
+    activeWeights = (cart.vehicle.isCar
       ? stage.hazardWeights.concat([{ type: 'wiper', weight: 3 }])
-      : stage.hazardWeights;
+      : stage.hazardWeights.slice()
+    ).concat(drinkWeightsFor(cart.character));
     camZ = 0; spawnZ = 600; steerLock = 10; squeakAccum = 0; hitShake = 0;
     state.mode = 'play';
     audio && audio.unlock();
@@ -123,12 +127,15 @@ export function createGame(audio) {
     if (state.mode !== 'play') return;
     if (steerLock > 0) steerLock--;
     // Loose-rig wander: a slow, mean-reverting drift that pulls the cart off its line.
-    const looseness = Math.max(0, 1.15 - (cart.stability || 1));
+    // Alcohol (cart.tipsy) adds to that wander — booze makes the steering error-prone.
+    const looseness = Math.max(0, 1.15 - (cart.stability || 1)) + (cart.tipsy ? cart.tipsy * IMPAIR.wander : 0);
     cart.drift = (cart.drift || 0) * Math.exp(-1.6 * dt) + (Math.random() - 0.5) * looseness * 6 * dt;
     cart.drift = Math.max(-0.15, Math.min(0.15, cart.drift));
 
     // Tick power-up effects
     tickEffects(effects, dt);
+    // Booze wears off: once the tipsy timer expires, steering steadies again.
+    if (!effectActive(effects, 'tipsy')) cart.tipsy = 0;
     // Supercharge: water makes the cart invincible (handled in run.js) and surges
     // the speed up toward a higher cap so you cover more ground while collecting.
     if (effectActive(effects, 'super')) {
