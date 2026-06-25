@@ -169,11 +169,15 @@ export function createGame(audio) {
     save.condition = Math.max(0, cart.condition.value);
     decayBlessing(save);
     // Bank the EXACT road coins collected — no MIN_EARN floor here, or losing the
-    // cheapest tier would still pay out the floor and make losing profitable.
+    // cheapest tier would still pay out the floor and make losing profitable. (Races
+    // have no road money now, so this is usually 0 — the purse is the prize.)
     save.wallet += run.coins;
     save.lifetimeEarned += run.coins;
     addCoins(save, run.coins);
     raceResult = settleRace(save, race.tier, place);
+    // Winnings also count toward save.coins (the unlock currency) so racing for money
+    // still progresses the coins-gated unlocks (now that there's no road money to bank).
+    if (raceResult.winnings > 0) { addCoins(save, raceResult.winnings); maybeUnlock(); }
     writeSave(save);
     audio && audio.sfx(place === 1 ? 'cash' : 'wreck');
     audio && audio.stop();
