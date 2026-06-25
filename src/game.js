@@ -149,7 +149,10 @@ export function createGame(audio) {
   function finishRace(place) {
     save.condition = Math.max(0, cart.condition.value);
     decayBlessing(save);
-    bankRun(save, run.coins);
+    // Bank the EXACT road coins collected — no MIN_EARN floor here, or losing the
+    // cheapest tier would still pay out the floor and make losing profitable.
+    save.wallet += run.coins;
+    save.lifetimeEarned += run.coins;
     addCoins(save, run.coins);
     raceResult = settleRace(save, race.tier, place);
     writeSave(save);
