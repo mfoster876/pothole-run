@@ -15,7 +15,9 @@ export function tickEffects(fx, dt) {
 }
 export function applyPowerup(fx, cart, run, kind, distance, info) {
   if (kind === 'water') {
-    fx.super = SUPERCHARGE.dur;   // invincibility + speed burst + money flood
+    const ext = 1 + ((cart.blessing && cart.blessing.invincExtend) || 0);
+    fx.super    = SUPERCHARGE.dur * ext;
+    fx.superMax = fx.super;       // invincibility + speed burst + money flood
   } else if (kind === 'tools') {
     cart.condition = repair(cart.condition, CART.maxCondition * POWERUP.toolsHeal / 100);
     fx.steady = POWERUP.steady;

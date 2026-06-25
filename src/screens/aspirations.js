@@ -79,7 +79,11 @@ export function render(ctx, { save, W, H }) {
 
     // Price / status
     ctx.textAlign = 'right';
-    if (done) {
+    if (a.id === 'tithes') {
+      // Tithes is a recurring offering — show a call-to-action, never a locked price
+      ctx.fillStyle = '#f0c020'; ctx.font = '700 15px "Courier New", monospace';
+      ctx.fillText('OFFERINGS →', rx + rw - 10, ry + rh / 2);
+    } else if (done) {
       ctx.fillStyle = '#3fae54'; ctx.font = '700 15px "Courier New", monospace';
       ctx.fillText('ACHIEVED ✓', rx + rw - 10, ry + rh / 2);
     } else if (affordable) {

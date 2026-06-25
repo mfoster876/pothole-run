@@ -22,6 +22,8 @@ export function isAchieved(save, id) {
 }
 
 export function canBuy(save, id) {
+  // Tithes is a recurring offering, not a one-time purchase — always non-buyable here.
+  if (id === 'tithes') return false;
   const a = getAspiration(id);
   return !!a && !isAchieved(save, id) && canAfford(save, a.price);
 }

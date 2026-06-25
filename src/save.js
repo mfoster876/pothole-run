@@ -20,6 +20,7 @@ export function defaultSave() {
     bounties: [],
     aspirations: { achieved: [] },
     goldHandcart: false,
+    blessing: 0,
   };
 }
 export function loadSave(storage = globalThis.localStorage) {
@@ -39,7 +40,8 @@ export function loadSave(storage = globalThis.localStorage) {
       garage: Array.isArray(parsed.garage) && parsed.garage.length ? parsed.garage : base.garage,
       upgrades: Array.isArray(parsed.upgrades) ? parsed.upgrades : base.upgrades,
       unlocks: { ...base.unlocks, ...(parsed.unlocks || {}) },
-      settings: { ...base.settings, ...(parsed.settings || {}) }
+      settings: { ...base.settings, ...(parsed.settings || {}) },
+      blessing: Number.isFinite(parsed.blessing) ? Math.max(0, Math.min(1, parsed.blessing)) : 0,
     };
     if (!save.garage.includes(save.vehicle)) save.vehicle = save.garage[0];
     if (!GENRES.includes(save.settings.genre)) save.settings.genre = 'reggae';

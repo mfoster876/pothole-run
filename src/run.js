@@ -57,7 +57,10 @@ export function resolveHits(run, cart, field, effects = cart._effects || {}) {
       // (gusts may still apply at the airborne-parity check above)
     } else {
       const tough = cart.character.toughness * (cart.vehicle ? cart.vehicle.toughness : 1);
-      cart.condition = applyDamage(cart.condition, info.damage / tough);
+      const resist = (cart.blessing && cart.blessing.resist) || 0;
+      let dmg = info.damage / tough;
+      dmg *= (1 - Math.min(0.9, resist));        // blessing makes the cart more resilient
+      cart.condition = applyDamage(cart.condition, dmg);
       run.combo = 0;
       // windscreen youth: forced "wash" skims coins off your fare
       if (info.coinLoss) { run.coins = Math.max(0, run.coins - WIPER.coinLoss); cart.washed = true; }

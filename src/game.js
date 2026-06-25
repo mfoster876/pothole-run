@@ -31,6 +31,8 @@ import * as cashpotScreen from './screens/cashpot.js';
 import { rankFor } from './ranks.js';
 import { purchaseAspiration, canBuy } from './aspirations.js';
 import { playCashPot } from './cashpot.js';
+import * as tithesScreen from './screens/tithes.js';
+import { blessingEffects, decayBlessing, offeringAmount, giveTithe } from './tithes.js';
 
 const W = VIRTUAL.width, H = VIRTUAL.height;
 const GENRE_LABEL = { reggae: 'Reggae', ska: 'Ska', dancehall: 'Dancehall', hiphop: 'Hip-Hop' };
@@ -84,6 +86,12 @@ export function createGame(audio) {
     field = createField();
     run = createRun();
     effects = createEffects();
+    // Tithe blessing: resilience + longer invincibility + a brief roll-out grace.
+    cart.blessing = blessingEffects(save.blessing || 0);
+    if (cart.blessing.startGrace > 0) {
+      effects.super = cart.blessing.startGrace;
+      effects.superMax = cart.blessing.startGrace;
+    }
     // Seed bounties if this is the player's first run or they've been exhausted
     if (!save.bounties || save.bounties.length === 0) {
       save.bounties = rollBounties(rng, 3);
@@ -105,6 +113,8 @@ export function createGame(audio) {
     audio && audio.sfx('wreck');
     // Persist the ending condition (40% floor applied at next run start by createCart)
     save.condition = Math.max(0, cart.condition.value);
+    // Blessing fades a little each run — keeps faithful giving a recurring choice.
+    decayBlessing(save);
     // Bank earnings via economy module (ensures MIN_EARN floor)
     bankRun(save, run.coins);
     addCoins(save, run.coins);
@@ -350,6 +360,8 @@ export function createGame(audio) {
       const action = aspirations.hit(vx, vy, { W, H });
       if (action === 'back') { router.go('hub'); return; }
       if (action === 'cashpot') { cashpotResult = null; router.go('cashpot'); return; }
+      // Tithes is a recurring offering, not a one-time buy — open its own screen.
+      if (action === 'row:tithes') { router.go('tithes'); return; }
       if (action && action.startsWith('row:')) {
         const id = action.slice(4);
         if (canBuy(save, id)) {
@@ -372,6 +384,18 @@ export function createGame(audio) {
       if (action === 'play') {
         cashpotResult = playCashPot(save, Math.random);
         writeSave(save);
+        return;
+      }
+      return;
+    }
+
+    // Tithes & Offerings — choose an amount to give for a blessing
+    if (screen === 'tithes') {
+      const action = tithesScreen.hit(vx, vy, { W, H });
+      if (action === 'back') { router.go('aspirations'); return; }
+      if (action && action.startsWith('give:')) {
+        const amount = offeringAmount(save, action.slice(5));
+        if (giveTithe(save, amount)) { audio && audio.sfx('cash'); writeSave(save); }
         return;
       }
       return;
@@ -409,7 +433,7 @@ export function createGame(audio) {
       if (key === 'Escape') router.go('hub');
       return;
     }
-    if (screen === 'cashpot') {
+    if (screen === 'cashpot' || screen === 'tithes') {
       if (key === 'Escape') router.go('aspirations');
       return;
     }
@@ -465,6 +489,11 @@ export function createGame(audio) {
     }
     if (screen === 'cashpot') {
       cashpotScreen.render(ctx, { save, lastResult: cashpotResult, W, H });
+      if (state.popup) renderPopup(ctx, state.popup);
+      return;
+    }
+    if (screen === 'tithes') {
+      tithesScreen.render(ctx, { save, W, H });
       if (state.popup) renderPopup(ctx, state.popup);
       return;
     }

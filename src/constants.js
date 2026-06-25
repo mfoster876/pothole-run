@@ -59,3 +59,5 @@ export const VIRTUAL = { width: 960, height: 540 };
 // Passing traffic buffets the cart: when a fast vehicle in a neighbouring lane
 // blows past, its wake shoves the cart sideways (away from the vehicle).
 export const GUST = { range: 0.95, push: 1.6, fromTaxi: 1.0, fromBus: 1.3, fromCoaster: 1.0 };
+
+export const TITHE = { mite: 2000, perGift: 0.5, maxResist: 0.40, maxExtend: 0.50, maxGrace: 3, decay: 0.15 };

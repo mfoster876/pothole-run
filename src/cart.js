@@ -29,7 +29,8 @@ export function createCart(character, vehicle = getVehicle('handcart'), stabilit
     stability: (vehicle.stability || 1) + stabilityBonus, // higher = steadier
     condition: { value: startCondition(savedCondition), max: CART.maxCondition },
     jumpT: 0,         // seconds remaining airborne (set by sleeping-policeman hop)
-    tipsy: 0          // alcohol impairment magnitude 0..1 (set by applyDrink)
+    tipsy: 0,         // alcohol impairment magnitude 0..1 (set by applyDrink)
+    blessing: null    // { resist, invincExtend, startGrace } — set by game.js at run start
   };
 }
 export function steer(cart, dir) {

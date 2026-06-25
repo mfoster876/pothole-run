@@ -49,7 +49,8 @@ export function canDrink(character, id) {
 export function applyDrink(effects, cart, id) {
   const drink = DRINKS[id];
   if (!drink) return 0;
-  const boostDur = DRINK.baseDur * (0.5 + drink.potency);
+  let boostDur = DRINK.baseDur * (0.5 + drink.potency);
+  boostDur *= 1 + ((cart.blessing && cart.blessing.invincExtend) || 0);
   effects.super    = boostDur;
   effects.superMax = boostDur;
   if (drink.alcohol > 0) {
