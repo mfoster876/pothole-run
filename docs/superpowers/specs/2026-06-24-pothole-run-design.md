@@ -268,7 +268,58 @@ and a real iPhone (the parts that can't be meaningfully unit-tested).
 
 ---
 
-## 16. Open / deferred items
+## 16. Authenticity & hazard grounding
+
+Full reference: [`docs/superpowers/research/2026-06-24-jamaica-environment-research.md`](../research/2026-06-24-jamaica-environment-research.md).
+Stages and hazards are drawn from real Jamaican reporting, not invented. Key takeaways
+that bind the build:
+
+**Signature recurring mechanic — the stripped road (scrap-metal theft).** This is the
+game's distinctive, true-to-life hazard family and a thematic throughline (the *reason*
+the road is so deadly). Grounded in NWA / Road Safety Unit reporting (~36 signs stolen
+in Portmore 2012–14; manhole/water-meter covers, guardrails, even bridge rails off
+Washington Boulevard, all sold for scrap). In-game it appears as:
+- **Open manholes / missing drain covers** — black instant-fail pits, deadlier than a
+  pothole, sometimes mid-lane with no warning.
+- **Sign-stripped junctions** — a bare metal stub where a stop/keep-left sign was, so
+  cross-traffic (a route taxi) appears with no warning.
+- **Missing guardrails** on cliff/bridge/hill edges — nothing between the cart and the
+  drop (Negril West End, hill bends).
+- **Cut street-light poles** — the in-world justification for dark night stages.
+- Optional roadside vignette: a **scrap-thief NPC** sawing a rail / dragging a cover.
+
+**Telegraphing via improvised markers.** Because real signs are gone, Jamaicans mark
+craters with what's to hand — a **branch jammed in the pothole**, a ring of
+**rockstones**, a **breeze-block**, an old tyre. In-game these *telegraph* a crater just
+ahead, rewarding players who read the verge (and can be used for the occasional fake-out).
+
+**"Craters," not potholes.** Reporting calls them craters and the road a "moonscape" —
+useful register for naming and for the pothole art (sharp black shadow lips, mismatched
+patch scars, wavy undulating asphalt, white marl ribbon roads).
+
+**Flavour vocabulary to use** (HUD, signage, character barks): *crater, sleeping
+policeman* (speed bump), *robot/route taxi* (red plates), *yeng-yeng* (motorbike swarm),
+*higgler* (market vendor), *JUTC bus + conductor*, *zinc fence*.
+
+**MVP stage grounding (the 3 we ship first):**
+- **Fern Gully** — green fern-tunnel with dappled light; hazards: overturned paint truck
+  + slick, sudden river-flood across the road, wet shadow patches, vendor-stall pinch.
+- **Holland Bamboo** — golden bamboo arch; hazards: stray goats/cattle, schoolchildren
+  crossing (Holland Primary zone), speeding oncoming bus on the straight, fallen bamboo
+  culms, washboard surface.
+- **Negril 7-Mile + West End** — leaning palms / sunset / cliff lighthouse; hazards:
+  road narrowing where erosion ate the shoulder, **missing-guardrail cliff drop**,
+  pothole field, hustler stepping into the lane, route-taxi dead-stop, darting
+  pedestrian, stray goat.
+
+**Hazard tiers for the spawner** (`spawner.js` reads these): *common* = craters, goats,
+DIY speed bumps, marker-telegraphed craters, fare-stopping taxis; *mid* = open manholes,
+missing-guardrail edges, darting dogs, yeng-yeng swarm, breakdown squeeze, JUTC bus;
+*set-piece* = cattle-herd crossing, flood-hidden craters, blind-corner head-on taxi.
+
+---
+
+## 17. Open / deferred items
 
 - **Final name** (Pothole Run vs Cyaa Stop Wi vs other) — can be decided any time
   before launch; does not block the build.
