@@ -16,12 +16,14 @@ export function spawn(field, type, laneIndex, z) {
   e.halfWidth = ENTITY_HALF_WIDTH;
   e.collected = false;
   e.seed = Math.random();        // stable per-spawn shape seed (craters, slicks)
+  e.vz = info.vz || 0;           // extra closing speed (overtaking traffic)
+  e.gust = info.gust || null;    // wake-gust key, or null
   return e;
 }
-export function advance(field, dz) {
+export function advance(field, dz, dt = 0) {
   for (const e of field.pool) {
     if (!e.active) continue;
-    e.z -= dz;
+    e.z -= dz + (e.vz || 0) * dt; // traffic closes faster than the world scrolls
     // Retire once well past the cart. The margin must exceed one frame's travel so
     // an entity is never retired in the same frame it crosses the cart plane (which
     // would let it slip past resolveHits unseen).

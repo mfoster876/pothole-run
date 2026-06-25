@@ -11,10 +11,13 @@ export function drawEntity(ctx, type, sx, sy, size, seed = 0.137) {
     case 'bump': roundedBar(ctx, sx, sy, s * 1.4, s * 0.3, '#8a8a8a'); break;
     case 'goat': blob(ctx, sx, sy, s * 0.6, '#d8c7b0', '#6b5a3a'); break;
     case 'dog': blob(ctx, sx, sy, s * 0.5, '#9a7a4a', '#5a4326'); break;
+    case 'cat': blob(ctx, sx, sy, s * 0.34, '#5a5a5a', '#333333'); break;
     case 'cattle': blob(ctx, sx, sy, s * 0.85, '#5a4636', '#2f261d'); break;
     case 'taxi': vehicle(ctx, sx, sy, s, '#c0382c'); break;
-    case 'bus': vehicle(ctx, sx, sy, s * 1.2, '#e7c84a'); break;
+    case 'bus': vehicle(ctx, sx, sy, s * 1.35, '#e7c84a'); break;
+    case 'coaster': vehicle(ctx, sx, sy, s * 1.15, '#eef0f2'); break;
     case 'hustler': person(ctx, sx, sy, s, '#d06a30'); break;
+    case 'jaywalker': person(ctx, sx, sy, s, '#3a6ea5'); break;
     case 'stall': roundedBar(ctx, sx, sy, s * 1.2, s * 0.8, '#7a4a22'); break;
     default: crater(ctx, sx, sy, s, seed);
   }

@@ -1,7 +1,7 @@
 import { laneOverlap } from './collision.js';
 import { applyDamage, repair } from './wreck.js';
 import { hazardInfo } from './hazardTypes.js';
-import { DAMAGE } from './constants.js';
+import { DAMAGE, GUST } from './constants.js';
 
 export function createRun() {
   return { distance: 0, coins: 0 };
@@ -18,7 +18,15 @@ export function resolveHits(run, cart, field) {
     e.collected = true;                    // consume this entity's single chance
     const info = hazardInfo(e.type);
     const magnet = info.collectible ? cart.character.coinDraw : 1;
-    if (!laneOverlap(cart.x, cart.halfWidth * magnet, e.x, e.halfWidth)) continue; // dodged
+    if (!laneOverlap(cart.x, cart.halfWidth * magnet, e.x, e.halfWidth)) {
+      // dodged — but a passing vehicle's wake still shoves the cart sideways
+      if (e.gust && Math.abs(cart.x - e.x) < GUST.range) {
+        const dir = cart.x >= e.x ? 1 : -1; // pushed away from the vehicle
+        cart.vx = (cart.vx || 0) + dir * GUST.push * (GUST[e.gust] || 1);
+        cart.gusted = true;
+      }
+      continue;
+    }
     e.active = false;
     if (info.collectible) {
       run.coins += 1;

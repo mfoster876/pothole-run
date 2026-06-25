@@ -86,6 +86,17 @@ export function createAudio() {
     if (kind === 'squeak') { const b = 1700 + Math.random() * 1000; rub(t, b, b * 0.66, 0.05, 0.16, 2600, 7); }
     // low wooden creak when the cart leans into a turn
     if (kind === 'creak') { const b = 120 + Math.random() * 70; rub(t, b, b * 1.5, 0.08, 0.2, 380, 3); }
+    // airy whoosh of a vehicle blasting past (sweeping band-passed wash)
+    if (kind === 'whoosh') {
+      const o = ctx.createOscillator(), g = ctx.createGain(), bp = ctx.createBiquadFilter();
+      bp.type = 'bandpass'; bp.Q.value = 0.7;
+      bp.frequency.setValueAtTime(600, t); bp.frequency.exponentialRampToValueAtTime(2400, t + 0.16);
+      bp.frequency.exponentialRampToValueAtTime(500, t + 0.34);
+      o.type = 'sawtooth'; o.frequency.setValueAtTime(170, t); o.frequency.linearRampToValueAtTime(80, t + 0.34);
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.13, t + 0.06);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.36);
+      o.connect(bp); bp.connect(g); g.connect(master); o.start(t); o.stop(t + 0.38);
+    }
   }
   function setMuted(v) { muted = v; if (master) master.gain.value = v ? 0 : 0.5; }
 

@@ -50,3 +50,17 @@ test('fragile conductor takes more pothole damage than tough rasta', () => {
   spawn(r.field, 'pothole', 1, 0); resolveHits(r.run, r.cart, r.field);
   assert.ok(c.cart.condition.value < r.cart.condition.value);
 });
+test('a bus passing in the next lane gusts the cart sideways without damaging it', () => {
+  const { cart, field, run } = setup();   // cart in middle lane (x = 0)
+  spawn(field, 'bus', 2, 0);              // bus in the right lane (x = 0.6)
+  resolveHits(run, cart, field);
+  assert.equal(cart.condition.value, 100); // no contact, no damage
+  assert.ok(cart.vx < 0);                  // shoved left, away from the bus
+  assert.equal(cart.gusted, true);
+});
+test('a vehicle in the same lane still collides (damages), no free pass', () => {
+  const { cart, field, run } = setup();
+  spawn(field, 'bus', 1, 0);             // same lane as cart
+  resolveHits(run, cart, field);
+  assert.ok(cart.condition.value < 100);
+});

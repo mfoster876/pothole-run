@@ -68,17 +68,21 @@ export function createGame(audio) {
     const dz = cart.speed * dt * 4;
     camZ += dz;
     run.distance += cart.speed * dt * 0.1 * cart.character.scoreMult;
-    advance(field, dz);
+    advance(field, dz, dt);
     spawnZ -= dz;
     if (spawnZ <= 0) {
-      spawn(field, pickHazard(stage.hazardWeights, rng), laneFor(rng, 3), 5200);
+      const type = pickHazard(stage.hazardWeights, rng);
+      const lane = type === 'bus' ? 0 : laneFor(rng, 3); // JUTC buses overtake on the left
+      spawn(field, type, lane, 5200);
       spawnZ = spawnInterval(run.distance) * 8;
     }
     const coinsBefore = run.coins, condBefore = cart.condition.value;
+    cart.gusted = false;
     resolveHits(run, cart, field);
     // independent: a coin and a hazard can both resolve in the same frame
     if (run.coins > coinsBefore) audio && audio.sfx('coin');
     if (cart.condition.value < condBefore) { audio && audio.sfx('hit'); hitShake = 1; }
+    if (cart.gusted) { audio && audio.sfx('whoosh'); hitShake = Math.max(hitShake, 0.55); }
     // rhythmic wheel squeak, paced by distance rolled (faster = squeakier)
     squeakAccum += dz;
     if (squeakAccum >= 215) { squeakAccum -= 215; audio && audio.sfx('squeak'); }

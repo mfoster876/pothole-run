@@ -6,6 +6,7 @@ export function createCart(character) {
     character,
     laneIndex: 1,
     x: LANES[1],
+    vx: 0,            // lateral velocity from gusts (decays)
     halfWidth: PLAYER_HALF_WIDTH,
     speed: CART.startSpeed,
     lean: 0,
@@ -16,6 +17,10 @@ export function steer(cart, dir) {
   cart.laneIndex = Math.max(0, Math.min(LANES.length - 1, cart.laneIndex + dir));
 }
 export function updateCart(cart, dt) {
+  // gust push first, then the driver hauls the cart back toward its lane
+  cart.x += (cart.vx || 0) * dt;
+  cart.vx = (cart.vx || 0) * Math.exp(-6 * dt);
+  cart.x = Math.max(-1.1, Math.min(1.1, cart.x));
   const targetX = LANES[cart.laneIndex];
   const k = CART.laneLerp * cart.character.handling;
   const t = 1 - Math.exp(-k * dt);
