@@ -14,20 +14,20 @@ copy patois and comedic throughout.
 - **Politician immunity:** if the driver is `politician`, the cops wave him through —
   no stop triggers at all (diplomatic immunity). Expose `isImmune(character)`.
 
-## The shakedown — "Right or left, driva?"  (DECISION: guess sets the stakes)
-1. The officer barks **"Right or left, driva?"** — two buttons, LEFT / RIGHT.
-2. The pick **randomly reveals the shakedown** (weighted by vehicle — worse in a car):
-   - Handcart / cheap ride → minor: "Mi did see yuh a speed!" → small bribe or small fine.
-   - Car → can escalate: "Weh yuh registration / fitness?" → heavy fine OR **confiscation**.
-   - Either → "Di whole squad hungry" → you're buying lunch for the WHOLE squad (a
-     multiplied bribe that eats your budget).
-3. Then the player chooses their response:
-   - **Buy him a lunch** (bribe) — pay now from wallet, settles instantly. (Squad = bribe × N.)
-   - **"Cha, write di ticket"** (risk) — the fine goes on your **court tab** (`save.fines`)
-     and you keep driving. BUT on a confiscation-tier stop in a car, refusing means he
-     **takes the vehicle**: remove it from the garage and revert `save.vehicle` to
-     `handcart` — you must repurchase it.
-   - If you can't afford the bribe, only the risk option is available.
+## The shakedown — "Right or left, driva?"  (DECISION: right/left = RISK vs BRIBE)
+The officer barks **"Right or left, driva?"** — and the two sides ARE the choice
+(Milton's clarification): one side = **BRIBE**, the other = **RISK**. (Pick a fixed
+mapping and label it on the buttons so it's never ambiguous, e.g. LEFT = bribe him a
+lunch, RIGHT = risk it.)
+
+- **BRIBE — buy him a lunch:** pay now from wallet, settles instantly. The cost scales
+  with the vehicle, and a "whole squad" stop multiplies it (bribe × N) — eats the budget.
+- **RISK — "cha, write di ticket":** roll the consequence, weighted by vehicle (worse in
+  a car): speeding / no registration / no fitness → a **fine** added to your **court tab**
+  (`save.fines`) and you keep driving; a confiscation-tier roll in a car **takes the
+  vehicle** (remove from garage, revert `save.vehicle` to `handcart`, repurchase to
+  get it back). The risk is genuinely risky — sometimes you walk, sometimes it stings.
+- If the player can't afford the bribe, only RISK is available.
 
 ## Traffic Court — start-menu screen
 - New hub button → **TRAFFIC COURT** screen showing your outstanding `save.fines`.

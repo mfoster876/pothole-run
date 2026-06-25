@@ -6,12 +6,13 @@ import { rankFor, nextRank } from '../ranks.js';
 
 // Lazy-built button rects — recalculated each render for the current W/H.
 function hubRects(W, H) {
-  const bw = Math.round(W * 0.60), bh = 56;
+  const bw = Math.round(W * 0.60), bh = 50;
   const bx = (W - bw) / 2;
   return {
-    play:        { x: bx, y: H * 0.36 - bh / 2, w: bw, h: bh },
-    mechshop:    { x: bx, y: H * 0.50 - bh / 2, w: bw, h: bh },
-    cardealer:   { x: bx, y: H * 0.64 - bh / 2, w: bw, h: bh },
+    play:        { x: bx, y: H * 0.34 - bh / 2, w: bw, h: bh },
+    races:       { x: bx, y: H * 0.45 - bh / 2, w: bw, h: bh },
+    mechshop:    { x: bx, y: H * 0.56 - bh / 2, w: bw, h: bh },
+    cardealer:   { x: bx, y: H * 0.67 - bh / 2, w: bw, h: bh },
     aspirations: { x: bx, y: H * 0.78 - bh / 2, w: bw, h: bh },
     help:        { x: W - 64, y: 18, w: 46, h: 46 }  // small "?" — How To Play
   };
@@ -49,7 +50,8 @@ export function render(ctx, { save, W, H }) {
   }
 
   const R = hubRects(W, H);
-  btn(ctx, R.play,        'PLAY',         { stroke: '#f0c020', text: '#f0c020', font: '700 34px "Courier New", monospace' });
+  btn(ctx, R.play,        'PLAY',         { stroke: '#f0c020', text: '#f0c020', font: '700 32px "Courier New", monospace' });
+  btn(ctx, R.races,       'STREET RACES', { stroke: '#e0a52a', text: '#e0a52a', font: '700 26px "Courier New", monospace' });
   btn(ctx, R.mechshop,    'MECH SHOP',    { stroke: '#cbe7cf' });
   btn(ctx, R.cardealer,   'CAR DEALER',   { stroke: '#cbe7cf' });
   btn(ctx, R.aspirations, 'ASPIRATIONS',  { stroke: '#9fb8a3', text: '#9fb8a3' });
@@ -66,6 +68,7 @@ export function hit(x, y, { W, H }) {
   const R = hubRects(W, H);
   if (inRect(R.help, x, y))        return 'help';
   if (inRect(R.play, x, y))        return 'play';
+  if (inRect(R.races, x, y))       return 'races';
   if (inRect(R.mechshop, x, y))    return 'mechshop';
   if (inRect(R.cardealer, x, y))   return 'cardealer';
   if (inRect(R.aspirations, x, y)) return 'aspirations';

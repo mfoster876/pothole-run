@@ -1,4 +1,4 @@
-const CACHE = 'pothole-run-v18';
+const CACHE = 'pothole-run-v19';
 const ASSETS = [
   './', './index.html', './styles.css', './manifest.webmanifest',
   './src/main.js', './src/constants.js', './src/game.js', './src/road.js',
@@ -20,6 +20,7 @@ const ASSETS = [
   './src/portrait.js',  // Phase 2: front-facing driver portraits
   './src/usermusic.js', './src/screens/help.js',  // Phase 2.1: custom soundtracks + help screen
   './src/charitems.js',  // Phase 2.2: character-specific bleach / wholesome items
+  './src/races.js', './src/screens/races.js',  // Phase 2.4: bank-gated street races
   './assets/icons/icon-192.png', './assets/icons/icon-512.png'
 ];
 self.addEventListener('install', (e) => {

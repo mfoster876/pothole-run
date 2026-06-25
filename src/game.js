@@ -33,6 +33,8 @@ import { rankFor } from './ranks.js';
 import { purchaseAspiration, canBuy } from './aspirations.js';
 import { playCashPot } from './cashpot.js';
 import * as tithesScreen from './screens/tithes.js';
+import * as racesScreen from './screens/races.js';
+import { tierById, enterRace, tickRival, placement, settleRace } from './races.js';
 import { blessingEffects, decayBlessing, offeringAmount, giveTithe, pray, readBible } from './tithes.js';
 import { renderPortrait } from './portrait.js';
 import * as help from './screens/help.js';
@@ -79,6 +81,8 @@ export function createGame(audio) {
   let endingId = null; // tracks which aspiration's ending is showing
   let goldToast = 0;  // frames remaining to show GOLD CART UNLOCK toast
   let cashpotResult = null; // last result from playCashPot
+  let race = null;          // active street-race state ({tier, finish, rivals}) or null
+  let raceResult = null;    // last race result banner for the races screen
   let myMusicCount = 0; // how many of the player's own tracks are stored (for the riddim picker)
   const rng = Math.random;
   function refreshMusicCount() { try { countMusic().then((n) => { myMusicCount = n || 0; }).catch(() => {}); } catch (_) {} }
@@ -126,6 +130,34 @@ export function createGame(audio) {
     } else {
       audio && audio.playStage(stage.musicId);
     }
+  }
+  // Start a bank-gated street race: pay the buy-in, then drive a normal run toward the
+  // tier's finish line with 3 AI rivals pacing alongside.
+  function startRace(tierId) {
+    const tier = tierById(tierId);
+    const r = enterRace(save, tier, rng);   // deducts the buy-in, builds rivals
+    if (!r) {
+      state.popup = { title: 'NUH RICH YET', lines: ['Yuh need ' + formatMoney(tier.buyIn) + ' fi enter,', 'an di bank fi unlock it.'] };
+      return;
+    }
+    writeSave(save);
+    startRun(menuChoice.character, menuChoice.stage);
+    race = r;   // mark race mode (set AFTER startRun so it isn't cleared)
+  }
+  // Conclude a race at the given placement: bank the road coins like a normal run, pay
+  // the purse by placement, and drop back to the races screen with the result banner.
+  function finishRace(place) {
+    save.condition = Math.max(0, cart.condition.value);
+    decayBlessing(save);
+    bankRun(save, run.coins);
+    addCoins(save, run.coins);
+    raceResult = settleRace(save, race.tier, place);
+    writeSave(save);
+    audio && audio.sfx(place === 1 ? 'cash' : 'wreck');
+    audio && audio.stop();
+    race = null;
+    router.go('races');
+    state.mode = 'menu';
   }
   function endRun() {
     state.mode = 'gameover';
@@ -183,6 +215,11 @@ export function createGame(audio) {
     camZ += dz;
     const dDist = cart.speed * dt * 0.1 * cart.character.scoreMult;
     run.distance += dDist;
+    // Street race: pace the rivals off the player's speed; cross the line to settle.
+    if (race) {
+      for (const rv of race.rivals) tickRival(rv, dt, cart.speed * 0.1 * cart.character.scoreMult, rng);
+      if (run.distance >= race.finish) { finishRace(placement(run.distance, race.rivals)); return; }
+    }
     advance(field, dz, dt);
     spawnZ -= dz;
     if (spawnZ <= 0) {
@@ -220,7 +257,7 @@ export function createGame(audio) {
     if (squeakAccum >= (shoulder ? 120 : 215)) { squeakAccum -= (shoulder ? 120 : 215); audio && audio.sfx('squeak'); }
     // Soft-shoulder tipping: lean grows while out there, recovers back on the road.
     // Tip too far for too long and the cart topples — an instant wreck.
-    if (tipShoulder(cart, shoulder, dt)) { cart.toppled = true; endRun(); return; }
+    if (tipShoulder(cart, shoulder, dt)) { cart.toppled = true; if (race) finishRace(race.rivals.length + 1); else endRun(); return; }
     if (shoulder) cart.condition = applyDamage(cart.condition, SHOULDER.drainPerSec * dt);
     // The reel lean deepens with the tilt so the player can see how close to over it is.
     const reelTarget = shoulder ? (cart.laneIndex === 0 ? -1 : 1) * (0.17 + 0.55 * (cart.tilt || 0) + Math.sin(camZ * 0.06) * 0.05) : 0;
@@ -245,7 +282,7 @@ export function createGame(audio) {
       }
     }
 
-    if (isWrecked(cart.condition)) endRun();
+    if (isWrecked(cart.condition)) { if (race) finishRace(race.rivals.length + 1); else endRun(); }
   }
 
   function render(ctx) {
@@ -271,6 +308,26 @@ export function createGame(audio) {
     drawCart(ctx, cart, cp.x + cartCurve + jitX, cp.y + 6 + bobPx, cp.size * 0.9);
     renderTouchZones(ctx, W, H);
     renderHud(ctx, { stageName: stage.name, coins: run.coins, distance: run.distance, condition: cart.condition, effects }, W, H);
+    if (race) renderRaceHud(ctx);
+  }
+
+  // In-race overlay: live placement ladder + distance to the finish line. The ladder is
+  // the source of truth for position (rivals aren't drawn on the road in this version).
+  function renderRaceHud(ctx) {
+    const place = placement(run.distance, race.rivals);
+    const toGo = Math.max(0, Math.ceil(race.finish - run.distance));
+    const ord = ['', '1ST', '2ND', '3RD', '4TH'][place] || (place + 'TH');
+    ctx.save();
+    ctx.fillStyle = 'rgba(14,26,18,0.82)'; ctx.fillRect(W / 2 - 130, 62, 260, 50);
+    ctx.strokeStyle = place === 1 ? '#f0c020' : '#3a4a3e'; ctx.lineWidth = 2;
+    ctx.strokeRect(W / 2 - 130, 62, 260, 50);
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = place === 1 ? '#f0c020' : '#f4f1e6';
+    ctx.font = '700 24px "Courier New", monospace';
+    ctx.fillText('🏁 ' + ord + ' / ' + (race.rivals.length + 1), W / 2, 80);
+    ctx.fillStyle = '#9fb8a3'; ctx.font = '500 14px "Courier New", monospace';
+    ctx.fillText(toGo + ' m to di line', W / 2, 100);
+    ctx.restore();
   }
 
   // --- input ---
@@ -422,6 +479,14 @@ export function createGame(audio) {
       return;
     }
 
+    // Street races — pick a bank-gated tier and enter (pays the buy-in)
+    if (screen === 'races') {
+      const action = racesScreen.hit(vx, vy, { W, H });
+      if (action === 'back') { raceResult = null; router.go('hub'); return; }
+      if (action && action.startsWith('enter:')) { startRace(action.slice(6)); return; }
+      return;
+    }
+
     // Faith & Offerings — pray, read the Bible, or tithe to sustain the blessing
     if (screen === 'tithes') {
       const action = tithesScreen.hit(vx, vy, { W, H });
@@ -540,6 +605,11 @@ export function createGame(audio) {
     }
     if (screen === 'tithes') {
       tithesScreen.render(ctx, { save, W, H });
+      if (state.popup) renderPopup(ctx, state.popup);
+      return;
+    }
+    if (screen === 'races') {
+      racesScreen.render(ctx, { save, lastResult: raceResult, W, H });
       if (state.popup) renderPopup(ctx, state.popup);
       return;
     }
