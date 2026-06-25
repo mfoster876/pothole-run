@@ -106,7 +106,8 @@ export function render(ctx, { save, W, H }) {
 
   // GRIP meter — every part you buy visibly raises GRIP, and GRIP is what you FEEL on the
   // road: steadier steering, soaking up the gusts from passing buses, holding a clean line.
-  const gripFrac = Math.max(0, Math.min(1, stabilityBonus(owned, save.vehicle) / 0.8));
+  const maxBonus = set.reduce((s, u) => s + u.stability, 0) || 1;
+  const gripFrac = Math.max(0, Math.min(1, stabilityBonus(owned, save.vehicle) / maxBonus));
   ctx.fillStyle = '#9fb8a3'; ctx.font = '500 13px "Courier New", monospace';
   ctx.fillText('GRIP — steadier steering · soaks up gusts · holds the line', W / 2, H * 0.505);
   const gbx = R.repair.x, gby = H * 0.522;

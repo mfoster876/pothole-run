@@ -299,7 +299,7 @@ export function createGame(audio) {
     // any damage event ratchets the permanent rattle up — but a steadier, upgraded ride
     // holds its composure, ratcheting (and so visibly shaking) noticeably less per hit.
     if (cart.condition.value < condBefore) {
-      const rattleGain = 0.05 * Math.max(0.5, 1.2 - 0.4 * (cart.stability || 1));
+      const rattleGain = 0.05 * Math.max(0.5, 1.28 - 0.4 * (cart.stability || 1));
       cart.rattle = Math.min(0.5, cart.rattle + rattleGain);
     }
     if (cart.washed) { audio && audio.sfx('wash'); hitShake = Math.max(hitShake, 0.4); }

@@ -96,8 +96,9 @@ export function updateCart(cart, dt) {
   // gust push first, then the driver hauls back toward the slot (offset by any drift)
   cart.x += (cart.vx || 0) * dt;
   // A steadier ride also sheds gust velocity faster — it settles back onto its line
-  // instead of wallowing after a knock (stability tightens the recovery).
-  cart.vx = (cart.vx || 0) * Math.exp(-(5 + 2 * stability) * dt);
+  // instead of wallowing after a knock (stability tightens the recovery). Centred so the
+  // stock handcart (stability 0.70) keeps its original −6/s decay; upgrades only speed it.
+  cart.vx = (cart.vx || 0) * Math.exp(-(4.6 + 2 * stability) * dt);
   cart.x = Math.max(-1.1, Math.min(1.1, cart.x));
   // A loose rig won't hold a clean line: drift pulls the settle point off-slot, so a
   // wobbly handcart wanders and you must keep correcting. Steady rigs zero it out.
@@ -109,7 +110,8 @@ export function updateCart(cart, dt) {
   }
   // Square the handling spread, then let stability tighten (or loosen) the settle — a
   // wider weight so mech-shop parts make the steering noticeably snappier and more planted.
-  const k = CART.laneLerp * Math.pow(effHandling(cart), 1.6) * (0.55 + 0.45 * stability);
+  // Centred so the stock handcart (0.70) keeps its original responsiveness; parts add snap.
+  const k = CART.laneLerp * Math.pow(effHandling(cart), 1.6) * (0.6 + 0.45 * stability);
   const t = 1 - Math.exp(-k * dt);
   cart.x += (targetX - cart.x) * t;
   cart.lean = (targetX - cart.x);
