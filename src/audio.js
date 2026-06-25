@@ -46,51 +46,67 @@ export function createAudio() {
     g.gain.setValueAtTime(vol, start); g.gain.exponentialRampToValueAtTime(0.0001, start + dur);
     src.connect(f); f.connect(g); g.connect(master); src.start(start); src.stop(start + dur + 0.02);
   }
+  // A low-passed stack of partials — warm, less buzzy than a raw oscillator. Used
+  // for rounded dub bass and the organ chords that give reggae its bubble.
+  function tone(freqs, t, dur, type, gain, lp) {
+    const g = ctx.createGain(), f = ctx.createBiquadFilter();
+    f.type = 'lowpass'; f.frequency.value = lp; f.Q.value = 0.6;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(gain, t + 0.014);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    for (const fr of freqs) { const o = ctx.createOscillator(); o.type = type; o.frequency.value = fr; o.connect(g); o.start(t); o.stop(t + dur + 0.02); }
+    g.connect(f); f.connect(master);
+  }
+  const bassNote = (fr, t, dur, gain) => tone([fr, fr * 0.5], t, dur, 'triangle', gain, 520); // warm, rounded dub bass
+  const organ = (root, t, dur, gain) => tone([root, root * 1.5, root * 2], t, dur, 'square', gain, 2000); // organ chord (root-fifth-octave)
+  const skank = (root, t, dur, gain) => tone([root * 2, root * 2.5, root * 3], t, dur, 'square', gain, 5000); // bright offbeat chop
 
   // --- one bar per genre. Returns the bar length in seconds. ---
   function bar(t0, root, beat) {
     if (genre === 'ska') {
+      const sw = beat * 0.03;                            // light swing
       for (let b = 0; b < 4; b++) {
         const t = t0 + b * beat;
         if (b % 2 === 0) drum(t, false);                 // kick on 1 & 3
         else noiseHit(t, 0.13, 2200, 0.22);              // snare backbeat 2 & 4
-        // bright upstroke chop on every offbeat
-        note(root * 2, t + beat / 2, beat * 0.16, 'square', 0.12);
-        note(root * 2.5, t + beat / 2, beat * 0.16, 'square', 0.09);
-        note(root * 3, t + beat / 2, beat * 0.16, 'square', 0.05);
-        const walk = [root, root * 1.25, root * 1.5, root * 1.68][b]; // walking bass
-        note(walk, t, beat * 0.42, 'triangle', 0.22);
-        noiseHit(t + beat / 2, 0.04, 6500, 0.05);        // light hat on the &
+        skank(root, t + beat / 2 + sw, beat * 0.15, 0.1);     // bright upstroke chop on the &
+        noiseHit(t + beat / 2, 0.04, 6500, 0.05);             // light hat on the &
       }
+      const walk = [root, root * 1.25, root * 1.5, root * 1.68]; // walking bassline
+      for (let b = 0; b < 4; b++) bassNote(walk[b], t0 + b * beat, beat * 0.4, 0.24);
     } else if (genre === 'dancehall') {
       for (let b = 0; b < 4; b++) {
         const t = t0 + b * beat;
         drum(t, false);                                  // digital four-on-the-floor
         if (b % 2 === 1) noiseHit(t, 0.16, 1500, 0.22);  // clap on 2 & 4
-        note(root * 3, t + beat / 2, beat * 0.2, 'square', 0.06); // synth stab
+        organ(root * 2, t + beat / 2, beat * 0.16, 0.05); // synth stab on the &
       }
-      // syncopated digital bassline riff across the bar (eighths)
+      // syncopated digital bassline riff across the bar (eighths) — the bounce
       const riff = [root, root, root * 1.5, root, root * 1.33, root, root * 1.5, root * 1.78];
-      for (let i = 0; i < 8; i++) note(riff[i], t0 + i * (beat / 2), beat * 0.4, 'triangle', 0.26);
+      for (let i = 0; i < 8; i++) bassNote(riff[i], t0 + i * (beat / 2), beat * 0.4, 0.26);
     } else if (genre === 'hiphop') {
+      const sw = beat * 0.06;                            // swung hats
       for (let b = 0; b < 4; b++) {
         const t = t0 + b * beat;
         if (b === 0) drum(t, false);                     // kick on 1
         if (b === 2) { drum(t, false); drum(t + beat / 2, false); } // kick on 3 + the &
         if (b % 2 === 1) noiseHit(t, 0.2, 1400, 0.26);   // fat snare on 2 & 4
       }
-      for (let i = 0; i < 8; i++) noiseHit(t0 + i * (beat / 2), 0.05, 6000, i % 2 ? 0.05 : 0.08); // swung hats
-      note(root, t0, beat * 1.8, 'sine', 0.3);           // sub bass
-      note(root * 0.75, t0 + beat * 2, beat * 1.8, 'sine', 0.3);
+      for (let i = 0; i < 8; i++) noiseHit(t0 + i * (beat / 2) + (i % 2 ? sw : 0), 0.05, 6000, i % 2 ? 0.05 : 0.08);
+      bassNote(root, t0, beat * 1.8, 0.3);               // deep sub bass
+      bassNote(root * 0.75, t0 + beat * 2, beat * 1.8, 0.3);
     } else {                                             // reggae one-drop (default)
+      const sw = beat * 0.05;                            // laid-back swing on the offbeats
       for (let b = 0; b < 4; b++) {
         const t = t0 + b * beat;
-        if (b === 2) { drum(t, false); noiseHit(t, 0.16, 1700, 0.22); } // one-drop on 3
-        note(root * 2, t + beat / 2, beat * 0.26, 'square', 0.1);       // offbeat skank
-        note(root * 2.5, t + beat / 2, beat * 0.26, 'square', 0.07);
-        const bass = [root, root, root * 1.33, root * 0.75][b];          // dub bassline
-        note(bass, t, beat * 0.55, 'triangle', 0.24);
+        if (b === 2) { drum(t, false); noiseHit(t, 0.16, 1700, 0.2); }  // one-drop on 3
+        skank(root, t + beat / 2 + sw, beat * 0.2, 0.075);              // guitar skank on the &
+        // organ "bubble": the syncopated shuffle that makes it read as reggae
+        organ(root, t + beat * 0.5 + sw, beat * 0.16, 0.05);
+        organ(root * 1.5, t + beat * 0.75 + sw, beat * 0.14, 0.042);
       }
+      const bass = [root, 0, root * 1.33, root * 0.75];  // walking dub line; rests on beat 2 for space
+      for (let b = 0; b < 4; b++) if (bass[b]) bassNote(bass[b], t0 + b * beat, beat * 0.6, 0.28);
     }
     return 4 * beat;
   }
