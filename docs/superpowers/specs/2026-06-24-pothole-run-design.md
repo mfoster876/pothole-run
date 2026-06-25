@@ -110,8 +110,12 @@ Nine locations, each with its own palette, hazard mix, and chiptune:
 Fern Gully · Holland Bamboo · Coronation Market · Montego Bay Pier 1 ·
 Negril 7-Mile Beach · Portmore back road · Old Hope Road · Norbrook · Cherry Gardens
 
-Plus **Downtown Kingston = unlockable HARD mode** (dense traffic, tight lanes,
-relentless potholes).
+Plus **Downtown Kingston = unlockable HARD mode**, styled as a **Tron-influenced
+neon-grid "digital dancehall"**: night setting, glowing road lines, laser-lit
+potholes, and the sound-system box throbbing neon to the riddim. Gameplay-wise it is
+the climax — dense traffic, tight lanes, relentless potholes. The Tron aesthetic is
+**deliberately contained to this stage**; every daytime location stays warm and
+tropical so the neon hit lands as a reward, not a reskin.
 
 **Two modes:**
 - **Stage Select** — pick a single location and run it.
@@ -197,6 +201,9 @@ only module that touches `localStorage`. This keeps each unit testable in isolat
 - **Chunky 16-bit (SNES-era) pixel art**, vibrant palette flattering to Jamaican
   colour. AI-generated sprites, each approved before integration.
 - Consistent sprite scale and palette across personas and environments.
+- **One deliberate exception:** the Downtown Kingston hard mode (§7) uses a
+  dark **neon-grid (Tron-influenced) night palette** — glowing road lines, neon
+  edges, laser potholes. Same sprites, recoloured/glow-treated for the night stage.
 
 ---
 
@@ -225,7 +232,7 @@ only module that touches `localStorage`. This keeps each unit testable in isolat
 
 **Phase 2 — Full game:**
 - Remaining 4 drivers + 6 stages.
-- Downtown Kingston hard mode.
+- Downtown Kingston hard mode (Tron-influenced neon-grid night stage).
 - "Round Jamaica" endless polish + full unlock economy.
 - Personas as road traffic/cameos across all stages.
 - Additional chiptunes and SFX polish.
