@@ -5,7 +5,7 @@ makeshift **handcart** — sound system blaring on the back — down Jamaica's
 notoriously potholed roads, sliding between lanes to dodge craters, traffic and
 goats for as long as your rotten cart holds together.
 
-- **Play:** _(GitHub Pages URL goes here once deployed)_
+- **Play:** https://mfoster876.github.io/pothole-run/
 - **Controls:** hold left / right (touch) or arrow keys / A,D. `M` mutes.
 - **Built with:** vanilla HTML5 Canvas + ES modules, no build step, no dependencies.
 - **Run tests:** `node --test`
