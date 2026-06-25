@@ -18,7 +18,10 @@ export const HAZARD_TYPES = {
   flood:    { damage: DAMAGE.bump,    collectible: false, depth: 4, color: '#5a705a', label: 'flooded patch' },
   dog:      { damage: DAMAGE.animal,  collectible: false, depth: 3, color: '#9a7a4a', label: 'street dog', vz: 120 },
   cat:      { damage: DAMAGE.animal,  collectible: false, depth: 2, color: '#5a5a5a', label: 'cat', vz: 160 },
-  cattle:   { damage: DAMAGE.traffic, collectible: false, depth: 5, color: '#5a4636', label: 'stray cattle' }
+  cattle:   { damage: DAMAGE.traffic, collectible: false, depth: 5, color: '#5a4636', label: 'stray cattle' },
+  // soapy-can windscreen youth — only spawns when you're driving a car. Minor
+  // scrape damage, but costs you coins (`coinLoss` handled in run.js).
+  wiper:    { damage: DAMAGE.wiper,   collectible: false, depth: 3, color: '#5aa0c0', label: 'windscreen youth', coinLoss: true }
 };
 export function hazardInfo(type) {
   return HAZARD_TYPES[type] ?? HAZARD_TYPES.pothole;

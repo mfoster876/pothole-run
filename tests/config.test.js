@@ -30,7 +30,14 @@ test('every stage has required fields and a 3-lane hazard weight table', () => {
     for (const w of s.hazardWeights) assert.ok('type' in w && 'weight' in w);
   }
 });
-test('MVP ships 3 stages; fern-gully unlocked by default', () => {
-  assert.deepEqual(STAGES.map(s => s.id), ['fern-gully', 'holland-bamboo', 'negril']);
+test('stage list incl. New Kingston; fern-gully unlocked by default', () => {
+  assert.deepEqual(STAGES.map(s => s.id), ['fern-gully', 'holland-bamboo', 'negril', 'new-kingston']);
   assert.equal(getStage('fern-gully').locked, false);
+});
+test('JUTC buses run only in Kingston', () => {
+  for (const s of STAGES) {
+    const hasBus = s.hazardWeights.some(w => w.type === 'bus');
+    if (s.id === 'new-kingston') assert.ok(hasBus, 'Kingston should have buses');
+    else assert.ok(!hasBus, `${s.id} should not have JUTC buses`);
+  }
 });

@@ -16,10 +16,16 @@ export const DAMAGE = {
   traffic: 26,
   animal: 20,
   bump: 6,
+  wiper: 5,            // soapy-can windscreen youth: a nuisance scrape, not a wreck
   repairPerCoin: 4
 };
 
-export const SPAWN = { baseInterval: 60, minInterval: 22, ramp: 500 };
+// Windscreen youths cost you coins (a "forced wash") more than condition.
+export const WIPER = { coinLoss: 6 };
+
+// Hazard spacing: wide gaps at the start (less cluttered, learnable), tightening
+// as `distance` climbs and the ride gets faster. Floor keeps it survivable.
+export const SPAWN = { baseInterval: 90, minInterval: 20, ramp: 22 };
 export const MAX_DPR = 2;
 export const VIRTUAL = { width: 960, height: 540 };
 

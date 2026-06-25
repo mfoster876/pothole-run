@@ -1,7 +1,7 @@
 import { laneOverlap } from './collision.js';
 import { applyDamage, repair } from './wreck.js';
 import { hazardInfo } from './hazardTypes.js';
-import { DAMAGE, GUST } from './constants.js';
+import { DAMAGE, GUST, WIPER } from './constants.js';
 
 export function createRun() {
   return { distance: 0, coins: 0 };
@@ -32,7 +32,10 @@ export function resolveHits(run, cart, field) {
       run.coins += 1;
       cart.condition = repair(cart.condition, DAMAGE.repairPerCoin);
     } else {
-      cart.condition = applyDamage(cart.condition, info.damage / cart.character.toughness);
+      const tough = cart.character.toughness * (cart.vehicle ? cart.vehicle.toughness : 1);
+      cart.condition = applyDamage(cart.condition, info.damage / tough);
+      // windscreen youth: forced "wash" skims coins off your fare
+      if (info.coinLoss) { run.coins = Math.max(0, run.coins - WIPER.coinLoss); cart.washed = true; }
     }
   }
 }

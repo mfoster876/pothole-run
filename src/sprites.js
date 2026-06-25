@@ -18,6 +18,7 @@ export function drawEntity(ctx, type, sx, sy, size, seed = 0.137) {
     case 'coaster': vehicle(ctx, sx, sy, s * 1.15, '#eef0f2'); break;
     case 'hustler': person(ctx, sx, sy, s, '#d06a30'); break;
     case 'jaywalker': person(ctx, sx, sy, s, '#3a6ea5'); break;
+    case 'wiper': wiperYouth(ctx, sx, sy, s, seed); break;
     case 'stall': roundedBar(ctx, sx, sy, s * 1.2, s * 0.8, '#7a4a22'); break;
     default: crater(ctx, sx, sy, s, seed);
   }
@@ -128,4 +129,23 @@ function person(ctx, x, y, s, color) {
   ctx.fillStyle = color; ctx.fillRect(x - s * 0.2, y - s, s * 0.4, s * 0.8);
   ctx.beginPath(); ctx.arc(x, y - s, s * 0.22, 0, Math.PI * 2);
   ctx.fillStyle = '#6b4a2a'; ctx.fill();
+}
+// Windscreen youth: stands in the road, raised arm, soapy can throwing a misty
+// spray of droplets overhead — the "forced wash" hustle at the stop-light.
+function wiperYouth(ctx, x, y, s, seed) {
+  const rnd = mulberry32(Math.floor((seed || 0.3) * 2147483647) ^ 0x71c5);
+  // body + head
+  ctx.fillStyle = '#3f8aa8'; ctx.fillRect(x - s * 0.2, y - s, s * 0.4, s * 0.8);
+  ctx.fillStyle = '#2a2a2a'; ctx.fillRect(x - s * 0.18, y - s * 0.25, s * 0.36, s * 0.3); // shorts
+  ctx.beginPath(); ctx.arc(x, y - s, s * 0.22, 0, Math.PI * 2); ctx.fillStyle = '#6b4a2a'; ctx.fill();
+  // raised arm + soapy can
+  ctx.strokeStyle = '#6b4a2a'; ctx.lineWidth = s * 0.12; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(x + s * 0.12, y - s * 0.85); ctx.lineTo(x + s * 0.4, y - s * 1.25); ctx.stroke();
+  ctx.fillStyle = '#b9c2c8'; ctx.fillRect(x + s * 0.34, y - s * 1.38, s * 0.16, s * 0.22); // can
+  // misty soapy spray fanning above
+  ctx.fillStyle = 'rgba(220,235,245,0.8)';
+  for (let i = 0; i < 9; i++) {
+    const dx = (rnd() - 0.5) * s * 0.9, dy = -s * (1.3 + rnd() * 0.7);
+    ctx.beginPath(); ctx.arc(x + s * 0.4 + dx, y + dy, Math.max(1, s * 0.05 * rnd() + s * 0.02), 0, Math.PI * 2); ctx.fill();
+  }
 }

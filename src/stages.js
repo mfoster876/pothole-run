@@ -5,7 +5,7 @@ export const STAGES = [
     hazardWeights: [
       { type: 'pothole', weight: 5 }, { type: 'coin', weight: 4 },
       { type: 'slick', weight: 2 }, { type: 'stall', weight: 2 }, { type: 'manhole', weight: 1 },
-      { type: 'taxi', weight: 3 }, { type: 'bus', weight: 2 }, { type: 'dog', weight: 2 },
+      { type: 'taxi', weight: 3 }, { type: 'dog', weight: 2 },
       { type: 'jaywalker', weight: 2 }, { type: 'goat', weight: 2 }
     ]
   },
@@ -14,7 +14,7 @@ export const STAGES = [
     palette: { sky: '#e7f3c8', hill: '#6b7a1e', ground: '#7c8a2a', road: '#5a5044', rumble: '#7a6a44' },
     hazardWeights: [
       { type: 'pothole', weight: 4 }, { type: 'coin', weight: 4 },
-      { type: 'goat', weight: 3 }, { type: 'bus', weight: 2 }, { type: 'bump', weight: 2 },
+      { type: 'goat', weight: 3 }, { type: 'bump', weight: 2 },
       { type: 'taxi', weight: 3 }, { type: 'coaster', weight: 2 }, { type: 'dog', weight: 2 },
       { type: 'cat', weight: 1 }, { type: 'jaywalker', weight: 2 }
     ]
@@ -25,8 +25,19 @@ export const STAGES = [
     hazardWeights: [
       { type: 'pothole', weight: 4 }, { type: 'coin', weight: 4 },
       { type: 'taxi', weight: 4 }, { type: 'hustler', weight: 2 }, { type: 'manhole', weight: 1 },
-      { type: 'coaster', weight: 3 }, { type: 'bus', weight: 2 }, { type: 'jaywalker', weight: 2 },
+      { type: 'coaster', weight: 3 }, { type: 'jaywalker', weight: 2 },
       { type: 'dog', weight: 2 }, { type: 'cat', weight: 1 }
+    ]
+  },
+  {
+    // Kingston — the only place the big yellow JUTC buses run.
+    id: 'new-kingston', name: 'New Kingston', locked: true, musicId: 'kingston', scenery: 'zinc',
+    palette: { sky: '#b7c2cc', hill: '#4a5560', ground: '#6a6f74', road: '#4c4f56', rumble: '#5a5048' },
+    hazardWeights: [
+      { type: 'pothole', weight: 4 }, { type: 'coin', weight: 4 },
+      { type: 'bus', weight: 4 }, { type: 'taxi', weight: 4 }, { type: 'coaster', weight: 2 },
+      { type: 'manhole', weight: 1 }, { type: 'jaywalker', weight: 3 }, { type: 'stall', weight: 2 },
+      { type: 'dog', weight: 1 }
     ]
   }
 ];

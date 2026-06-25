@@ -1,8 +1,10 @@
-// Original 8-bit reggae, generated live (no files, no copyright): a square-wave
-// skank on the offbeat, a triangle dub bassline, and a one-drop kick/snare on beat
-// 3. Per-stage tempo/key via musicId. SFX for coins, hits and the cart wreck.
+// All music + SFX generated live (no files, no copyright). Four switchable genres,
+// each its own riddim: a reggae one-drop, an up-tempo ska chop, a digital dancehall
+// bounce, and a boom-bap hip-hop beat. Stage `musicId` sets the key; genre sets the
+// tempo and the pattern. SFX for coins, hits, the cart wreck, squeak/creak/whoosh.
 export function createAudio() {
-  let ctx = null, master = null, loopTimer = null, muted = false, current = null;
+  let ctx = null, master = null, loopTimer = null, muted = false;
+  let stageRoot = 146.83, genre = 'reggae', noiseBuf = null;
 
   function unlock() {
     if (ctx) { if (ctx.state === 'suspended') ctx.resume(); return; }
@@ -12,13 +14,15 @@ export function createAudio() {
     master = ctx.createGain();
     master.gain.value = muted ? 0 : 0.5;
     master.connect(ctx.destination);
+    // one reusable white-noise buffer for snares, claps and hats
+    noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 0.4, ctx.sampleRate);
+    const d = noiseBuf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
   }
 
-  const STAGE_SETTINGS = {
-    fern:   { bpm: 140, root: 146.83 }, // D3
-    bamboo: { bpm: 150, root: 164.81 }, // E3
-    negril: { bpm: 132, root: 130.81 }  // C3
-  };
+  // root key per stage; genre supplies the tempo
+  const STAGE_ROOT = { fern: 146.83, bamboo: 164.81, negril: 130.81, kingston: 138.59, hills: 155.56 };
+  const GENRE_BPM = { reggae: 142, ska: 168, dancehall: 102, hiphop: 92 };
 
   function note(freq, start, dur, type, gain) {
     const o = ctx.createOscillator(), g = ctx.createGain();
@@ -31,21 +35,62 @@ export function createAudio() {
   function drum(start, hi) {
     const o = ctx.createOscillator(), g = ctx.createGain();
     o.type = 'square'; o.frequency.setValueAtTime(hi ? 220 : 90, start);
-    o.frequency.exponentialRampToValueAtTime(hi ? 180 : 50, start + 0.08);
+    o.frequency.exponentialRampToValueAtTime(hi ? 180 : 45, start + 0.08);
     g.gain.setValueAtTime(0.4, start); g.gain.exponentialRampToValueAtTime(0.0001, start + 0.12);
     o.connect(g); g.connect(master); o.start(start); o.stop(start + 0.14);
   }
+  // noise burst through a high-pass — snares (low hp), claps (mid), hats (high)
+  function noiseHit(start, dur, hp, vol) {
+    const src = ctx.createBufferSource(), g = ctx.createGain(), f = ctx.createBiquadFilter();
+    src.buffer = noiseBuf; f.type = 'highpass'; f.frequency.value = hp;
+    g.gain.setValueAtTime(vol, start); g.gain.exponentialRampToValueAtTime(0.0001, start + dur);
+    src.connect(f); f.connect(g); g.connect(master); src.start(start); src.stop(start + dur + 0.02);
+  }
 
-  function scheduleBar(cfg, t0) {
-    const beat = 60 / cfg.bpm;
-    const root = cfg.root;
-    for (let b = 0; b < 4; b++) {
-      const t = t0 + b * beat;
-      if (b === 2) { drum(t, false); drum(t, true); }     // one-drop on beat 3
-      note(root * 2, t + beat / 2, beat * 0.28, 'square', 0.12);   // offbeat skank
-      note(root * 2.5, t + beat / 2, beat * 0.28, 'square', 0.08);
-      const bass = [root, root, root * 1.33, root * 0.75][b];      // dub bassline
-      note(bass, t, beat * 0.6, 'triangle', 0.25);
+  // --- one bar per genre. Returns the bar length in seconds. ---
+  function bar(t0, root, beat) {
+    if (genre === 'ska') {
+      for (let b = 0; b < 4; b++) {
+        const t = t0 + b * beat;
+        if (b % 2 === 0) drum(t, false);                 // kick on 1 & 3
+        else noiseHit(t, 0.13, 2200, 0.22);              // snare backbeat 2 & 4
+        // bright upstroke chop on every offbeat
+        note(root * 2, t + beat / 2, beat * 0.16, 'square', 0.12);
+        note(root * 2.5, t + beat / 2, beat * 0.16, 'square', 0.09);
+        note(root * 3, t + beat / 2, beat * 0.16, 'square', 0.05);
+        const walk = [root, root * 1.25, root * 1.5, root * 1.68][b]; // walking bass
+        note(walk, t, beat * 0.42, 'triangle', 0.22);
+        noiseHit(t + beat / 2, 0.04, 6500, 0.05);        // light hat on the &
+      }
+    } else if (genre === 'dancehall') {
+      for (let b = 0; b < 4; b++) {
+        const t = t0 + b * beat;
+        drum(t, false);                                  // digital four-on-the-floor
+        if (b % 2 === 1) noiseHit(t, 0.16, 1500, 0.22);  // clap on 2 & 4
+        note(root * 3, t + beat / 2, beat * 0.2, 'square', 0.06); // synth stab
+      }
+      // syncopated digital bassline riff across the bar (eighths)
+      const riff = [root, root, root * 1.5, root, root * 1.33, root, root * 1.5, root * 1.78];
+      for (let i = 0; i < 8; i++) note(riff[i], t0 + i * (beat / 2), beat * 0.4, 'triangle', 0.26);
+    } else if (genre === 'hiphop') {
+      for (let b = 0; b < 4; b++) {
+        const t = t0 + b * beat;
+        if (b === 0) drum(t, false);                     // kick on 1
+        if (b === 2) { drum(t, false); drum(t + beat / 2, false); } // kick on 3 + the &
+        if (b % 2 === 1) noiseHit(t, 0.2, 1400, 0.26);   // fat snare on 2 & 4
+      }
+      for (let i = 0; i < 8; i++) noiseHit(t0 + i * (beat / 2), 0.05, 6000, i % 2 ? 0.05 : 0.08); // swung hats
+      note(root, t0, beat * 1.8, 'sine', 0.3);           // sub bass
+      note(root * 0.75, t0 + beat * 2, beat * 1.8, 'sine', 0.3);
+    } else {                                             // reggae one-drop (default)
+      for (let b = 0; b < 4; b++) {
+        const t = t0 + b * beat;
+        if (b === 2) { drum(t, false); noiseHit(t, 0.16, 1700, 0.22); } // one-drop on 3
+        note(root * 2, t + beat / 2, beat * 0.26, 'square', 0.1);       // offbeat skank
+        note(root * 2.5, t + beat / 2, beat * 0.26, 'square', 0.07);
+        const bass = [root, root, root * 1.33, root * 0.75][b];          // dub bassline
+        note(bass, t, beat * 0.55, 'triangle', 0.24);
+      }
     }
     return 4 * beat;
   }
@@ -53,16 +98,19 @@ export function createAudio() {
   function playStage(musicId) {
     unlock();
     if (!ctx) return;
-    current = STAGE_SETTINGS[musicId] || STAGE_SETTINGS.fern;
+    stageRoot = STAGE_ROOT[musicId] || STAGE_ROOT.fern;
     stop();
     let next = ctx.currentTime + 0.1;
     const tick = () => {
-      while (next < ctx.currentTime + 1.0) next += scheduleBar(current, next);
+      const beat = 60 / (GENRE_BPM[genre] || 140);
+      while (next < ctx.currentTime + 1.0) next += bar(next, stageRoot, beat);
       loopTimer = setTimeout(tick, 250);
     };
     tick();
   }
   function stop() { if (loopTimer) { clearTimeout(loopTimer); loopTimer = null; } }
+  // switch genre live — the running loop picks up the new pattern on the next bar
+  function setGenre(g) { if (GENRE_BPM[g]) genre = g; }
 
   // A short band-passed glide — used for the dry wheel squeak and the wood creak.
   function rub(t, f0, f1, peak, dur, bp, q) {
@@ -82,6 +130,8 @@ export function createAudio() {
     if (kind === 'coin') { note(880, t, 0.08, 'square', 0.2); note(1320, t + 0.05, 0.08, 'square', 0.18); }
     if (kind === 'hit') drum(t, false);
     if (kind === 'wreck') { drum(t, false); note(70, t, 0.5, 'sawtooth', 0.3); }
+    // a wet, descending squelch for the soapy-can windscreen wash
+    if (kind === 'wash') { rub(t, 900, 300, 0.12, 0.26, 1100, 4); note(180, t, 0.2, 'square', 0.08); }
     // dry, slightly random wheel squeak — high and thin
     if (kind === 'squeak') { const b = 1700 + Math.random() * 1000; rub(t, b, b * 0.66, 0.05, 0.16, 2600, 7); }
     // low wooden creak when the cart leans into a turn
@@ -100,5 +150,5 @@ export function createAudio() {
   }
   function setMuted(v) { muted = v; if (master) master.gain.value = v ? 0 : 0.5; }
 
-  return { unlock, playStage, stop, sfx, setMuted };
+  return { unlock, playStage, stop, sfx, setMuted, setGenre };
 }
