@@ -51,6 +51,18 @@ export function tipShoulder(cart, onShoulderNow, dt) {
 export function steer(cart, dir) {
   cart.laneIndex = Math.max(0, Math.min(CART_SLOTS.length - 1, cart.laneIndex + dir));
 }
+// A passing vehicle's wake shoves the cart sideways. A steadier ride — a heavier base
+// PLUS the mech-shop stability parts — soaks up the shove. The curve pivots at the stock
+// handcart (stability 0.70 → ×1.0) so the un-upgraded base game is unchanged, while a
+// fully-kitted ride barely rocks (down to ×0.4). This is the most-felt upgrade payoff:
+// every bus/coaster that screams past hits a planted, upgraded ride far less.
+export function gustFactor(stability) {
+  return Math.max(0.4, Math.min(1.2, 1 - 0.55 * ((stability || 1) - 0.70)));
+}
+export function applyGust(cart, dir, magnitude) {
+  cart.vx = (cart.vx || 0) + dir * magnitude * gustFactor(cart.stability);
+  cart.gusted = true;
+}
 export function onShoulder(cart) {
   return isShoulder(cart.laneIndex);
 }
@@ -83,7 +95,9 @@ export function updateCart(cart, dt) {
   const stability = cart.stability || 1;
   // gust push first, then the driver hauls back toward the slot (offset by any drift)
   cart.x += (cart.vx || 0) * dt;
-  cart.vx = (cart.vx || 0) * Math.exp(-6 * dt);
+  // A steadier ride also sheds gust velocity faster — it settles back onto its line
+  // instead of wallowing after a knock (stability tightens the recovery).
+  cart.vx = (cart.vx || 0) * Math.exp(-(5 + 2 * stability) * dt);
   cart.x = Math.max(-1.1, Math.min(1.1, cart.x));
   // A loose rig won't hold a clean line: drift pulls the settle point off-slot, so a
   // wobbly handcart wanders and you must keep correcting. Steady rigs zero it out.
@@ -93,8 +107,9 @@ export function updateCart(cart, dt) {
   if (isShoulder(cart.laneIndex) && cart.tilt) {
     targetX += (cart.laneIndex === 0 ? -1 : 1) * cart.tilt * SHOULDER.tipReach;
   }
-  // Square the handling spread, then let stability tighten (or loosen) the settle.
-  const k = CART.laneLerp * Math.pow(effHandling(cart), 1.6) * (0.7 + 0.3 * stability);
+  // Square the handling spread, then let stability tighten (or loosen) the settle — a
+  // wider weight so mech-shop parts make the steering noticeably snappier and more planted.
+  const k = CART.laneLerp * Math.pow(effHandling(cart), 1.6) * (0.55 + 0.45 * stability);
   const t = 1 - Math.exp(-k * dt);
   cart.x += (targetX - cart.x) * t;
   cart.lean = (targetX - cart.x);

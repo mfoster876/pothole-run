@@ -296,8 +296,12 @@ export function createGame(audio) {
     cart.pickupLabel = null; cart.hitNegative = null; cart.fined = false; cart.washCharge = 0; cart.bribed = false;
     resolveHits(run, cart, field, effects);
     if (run.coins > coinsBefore) audio && audio.sfx(cart.pickupValue >= 100 ? 'cash' : 'coin');
-    // any damage event ratchets the permanent rattle up
-    if (cart.condition.value < condBefore) cart.rattle = Math.min(0.5, cart.rattle + 0.05);
+    // any damage event ratchets the permanent rattle up — but a steadier, upgraded ride
+    // holds its composure, ratcheting (and so visibly shaking) noticeably less per hit.
+    if (cart.condition.value < condBefore) {
+      const rattleGain = 0.05 * Math.max(0.5, 1.2 - 0.4 * (cart.stability || 1));
+      cart.rattle = Math.min(0.5, cart.rattle + rattleGain);
+    }
     if (cart.washed) { audio && audio.sfx('wash'); hitShake = Math.max(hitShake, 0.4); }
     else if (cart.condition.value < condBefore) { audio && audio.sfx('hit'); hitShake = 1; }
     if (cart.gusted) { audio && audio.sfx('whoosh'); hitShake = Math.max(hitShake, 0.55); }

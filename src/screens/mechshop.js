@@ -3,7 +3,7 @@
 // Repair cost = $REPAIR_PRICE per condition point to restore.
 // RIG upgrades moved here from the start menu.
 import { spend } from '../economy.js';
-import { upgradesForVehicle } from '../upgrades.js';
+import { upgradesForVehicle, stabilityBonus } from '../upgrades.js';
 import { ownedUpgrades } from '../save.js';
 import { getVehicle } from '../vehicles.js';
 import { UPKEEP } from '../constants.js';
@@ -37,7 +37,7 @@ function shopRects(W, H, vehicleId) {
   const bx = (W - bw) / 2;
   const upgrades = upgradesForVehicle(vehicleId).map((u, i) => ({
     id: u.id,
-    rect: { x: bx, y: H * 0.52 + i * 62 - bh / 2, w: bw, h: bh }
+    rect: { x: bx, y: H * 0.55 + i * 62 - bh / 2, w: bw, h: bh }
   }));
   return {
     repair: { x: bx, y: H * 0.36 - bh / 2, w: bw, h: bh },
@@ -103,6 +103,16 @@ export function render(ctx, { save, W, H }) {
 
   const owned = ownedUpgrades(save, save.vehicle);
   const total = set.length;
+
+  // GRIP meter — every part you buy visibly raises GRIP, and GRIP is what you FEEL on the
+  // road: steadier steering, soaking up the gusts from passing buses, holding a clean line.
+  const gripFrac = Math.max(0, Math.min(1, stabilityBonus(owned, save.vehicle) / 0.8));
+  ctx.fillStyle = '#9fb8a3'; ctx.font = '500 13px "Courier New", monospace';
+  ctx.fillText('GRIP — steadier steering · soaks up gusts · holds the line', W / 2, H * 0.505);
+  const gbx = R.repair.x, gby = H * 0.522;
+  ctx.fillStyle = '#2a3a2e'; ctx.fillRect(gbx, gby, R.repair.w, 10);
+  ctx.fillStyle = '#49b6c8'; ctx.fillRect(gbx, gby, R.repair.w * gripFrac, 10);
+
   for (let i = 0; i < total; i++) {
     const u = set[i];
     const isOwned = owned.includes(u.id);

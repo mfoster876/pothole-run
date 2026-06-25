@@ -1,4 +1,5 @@
 import { laneOverlap } from './collision.js';
+import { applyGust } from './cart.js';
 import { applyDamage, repair } from './wreck.js';
 import { hazardInfo } from './hazardTypes.js';
 import { DAMAGE, GUST, WIPER, HOP, COMBO, POLICE, POLITICIAN } from './constants.js';
@@ -39,11 +40,11 @@ export function resolveHits(run, cart, field, effects = cart._effects || {}) {
           cart.nearMiss = true;
         }
       }
-      // dodged — but a passing vehicle's wake still shoves the cart sideways
+      // dodged — but a passing vehicle's wake still shoves the cart sideways (a steadier,
+      // upgraded ride soaks up the shove — see applyGust)
       if (e.gust && Math.abs(cart.x - e.x) < GUST.range) {
         const dir = cart.x >= e.x ? 1 : -1; // pushed away from the vehicle
-        cart.vx = (cart.vx || 0) + dir * GUST.push * (GUST[e.gust] || 1);
-        cart.gusted = true;
+        applyGust(cart, dir, GUST.push * (GUST[e.gust] || 1));
       }
       continue;
     }
@@ -65,7 +66,7 @@ export function resolveHits(run, cart, field, effects = cart._effects || {}) {
       // airborne over a hazard — sail clear (a passing-traffic gust still applies)
       if (e.gust && Math.abs(cart.x - e.x) < GUST.range) {
         const dir = cart.x >= e.x ? 1 : -1;
-        cart.vx = (cart.vx || 0) + dir * GUST.push * (GUST[e.gust] || 1);
+        applyGust(cart, dir, GUST.push * (GUST[e.gust] || 1));
       }
     } else if (effectActive(effects, 'super')) {
       // SUPERCHARGE: cart is invincible — skip all damage, fines, negatives and
