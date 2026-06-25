@@ -9,7 +9,7 @@ import { ASPIRATIONS, isAchieved, canBuy } from '../aspirations.js';
 const VIGNETTES = {
   tithes:   'Yuh drop it in di plate knowing di roof still leak.\nGod see di struggle — yuh give anyway.',
   school:   'Di pickney make it through. Graduation day fine.\nBut yuh still counting every dollar come August.',
-  artist:   'Dem spin yuh song pon radio Tuesday morning.\nRent still due Friday. Yuh smile anyway.',
+  artist:   'Yuh painting hang pon di gallery wall uptown.\nDem sell it fi plenty — yuh see a likkle piece, and yuh smile anyway.',
   business: 'Di sign lean against di wall, people call yuh Mr. now.\nBut yuh remember when yuh never know where supper coming from.',
   music:    'Di riddim reach far — England, New York, somewhere cold.\nRoyalties letter come. It never quite reach yuh, but it reach.',
   migrate:  'Ticket in yuh hand. Yard behind yuh getting smaller.\nYuh going, yes. But something — always, always — staying.',
