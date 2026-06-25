@@ -1341,8 +1341,8 @@ git commit -m "feat: HUD (banner, coins, distance, condition meter, touch zones)
 ```js
 // Draw an entity centred at (sx, sy) scaled by `scale`. Procedural shapes keep
 // Phase 1 asset-free; AI-generated sprite atlases can replace these per type later.
-export function drawEntity(ctx, type, sx, sy, scale) {
-  const s = Math.max(6, scale * 90);
+export function drawEntity(ctx, type, sx, sy, size) {
+  const s = Math.max(6, size);
   switch (type) {
     case 'coin': disc(ctx, sx, sy, s * 0.5, '#f0c020', '#9a7a10'); break;
     case 'pothole': ellipse(ctx, sx, sy, s * 0.8, s * 0.34, '#1c1c1c'); break;
@@ -1403,10 +1403,7 @@ git commit -m "feat: procedural entity sprites (asset-free Phase 1)"
 ```js
 import { conditionTier } from './wreck.js';
 
-export function drawCart(ctx, cart, W, H) {
-  const cx = W / 2 + cart.x * (W * 0.32) + cart.lean * 40;
-  const cy = H * 0.84;
-  const s = H * 0.16;
+export function drawCart(ctx, cart, cx, cy, s) {
   const tier = conditionTier(cart.condition);
 
   // shadow
@@ -1478,7 +1475,7 @@ git commit -m "feat: hero handcart sprite with sound-system box and damage crack
 
 ```js
 import { VIRTUAL, SPAWN } from './constants.js';
-import { makeRoad, renderRoad, projectEntity } from './road.js';
+import { makeRoad, renderRoad, projectEntity, CART_Z } from './road.js';
 import { createCart, steer, updateCart } from './cart.js';
 import { createField, spawn, advance, activeEntities } from './entities.js';
 import { spawnInterval, pickHazard, laneFor } from './spawner.js';
@@ -1548,12 +1545,13 @@ export function createGame(audio) {
   function render(ctx) {
     if (state.mode === 'menu') return renderMenu(ctx, state);
     if (state.mode === 'gameover') return renderGameOver(ctx, run, stage, save);
-    renderRoad(ctx, road, stage.palette, camZ, cart.x, W, H);
+    renderRoad(ctx, road, stage.palette, camZ, W, H);
     for (const e of activeEntities(field).sort((a, b) => b.z - a.z)) {
-      const p = projectEntity(camZ, e.x, e.z, W, H);
-      if (p.scale > 0) drawEntity(ctx, e.type, p.x, p.y, p.scale);
+      const p = projectEntity(e.x, e.z, W, H);
+      if (p.visible) drawEntity(ctx, e.type, p.x, p.y, p.size);
     }
-    drawCart(ctx, cart, W, H);
+    const cp = projectEntity(cart.x, CART_Z, W, H);
+    drawCart(ctx, cart, cp.x, cp.y, cp.size * 1.7);
     renderTouchZones(ctx, W, H);
     renderHud(ctx, { stageName: stage.name, coins: run.coins, distance: run.distance, condition: cart.condition }, W);
   }
