@@ -36,6 +36,7 @@ export const SHOULDER = { drainPerSec: 7 };
 // longer you survive. Floor keeps it just barely survivable.
 // flatter, more forgiving early ramp
 export const SPAWN = { baseInterval: 125, minInterval: 20, ramp: 20 };
+export const FLOOR_CONDITION = 40;
 export const MAX_DPR = 2;
 export const VIRTUAL = { width: 960, height: 540 };
 

@@ -1,4 +1,4 @@
-import { CART_SLOTS, CART, PLAYER_HALF_WIDTH } from './constants.js';
+import { CART_SLOTS, CART, PLAYER_HALF_WIDTH, FLOOR_CONDITION } from './constants.js';
 import { createCondition } from './wreck.js';
 import { getVehicle } from './vehicles.js';
 
@@ -9,7 +9,12 @@ export function isShoulder(slotIndex) {
   return slotIndex === 0 || slotIndex === CART_SLOTS.length - 1;
 }
 
-export function createCart(character, vehicle = getVehicle('handcart'), stabilityBonus = 0) {
+export function startCondition(saved) {
+  if (saved == null) return CART.maxCondition;
+  return Math.max(FLOOR_CONDITION, Math.min(CART.maxCondition, saved));
+}
+
+export function createCart(character, vehicle = getVehicle('handcart'), stabilityBonus = 0, savedCondition = null) {
   return {
     character,
     vehicle,
@@ -22,7 +27,7 @@ export function createCart(character, vehicle = getVehicle('handcart'), stabilit
     rattle: 0,        // permanent per-run looseness: every hit ratchets it up
     drift: 0,         // slow off-line wander (game.update evolves it; low stability = more)
     stability: (vehicle.stability || 1) + stabilityBonus, // higher = steadier
-    condition: createCondition(CART.maxCondition)
+    condition: { value: startCondition(savedCondition), max: CART.maxCondition }
   };
 }
 export function steer(cart, dir) {
