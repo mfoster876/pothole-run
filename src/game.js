@@ -102,6 +102,7 @@ export function createGame(audio) {
     field = createField();
     run = createRun();
     effects = createEffects();
+    pickupToast = null;   // never carry a stale toast into a fresh run
     // Tithe blessing: resilience + longer invincibility + a brief roll-out grace.
     cart.blessing = blessingEffects(save.blessing || 0);
     if (cart.blessing.startGrace > 0) {
