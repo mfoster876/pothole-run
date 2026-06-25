@@ -15,12 +15,12 @@ export const CART = {
 };
 
 export const DAMAGE = {
-  pothole: 11,         // overall ~10% gentler than before, for a less punishing early game
+  pothole: 9,          // ~20% gentler
   manhole: 100,
-  traffic: 23,
-  animal: 18,
-  bump: 5,
-  wiper: 5,            // soapy-can windscreen youth: a nuisance scrape, not a wreck
+  traffic: 18,
+  animal: 14,
+  bump: 4,
+  wiper: 4,
   repairPerCoin: 1
 };
 
@@ -34,7 +34,8 @@ export const SHOULDER = { drainPerSec: 7 };
 // Hazard spacing: wide gaps at the start (less cluttered, learnable), tightening
 // HARD as `distance` climbs and the ride gets faster — the frustration grows the
 // longer you survive. Floor keeps it just barely survivable.
-export const SPAWN = { baseInterval: 100, minInterval: 20, ramp: 16 };
+// flatter, more forgiving early ramp
+export const SPAWN = { baseInterval: 125, minInterval: 20, ramp: 20 };
 export const MAX_DPR = 2;
 export const VIRTUAL = { width: 960, height: 540 };
 
