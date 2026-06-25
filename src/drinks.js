@@ -17,14 +17,15 @@ const ELIGIBLE = {
   rasta:     ['ting', 'boom', 'redstripe', 'whiterum', 'spirulina', 'rootstonic'],
 };
 
-// Spawn rarity weights per drink id
+// Spawn rarity weights per drink id. Kept deliberately low so a drink boost is an
+// occasional treat, not constant invincibility — the road still demands skill.
 const WEIGHTS = {
-  ting:       2,
-  boom:       1.5,
-  spirulina:  1,
-  rootstonic: 1,
-  redstripe:  1.2,
-  whiterum:   0.6,
+  ting:       1,
+  boom:       0.8,
+  spirulina:  0.6,
+  rootstonic: 0.6,
+  redstripe:  0.6,
+  whiterum:   0.3,
 };
 
 /**
