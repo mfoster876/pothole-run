@@ -1,8 +1,9 @@
 import { laneOverlap } from './collision.js';
 import { applyDamage, repair } from './wreck.js';
 import { hazardInfo } from './hazardTypes.js';
-import { DAMAGE, GUST, WIPER, HOP, COMBO } from './constants.js';
+import { DAMAGE, GUST, WIPER, HOP, COMBO, POLICE } from './constants.js';
 import { applyPowerup, effectActive } from './powerups.js';
+import { applyNegative } from './negatives.js';
 
 export function createRun() {
   return { distance: 0, coins: 0, combo: 0 };
@@ -42,7 +43,10 @@ export function resolveHits(run, cart, field, effects = cart._effects || {}) {
       run.coins += value;
       cart.pickupValue = value;     // game.js picks the coin vs cash sound
       cart.condition = repair(cart.condition, DAMAGE.repairPerCoin);
-      if (info.powerup) { applyPowerup(effects, cart, run, info.powerup, run.distance, info); }
+      if (info.powerup) {
+        applyPowerup(effects, cart, run, info.powerup, run.distance, info);
+        cart.pickupLabel = info.label;   // name the exact pick-up for the HUD toast
+      }
     } else if (e.type === 'bump') {
       cart.jumpT = HOP.air;          // launch — the bump itself never damages
       cart.bumped = true;
@@ -53,17 +57,37 @@ export function resolveHits(run, cart, field, effects = cart._effects || {}) {
         cart.vx = (cart.vx || 0) + dir * GUST.push * (GUST[e.gust] || 1);
       }
     } else if (effectActive(effects, 'super')) {
-      // SUPERCHARGE: cart is invincible — skip all damage and wiper coin-loss
-      // (gusts may still apply at the airborne-parity check above)
-    } else {
-      const tough = cart.character.toughness * (cart.vehicle ? cart.vehicle.toughness : 1);
-      const resist = (cart.blessing && cart.blessing.resist) || 0;
-      let dmg = info.damage / tough;
-      dmg *= (1 - Math.min(0.9, resist));        // blessing makes the cart more resilient
-      cart.condition = applyDamage(cart.condition, dmg);
+      // SUPERCHARGE: cart is invincible — skip all damage, fines, negatives and
+      // wiper coin-loss (gusts may still apply at the airborne-parity check above)
+    } else if (info.negative) {
+      // Lifestyle temptation / politician "responsibility": its own bite (money
+      // drain, condition, and/or sloppy steering) — see negatives.js.
+      cart.hitNegative = applyNegative(effects, cart, run, info.negative);
       run.combo = 0;
-      // windscreen youth: forced "wash" skims coins off your fare
-      if (info.coinLoss) { run.coins = Math.max(0, run.coins - WIPER.coinLoss); cart.washed = true; }
+    } else {
+      const ch = cart.character;
+      const cat = info.category;
+      // Privileged drivers (the Politician) shrug off whole hazard classes:
+      // immune categories plow straight through (no damage, no fine, combo kept).
+      if (ch.immune && cat && ch.immune.includes(cat)) {
+        // untouchable — nothing happens
+      } else {
+        const tough = ch.toughness * (cart.vehicle ? cart.vehicle.toughness : 1);
+        const resist = (cart.blessing && cart.blessing.resist) || 0;
+        // Some classes ignore a driver's toughness/privilege break entirely — potholes
+        // & manholes stay "equally devastating" for the otherwise-untouchable Politician.
+        const fullForce = ch.fullDamageCats && cat && ch.fullDamageCats.includes(cat);
+        let dmg = fullForce ? info.damage : info.damage / tough;
+        // soften a class of hits (e.g. politician takes half from other cars)
+        if (!fullForce && ch.damageScale && cat && ch.damageScale[cat] != null) dmg *= ch.damageScale[cat];
+        dmg *= (1 - Math.min(0.9, resist));      // blessing makes the cart more resilient
+        cart.condition = applyDamage(cart.condition, dmg);
+        run.combo = 0;
+        // windscreen youth: forced "wash" skims coins off your fare
+        if (info.coinLoss) { run.coins = Math.max(0, run.coins - WIPER.coinLoss); cart.washed = true; }
+        // police shakedown: a fine skimmed off your fare on contact
+        if (info.fine) { run.coins = Math.max(0, run.coins - POLICE.fine); cart.fined = true; }
+      }
     }
   }
 }

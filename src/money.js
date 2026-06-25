@@ -28,6 +28,14 @@ export function nextBill(value) {
   return BILLS[Math.min(i + 1, BILLS.length - 1)];
 }
 
+// Shift a note up `steps` rungs of the strict bill ladder (reckless drivers see
+// fatter — but rarer — notes). Stays on the ladder; never produces an off-ladder value.
+export function biasBill(value, steps) {
+  let v = value;
+  for (let i = 0; i < (steps || 0); i++) v = nextBill(v);
+  return v;
+}
+
 // $1,234,567 — thousands separators, for the now-large sums.
 export function formatMoney(n) {
   return '$' + Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');

@@ -77,6 +77,13 @@ export function applyItem(effects, cart, id) {
   }
 }
 
+/** { id, label } pairs of the items this character can pick up — for the legend. */
+export function eligibleItems(character) {
+  if (!character) return [];
+  const list = ELIGIBLE[character.id] || [];
+  return list.map(id => ({ id, label: ITEMS[id].label }));
+}
+
 /** Weighted spawn list for the items this character can pick up. */
 export function itemWeightsFor(character) {
   if (!character) return [];

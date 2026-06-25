@@ -8,6 +8,7 @@ export const STAGES = [
       { type: 'slick', weight: 2 }, { type: 'stall', weight: 2 }, { type: 'manhole', weight: 1 },
       { type: 'taxi', weight: 3 }, { type: 'dog', weight: 2 },
       { type: 'jaywalker', weight: 2 }, { type: 'goat', weight: 2 },
+      { type: 'police', weight: 1 },                            // rural — police only now and then
       { type: 'tools', weight: 3 }, { type: 'water', weight: 1 }
     ]
   },
@@ -20,6 +21,7 @@ export const STAGES = [
       { type: 'goat', weight: 3 }, { type: 'cattle', weight: 2 }, { type: 'bump', weight: 2 },
       { type: 'taxi', weight: 3 }, { type: 'coaster', weight: 2 }, { type: 'dog', weight: 2 },
       { type: 'cat', weight: 1 }, { type: 'jaywalker', weight: 2 },
+      { type: 'police', weight: 1 },                            // rural — police only now and then
       { type: 'tools', weight: 3 }, { type: 'water', weight: 1 }
     ]
   },
@@ -31,6 +33,7 @@ export const STAGES = [
       { type: 'taxi', weight: 4 }, { type: 'hustler', weight: 2 }, { type: 'manhole', weight: 1 },
       { type: 'coaster', weight: 3 }, { type: 'jaywalker', weight: 2 },
       { type: 'dog', weight: 2 }, { type: 'cat', weight: 1 },
+      { type: 'police', weight: 2 },                            // tourist strip — a fair police presence
       { type: 'tools', weight: 3 }, { type: 'water', weight: 1 }
     ]
   },
@@ -43,6 +46,7 @@ export const STAGES = [
       { type: 'bus', weight: 4 }, { type: 'taxi', weight: 4 }, { type: 'coaster', weight: 2 },
       { type: 'manhole', weight: 1 }, { type: 'jaywalker', weight: 3 }, { type: 'stall', weight: 2 },
       { type: 'dog', weight: 1 },
+      { type: 'police', weight: 3 },                            // urban — police out in force
       { type: 'tools', weight: 3 }, { type: 'water', weight: 1 }
     ]
   }

@@ -188,6 +188,11 @@ function drawDriver(ctx, ch, s) {
   const id = ch && ch.id;
   const skin = '#7a4a28', shirt = shirtColor(ch);
   ctx.fillStyle = shirt; ctx.fillRect(-s * 0.3, -s * 1.18, s * 0.6, s * 0.5);
+  // Politician: half-orange (viewer-left) / half-green (viewer-right) suit torso
+  if (id === 'politician') {
+    ctx.fillStyle = '#e8821e'; ctx.fillRect(-s * 0.3, -s * 1.18, s * 0.3, s * 0.5);
+    ctx.fillStyle = '#1f8a3c'; ctx.fillRect(0,        -s * 1.18, s * 0.3, s * 0.5);
+  }
   ctx.strokeStyle = shirt; ctx.lineWidth = s * 0.13; ctx.lineCap = 'round';
   ctx.beginPath(); ctx.moveTo(-s * 0.18, -s * 1.02); ctx.lineTo(s * 0.08, -s * 1.0); ctx.stroke();
   // Bleachaz conductor: bleach reaches only the face & neck — BOTH arms stay black.
@@ -254,11 +259,21 @@ function drawHead(ctx, ch, s, x, y) {
     ctx.fillStyle = '#1a2740'; ctx.beginPath(); ctx.arc(x, y - s * 0.04, s * 0.19, Math.PI, 0); ctx.fill();
     ctx.fillStyle = '#d8c24a'; ctx.fillRect(x - s * 0.06, y - s * 0.08, s * 0.12, s * 0.05);
   } else if (id === 'politician') {
-    // Neat greying side-parted hair (statesmanlike)
-    ctx.fillStyle = '#3a342c'; ctx.beginPath(); ctx.arc(x, y - s * 0.02, s * 0.17, Math.PI, 0); ctx.fill();
-    ctx.strokeStyle = '#bfb6a4'; ctx.lineWidth = Math.max(0.8, s * 0.018);   // grey temples
-    ctx.beginPath(); ctx.moveTo(x - s * 0.13, y - s * 0.02); ctx.lineTo(x - s * 0.15, y + s * 0.06); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(x + s * 0.13, y - s * 0.02); ctx.lineTo(x + s * 0.15, y + s * 0.06); ctx.stroke();
+    // British court wig — rows of small cream curls across the crown (seen from
+    // behind), with side-curl bunches over the ears. cream #ece9e0 / shadow #c8c4b8.
+    const cream = '#ece9e0', wshade = '#c8c4b8';
+    // cream dome cap over the back/crown of the head
+    ctx.fillStyle = cream; ctx.beginPath(); ctx.arc(x, y - s * 0.02, s * 0.2, Math.PI, 0); ctx.fill();
+    // small curl helper
+    const curl = (cxk, cyk, rk) => {
+      ctx.fillStyle = wshade; ctx.beginPath(); ctx.arc(cxk, cyk + rk * 0.3, rk, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = cream;  ctx.beginPath(); ctx.arc(cxk, cyk, rk * 0.9, 0, Math.PI * 2); ctx.fill();
+    };
+    // two rows of curls across the crown
+    for (const cx2 of [-0.13, -0.04, 0.05, 0.14]) curl(x + s * cx2, y - s * 0.12, s * 0.05);
+    for (const cx2 of [-0.1, 0, 0.1])             curl(x + s * cx2, y - s * 0.04, s * 0.05);
+    // side-curl bunches over each ear
+    for (const sign of [-1, 1]) for (let j = 0; j < 2; j++) curl(x + sign * s * 0.18, y + s * (0.02 + j * 0.08), s * 0.045);
   } else {
     ctx.fillStyle = '#1c1208'; ctx.beginPath(); ctx.arc(x, y, s * 0.18, Math.PI, 0); ctx.fill();
   }

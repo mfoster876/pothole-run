@@ -74,3 +74,18 @@ export const VIRTUAL = { width: 960, height: 540 };
 export const GUST = { range: 0.95, push: 1.6, fromTaxi: 1.0, fromBus: 1.3, fromCoaster: 1.0 };
 
 export const TITHE = { mite: 2000, perGift: 0.5, maxResist: 0.40, maxExtend: 0.50, maxGrace: 3, decay: 0.15 };
+
+// Police are a spawnable road obstacle (urban-frequent — weighted by stage). Direct
+// contact costs condition (traffic-tier damage, via the hazard's category) AND a cash
+// fine skimmed off your fare. The Politician is immune (see characters.js).
+export const POLICE = { fine: 500 };
+
+// Negatives / detractors: a lifestyle temptation or a politician "responsibility" that
+// bites on contact. `impairSecs` = how long an impairing negative (weed, molly…) leaves
+// the steering sloppy (reuses the booze `tipsy` machinery).
+export const NEGATIVE = { impairSecs: 4 };
+
+// Politician road tuning: his motorcade rolls on freshly-paved roads, so potholes and
+// manholes SPAWN far less (×potholeMult). They still hit at full damage when they do.
+// `cashBillChance` = odds each of his notes is the coveted $5000 (else a big note).
+export const POLITICIAN = { potholeMult: 0.4, cashBillChance: 0.85 };

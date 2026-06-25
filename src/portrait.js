@@ -80,6 +80,14 @@ const P = {
   pinkLipCtr:  '#e87888',
   tattooInk:   '#2a2040',
 
+  // politician — half-orange / half-green suit + British court wig
+  poliOrange:    '#e8821e',
+  poliOrangeDim: '#b5610c',
+  poliGreen:     '#1f8a3c',
+  poliGreenDim:  '#14622a',
+  wigCream:      '#ece9e0',
+  wigShadow:     '#c8c4b8',
+
   // outline + shadow
   outline:     '#0a0806',
   shadow:      'rgba(0,0,0,0.35)',
@@ -711,20 +719,33 @@ function _drawPolitician(ctx, size) {
   const neckBotY = chinY + s * 0.070;
   const shTopY = neckBotY - s * 0.004, shBotY = s * 0.955, shHalf = s * 0.36;
 
-  // ── Suit shoulders (navy) ──
-  ctx.fillStyle = '#1e2a44';
-  ctx.beginPath();
-  ctx.moveTo(cx - neckW * 0.5, neckBotY);
-  ctx.lineTo(cx + neckW * 0.5, neckBotY);
-  ctx.lineTo(cx + shHalf, shBotY);
-  ctx.lineTo(cx - shHalf, shBotY);
-  ctx.closePath(); ctx.fill();
-  ctx.strokeStyle = P.outline; ctx.lineWidth = Math.max(1, s * 0.016); ctx.stroke();
-  ctx.fillStyle = '#141d30';
-  ctx.beginPath();
-  ctx.moveTo(cx - shHalf * 0.86, shBotY);
-  ctx.quadraticCurveTo(cx, shTopY + (shBotY - shTopY) * 0.20, cx + shHalf * 0.86, shBotY);
-  ctx.closePath(); ctx.fill();
+  // ── Suit shoulders — HALF-ORANGE (viewer-left) / HALF-GREEN (viewer-right) ──
+  // The jacket polygon, painted with a vertical split down the centre line.
+  const jacketPath = () => {
+    ctx.beginPath();
+    ctx.moveTo(cx - neckW * 0.5, neckBotY);
+    ctx.lineTo(cx + neckW * 0.5, neckBotY);
+    ctx.lineTo(cx + shHalf, shBotY);
+    ctx.lineTo(cx - shHalf, shBotY);
+    ctx.closePath();
+  };
+  // green base fills the whole jacket
+  jacketPath(); ctx.fillStyle = P.poliGreen; ctx.fill();
+  // clip to the jacket, then overpaint the LEFT half orange (split at cx)
+  ctx.save();
+  jacketPath(); ctx.clip();
+  ctx.fillStyle = P.poliOrange;
+  ctx.fillRect(cx - shHalf - s * 0.02, neckBotY - s * 0.02, shHalf + s * 0.02, shBotY - neckBotY + s * 0.04);
+  // lower shadow bands — darker tone of each half so both sides keep depth
+  ctx.fillStyle = P.poliOrangeDim;
+  ctx.fillRect(cx - shHalf - s * 0.02, shBotY - (shBotY - neckBotY) * 0.34, shHalf + s * 0.02, (shBotY - neckBotY) * 0.4);
+  ctx.fillStyle = P.poliGreenDim;
+  ctx.fillRect(cx, shBotY - (shBotY - neckBotY) * 0.34, shHalf + s * 0.02, (shBotY - neckBotY) * 0.4);
+  ctx.restore();
+  // jacket outline + centre seam
+  jacketPath(); ctx.strokeStyle = P.outline; ctx.lineWidth = Math.max(1, s * 0.016); ctx.stroke();
+  ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.lineWidth = Math.max(1, s * 0.012);
+  ctx.beginPath(); ctx.moveTo(cx, neckBotY); ctx.lineTo(cx, shBotY); ctx.stroke();
 
   // white shirt V
   ctx.fillStyle = '#eef0f2';
@@ -770,27 +791,52 @@ function _drawPolitician(ctx, size) {
     ctx.strokeStyle = P.outline; ctx.lineWidth = Math.max(1, s * 0.014); ctx.stroke();
   }
 
-  // ── Greying side-parted hair ──
-  ctx.fillStyle = '#2a2620';
+  // ── British barrister/judge court wig — cream dome of horizontal curl-rows,
+  //    round side-curls bunched over each ear, framing the face, with a tail. ──
+  // helper: one cream curl with a soft grey underside shadow
+  const curl = (kx, ky, kr) => {
+    ctx.fillStyle = P.wigShadow;
+    ellipse(ctx, kx, ky + kr * 0.30, kr * 1.02, kr * 0.74); ctx.fill();
+    ctx.fillStyle = P.wigCream;
+    ellipse(ctx, kx, ky, kr, kr * 0.78); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.30)';
+    ellipse(ctx, kx - kr * 0.28, ky - kr * 0.24, kr * 0.32, kr * 0.24); ctx.fill();
+  };
+
+  // cream dome cap behind the curls (covers the crown to the brow)
+  ctx.fillStyle = P.wigCream;
   ctx.beginPath();
-  ctx.ellipse(cx, headCY - headRY * 0.30, headRX * 0.98, headRY * 0.55, 0, Math.PI, 2 * Math.PI);
+  ctx.ellipse(cx, headCY - headRY * 0.16, headRX * 1.04, headRY * 0.78, 0, Math.PI, 2 * Math.PI);
   ctx.fill();
-  ctx.strokeStyle = '#0e0c08'; ctx.lineWidth = Math.max(1, s * 0.012);    // side part
-  ctx.beginPath();
-  ctx.moveTo(cx - headRX * 0.28, headCY - headRY * 0.62);
-  ctx.lineTo(cx - headRX * 0.10, headCY - headRY * 0.30);
-  ctx.stroke();
-  ctx.strokeStyle = '#b8b0a0'; ctx.lineWidth = Math.max(1, s * 0.013);    // grey temples
-  for (const sign of [-1, 1]) {
-    ctx.beginPath();
-    ctx.moveTo(cx + sign * headRX * 0.82, headCY - headRY * 0.28);
-    ctx.lineTo(cx + sign * headRX * 0.92, headCY + headRY * 0.04);
-    ctx.stroke();
+  ctx.strokeStyle = P.wigShadow; ctx.lineWidth = Math.max(1, s * 0.012); ctx.stroke();
+
+  // rows of tight horizontal curls across the crown (top row smallest)
+  const rows = [
+    { y: -0.86, n: 4, r: 0.20, span: 0.62 },
+    { y: -0.64, n: 5, r: 0.22, span: 0.78 },
+    { y: -0.42, n: 6, r: 0.23, span: 0.92 },
+    { y: -0.22, n: 6, r: 0.22, span: 0.96 },
+  ];
+  for (const row of rows) {
+    for (let i = 0; i < row.n; i++) {
+      const t = row.n === 1 ? 0.5 : i / (row.n - 1);
+      const kx = cx + (t - 0.5) * 2 * headRX * row.span;
+      const ky = headCY + headRY * row.y;
+      curl(kx, ky, headRX * row.r);
+    }
   }
-  ctx.strokeStyle = P.outline; ctx.lineWidth = Math.max(1, s * 0.014);
-  ctx.beginPath();
-  ctx.ellipse(cx, headCY - headRY * 0.30, headRX * 0.98, headRY * 0.55, 0, Math.PI, 2 * Math.PI);
-  ctx.stroke();
+
+  // bunched round side-curls stacked over each ear (the barrister side-rolls)
+  for (const sign of [-1, 1]) {
+    for (let j = 0; j < 3; j++) {
+      const sx = cx + sign * headRX * (1.02 + j * 0.02);
+      const sy = headCY + headRY * (0.04 + j * 0.30);
+      curl(sx, sy, headRX * 0.22);
+    }
+  }
+
+  // a slight tail of curls hanging at the lower back-centre
+  curl(cx, headCY + headRY * 0.96, headRX * 0.18);
 
   // ── Face features — sly & confident ──
   const eyeY = headCY + headRY * 0.02, eyeSpan = headRX * 0.84, eyeR = s * 0.040;

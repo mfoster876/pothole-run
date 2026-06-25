@@ -80,6 +80,27 @@ function renderSupercharge(ctx, remaining, max, tipsy, label, W, H) {
   ctx.restore();
 }
 
+// A transient centre-screen toast naming the EXACT pick-up collected (or the negative
+// just hit), so feedback is never a vague "irie boost". `toast` = { label, good, t }
+// where t is the seconds remaining; it fades out over its final 0.4s.
+export function renderPickupToast(ctx, toast, W, H = 540) {
+  if (!toast) return;
+  const alpha = Math.max(0, Math.min(1, toast.t / 0.4));
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.font = '700 26px "Courier New", monospace';
+  const txt = (toast.good ? '✦ ' : '✕ ') + String(toast.label).toUpperCase();
+  const bw = ctx.measureText(txt).width + 44, by = H * 0.30;
+  ctx.fillStyle = toast.good ? 'rgba(14,26,18,0.85)' : 'rgba(44,12,10,0.88)';
+  ctx.fillRect(W / 2 - bw / 2, by - 24, bw, 44);
+  ctx.strokeStyle = toast.good ? '#3fae54' : '#c0382c'; ctx.lineWidth = 2;
+  ctx.strokeRect(W / 2 - bw / 2, by - 24, bw, 44);
+  ctx.fillStyle = toast.good ? '#f0c020' : '#ff8a78';
+  ctx.fillText(txt, W / 2, by - 1);
+  ctx.restore();
+}
+
 export function renderTouchZones(ctx, W, H) {
   ctx.font = '700 40px "Courier New", monospace';
   ctx.textBaseline = 'middle';

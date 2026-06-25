@@ -19,6 +19,7 @@ export function drawEntity(ctx, type, sx, sy, size, seed = 0.137, value = 1) {
     case 'coaster': vehicle(ctx, sx, sy, s * 1.15, '#eef0f2'); break;
     case 'hustler': person(ctx, sx, sy, s, '#d06a30'); break;
     case 'jaywalker': person(ctx, sx, sy, s, '#3a6ea5'); break;
+    case 'police': drawPolice(ctx, sx, sy, s); break;
     case 'wiper': wiperYouth(ctx, sx, sy, s, seed); break;
     case 'stall': roundedBar(ctx, sx, sy, s * 1.2, s * 0.8, '#7a4a22'); break;
     case 'water':  waterBottle(ctx, sx, sy, s); break;
@@ -31,15 +32,32 @@ export function drawEntity(ctx, type, sx, sy, size, seed = 0.137, value = 1) {
     case 'whiterum':   drinkBottle(ctx, sx, sy, s, '#eef2f5', '#b0bcc8', 'WR'); break;
     case 'spirulina':  drinkBottle(ctx, sx, sy, s, '#1f8a4c', '#0f5a2e', 'SP'); break;
     case 'rootstonic': drinkBottle(ctx, sx, sy, s, '#7a4a22', '#4a2a10', 'RT'); break;
-    // Conductor bleach vanity items (first-pass labelled icons)
-    case 'cakesoap':    drinkBottle(ctx, sx, sy, s, '#3a6ad0', '#1f3f8a', 'CS'); break;
-    case 'currypowder': drinkCan(ctx, sx, sy, s, '#d9a01f', '#a06e08', 'CY'); break;
-    case 'toothpaste':  drinkBottle(ctx, sx, sy, s, '#e8f2f5', '#9fb4c0', 'TP'); break;
+    // Conductor bleach vanity items — dedicated, recognizable icons
+    case 'cakesoap':    cakeSoap(ctx, sx, sy, s); break;
+    case 'currypowder': curryPowderBag(ctx, sx, sy, s); break;
+    case 'toothpaste':  toothpasteTube(ctx, sx, sy, s); break;
     // School Yute wholesome items
     case 'books':      drinkBottle(ctx, sx, sy, s, '#c0451f', '#7a2810', 'BK'); break;
     case 'stationery': drinkCan(ctx, sx, sy, s, '#1f9ad9', '#0f5e8a', 'ST'); break;
     case 'bagjuice':   drinkCan(ctx, sx, sy, s, '#e23f7a', '#9a1f4a', 'BJ'); break;
     case 'lasco':      drinkBottle(ctx, sx, sy, s, '#f0d8a0', '#bca060', 'LA'); break;
+    // School Yute "negative temptation" pickups (avoid)
+    case 'bleaching':  bleachingCream(ctx, sx, sy, s); break;
+    case 'tightpants': tightPants(ctx, sx, sy, s); break;
+    case 'weed':       weedBud(ctx, sx, sy, s); break;
+    case 'molly':      mollyPills(ctx, sx, sy, s); break;
+    case 'teensex':    warningHeart(ctx, sx, sy, s); break;
+    // Rasta "avoid" pickups
+    case 'obeah':      obeahCharm(ctx, sx, sy, s); break;
+    case 'pork':       porkCut(ctx, sx, sy, s); break;
+    case 'jw':         jwTract(ctx, sx, sy, s); break;
+    // Politician "responsibility" obstacles (money pits to dodge)
+    case 'roadfix':      roadworkSign(ctx, sx, sy, s); break;
+    case 'constituent':  angryCitizen(ctx, sx, sy, s); break;
+    case 'lightpole':    fallenPole(ctx, sx, sy, s); break;
+    case 'hustlerlunch': boxLunchHustler(ctx, sx, sy, s); break;
+    case 'voter':        ballotVoter(ctx, sx, sy, s); break;
+    case 'contractor':   hardHatContractor(ctx, sx, sy, s); break;
     default: crater(ctx, sx, sy, s, seed);
   }
 }
@@ -736,4 +754,478 @@ function drinkBottle(ctx, x, y, s, bodyColor, shadowColor, label) {
   }
   // light sheen on shoulder of bottle
   ctx.fillStyle = 'rgba(255,255,255,0.3)'; ctx.fillRect(bx + w * 0.1, by + neckH + s * 0.05, w * 0.12, (h - neckH) * 0.55);
+}
+
+// ============================================================================
+// Conductor bleach vanity items — dedicated, road-recognizable icons (Task 1)
+// ============================================================================
+
+// ---- cake soap: a chunky square bar of blue laundry soap (NOT a can) ----
+function cakeSoap(ctx, x, y, s) {
+  const w = s * 0.92, h = s * 0.70, bx = x - w * 0.5, by = y - h * 0.7;
+  const r = Math.min(w, h) * 0.18;
+  const base = '#3a6ad0', edge = '#1f3f8a';
+  // drop shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.22)'; ellipsePath(ctx, x + s * 0.04, by + h + s * 0.04, w * 0.5, s * 0.08); ctx.fill();
+  // darker blue base/shadow block, offset down-right so the bar reads as 3D
+  rrectSprite(ctx, bx + s * 0.05, by + s * 0.05, w, h, r); ctx.fillStyle = edge; ctx.fill();
+  // blue body on top
+  rrectSprite(ctx, bx, by, w, h, r); ctx.fillStyle = base; ctx.fill();
+  ctx.strokeStyle = edge; ctx.lineWidth = Math.max(1, s * 0.045); ctx.stroke();
+  // soft top highlight band
+  ctx.fillStyle = 'rgba(255,255,255,0.30)';
+  rrectSprite(ctx, bx + w * 0.10, by + h * 0.10, w * 0.80, h * 0.22, r * 0.6); ctx.fill();
+  // faint embossed lettering (only when big enough)
+  if (s >= 16) {
+    ctx.fillStyle = 'rgba(255,255,255,0.32)';
+    ctx.font = '700 ' + Math.round(s * 0.20) + 'px "Courier New", monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('SOAP', x, by + h * 0.62);
+  }
+}
+
+// ---- curry powder: a clear sandwich bag of yellow-gold powder with a knot tie ----
+function curryPowderBag(ctx, x, y, s) {
+  const w = s * 0.74, h = s * 0.90, bx = x - w * 0.5, by = y - h * 0.92;
+  // drop shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.20)'; ellipsePath(ctx, x + s * 0.04, y + s * 0.04, w * 0.5, s * 0.08); ctx.fill();
+  // yellow powder mass — a rounded heap that settles toward the bottom of the bag
+  const py = by + h * 0.42, ph = h * 0.52;
+  // lower shadow of the heap
+  rrectSprite(ctx, bx + w * 0.10, py + ph * 0.30, w * 0.80, ph * 0.70, w * 0.22);
+  ctx.fillStyle = '#a06e08'; ctx.fill();
+  // main gold body
+  rrectSprite(ctx, bx + w * 0.10, py, w * 0.80, ph, w * 0.24);
+  ctx.fillStyle = '#d9a01f'; ctx.fill();
+  // lighter top of the powder
+  ctx.fillStyle = '#ecc566';
+  rrectSprite(ctx, bx + w * 0.16, py + ph * 0.06, w * 0.68, ph * 0.30, w * 0.18); ctx.fill();
+  // translucent plastic bag over the powder (low alpha so the gold shows through)
+  ctx.fillStyle = 'rgba(240,244,248,0.30)';
+  rrectSprite(ctx, bx, by + h * 0.14, w, h * 0.84, w * 0.14); ctx.fill();
+  ctx.strokeStyle = 'rgba(220,228,236,0.85)'; ctx.lineWidth = Math.max(1, s * 0.035); ctx.stroke();
+  // sheen streak down the bag
+  ctx.fillStyle = 'rgba(255,255,255,0.35)';
+  ctx.fillRect(bx + w * 0.20, by + h * 0.22, w * 0.08, h * 0.62);
+  // knotted / twisted top — two little ear-loops of gathered plastic
+  ctx.fillStyle = 'rgba(225,232,240,0.9)';
+  ctx.beginPath(); ctx.ellipse(x - w * 0.18, by + h * 0.10, w * 0.16, h * 0.10, -0.5, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(x + w * 0.18, by + h * 0.10, w * 0.16, h * 0.10, 0.5, 0, Math.PI * 2); ctx.fill();
+  // pinch where the knot ties off
+  ctx.fillStyle = 'rgba(190,200,210,0.95)';
+  rrectSprite(ctx, x - w * 0.10, by + h * 0.08, w * 0.20, h * 0.10, w * 0.05); ctx.fill();
+}
+
+// ---- toothpaste: a tube lying down, crimped tail + screw cap at the nozzle ----
+function toothpasteTube(ctx, x, y, s) {
+  const w = s * 1.05, h = s * 0.40, bx = x - w * 0.5, cy = y - h * 0.6;
+  const body = '#e8f2f5', bodyShade = '#b9ccd4', cap = '#1f9ad9';
+  // drop shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.20)'; ellipsePath(ctx, x + s * 0.04, cy + h * 0.5 + s * 0.05, w * 0.46, s * 0.07); ctx.fill();
+  // crimped/folded flat tail at the LEFT end (triangular zig-zag fold)
+  ctx.fillStyle = bodyShade;
+  ctx.beginPath();
+  ctx.moveTo(bx, cy - h * 0.5); ctx.lineTo(bx + w * 0.14, cy - h * 0.34);
+  ctx.lineTo(bx + w * 0.14, cy + h * 0.34); ctx.lineTo(bx, cy + h * 0.5); ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = '#9fb4c0'; ctx.lineWidth = Math.max(1, s * 0.03);
+  // crimp ridges
+  for (const t of [0.30, 0.55, 0.80]) {
+    ctx.beginPath(); ctx.moveTo(bx + w * 0.02, cy - h * (0.5 - 0.5 * t)); ctx.lineTo(bx + w * 0.02, cy + h * (0.5 - 0.5 * t)); ctx.stroke();
+  }
+  // main tube body — rounded, fattening toward the nozzle end
+  rrectSprite(ctx, bx + w * 0.12, cy - h * 0.5, w * 0.72, h, h * 0.45);
+  ctx.fillStyle = body; ctx.fill();
+  ctx.strokeStyle = bodyShade; ctx.lineWidth = Math.max(1, s * 0.04); ctx.stroke();
+  // lower shadow along the tube belly
+  ctx.fillStyle = 'rgba(150,175,190,0.5)';
+  rrectSprite(ctx, bx + w * 0.14, cy + h * 0.18, w * 0.68, h * 0.26, h * 0.2); ctx.fill();
+  // thin coloured stripe along the tube
+  ctx.fillStyle = cap;
+  ctx.fillRect(bx + w * 0.16, cy - h * 0.06, w * 0.64, h * 0.10);
+  // top sheen
+  ctx.fillStyle = 'rgba(255,255,255,0.45)';
+  rrectSprite(ctx, bx + w * 0.16, cy - h * 0.40, w * 0.6, h * 0.16, h * 0.1); ctx.fill();
+  // shoulder where the tube necks down to the nozzle
+  ctx.fillStyle = bodyShade;
+  ctx.beginPath();
+  ctx.moveTo(bx + w * 0.84, cy - h * 0.34); ctx.lineTo(bx + w * 0.90, cy - h * 0.22);
+  ctx.lineTo(bx + w * 0.90, cy + h * 0.22); ctx.lineTo(bx + w * 0.84, cy + h * 0.34); ctx.closePath();
+  ctx.fill();
+  // small screw cap at the nozzle (right) end
+  rrectSprite(ctx, bx + w * 0.88, cy - h * 0.30, w * 0.12, h * 0.60, h * 0.12);
+  ctx.fillStyle = cap; ctx.fill();
+  ctx.strokeStyle = shadeColor(cap, -0.25); ctx.lineWidth = Math.max(1, s * 0.03); ctx.stroke();
+  // cap ridges
+  ctx.strokeStyle = 'rgba(255,255,255,0.4)'; ctx.lineWidth = Math.max(1, s * 0.02);
+  for (const t of [0.35, 0.65]) {
+    ctx.beginPath(); ctx.moveTo(bx + w * (0.88 + 0.12 * t), cy - h * 0.26); ctx.lineTo(bx + w * (0.88 + 0.12 * t), cy + h * 0.26); ctx.stroke();
+  }
+}
+
+// ============================================================================
+// Police officer in the road (Task 3)
+// ============================================================================
+// Jamaican police: navy uniform shirt, peaked cap with a gold badge band,
+// epaulettes — built on the same proportions as `person` but clearly "police".
+function drawPolice(ctx, x, y, s) {
+  const shirt = '#27407a', shirtShade = '#16284f', shirtHi = '#3a5aa0';
+  const skin = '#7a5030', skinHi = '#a87050', skinShadow = '#4a2e14';
+  const cap = '#16223e', capHi = '#26365a', badge = '#d8c24a';
+
+  // legs (dark navy trousers)
+  ctx.fillStyle = shirtShade;
+  ctx.fillRect(x - s * 0.16, y - s * 0.38, s * 0.12, s * 0.38);
+  ctx.fillRect(x + s * 0.04, y - s * 0.38, s * 0.12, s * 0.38);
+  ctx.fillStyle = shirt;
+  ctx.fillRect(x - s * 0.14, y - s * 0.37, s * 0.04, s * 0.3);
+  ctx.fillRect(x + s * 0.06, y - s * 0.37, s * 0.04, s * 0.3);
+
+  // torso / uniform shirt — base
+  ctx.fillStyle = shirt;
+  ctx.beginPath(); ctx.roundRect(x - s * 0.2, y - s * 0.88, s * 0.4, s * 0.52, s * 0.06); ctx.fill();
+  // shadow (right) + highlight (left)
+  ctx.fillStyle = shirtShade;
+  ctx.beginPath(); ctx.roundRect(x + s * 0.04, y - s * 0.86, s * 0.14, s * 0.48, s * 0.04); ctx.fill();
+  ctx.fillStyle = shirtHi;
+  ctx.beginPath(); ctx.roundRect(x - s * 0.18, y - s * 0.86, s * 0.08, s * 0.44, s * 0.04); ctx.fill();
+  // epaulettes (shoulder bars) + a gold button row down the front
+  ctx.fillStyle = badge;
+  ctx.fillRect(x - s * 0.2, y - s * 0.86, s * 0.1, s * 0.04);
+  ctx.fillRect(x + s * 0.1, y - s * 0.86, s * 0.1, s * 0.04);
+  if (s >= 14) {
+    for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.arc(x, y - s * (0.78 - i * 0.14), Math.max(1, s * 0.025), 0, Math.PI * 2); ctx.fill(); }
+  }
+
+  // arms (navy sleeves)
+  ctx.strokeStyle = shirt; ctx.lineWidth = Math.max(2, s * 0.1); ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(x - s * 0.18, y - s * 0.82);
+  ctx.quadraticCurveTo(x - s * 0.36, y - s * 0.6, x - s * 0.28, y - s * 0.42); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x + s * 0.18, y - s * 0.82);
+  ctx.quadraticCurveTo(x + s * 0.36, y - s * 0.6, x + s * 0.28, y - s * 0.42); ctx.stroke();
+  // skin hands
+  ctx.fillStyle = skin;
+  ctx.beginPath(); ctx.arc(x - s * 0.28, y - s * 0.42, s * 0.05, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(x + s * 0.28, y - s * 0.42, s * 0.05, 0, Math.PI * 2); ctx.fill();
+
+  // neck
+  ctx.fillStyle = skin;
+  ctx.fillRect(x - s * 0.07, y - s * 1.02, s * 0.14, s * 0.18);
+
+  // head
+  ctx.beginPath(); ctx.arc(x, y - s * 1.08, s * 0.22, 0, Math.PI * 2);
+  ctx.fillStyle = skin; ctx.fill();
+  ctx.beginPath(); ctx.arc(x - s * 0.07, y - s * 1.14, s * 0.1, 0, Math.PI * 2);
+  ctx.fillStyle = skinHi; ctx.fill();
+  ctx.beginPath(); ctx.arc(x + s * 0.07, y - s * 1.04, s * 0.1, 0, Math.PI * 2);
+  ctx.fillStyle = skinShadow; ctx.fill();
+  // eyes
+  ctx.fillStyle = '#1a0a04';
+  ctx.beginPath(); ctx.arc(x - s * 0.08, y - s * 1.08, Math.max(1, s * 0.04), 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(x + s * 0.04, y - s * 1.08, Math.max(1, s * 0.04), 0, Math.PI * 2); ctx.fill();
+
+  // peaked cap sitting on the crown
+  // dark peak/brim across the brow
+  ctx.fillStyle = '#0e1626';
+  ctx.beginPath(); ctx.ellipse(x, y - s * 1.18, s * 0.26, s * 0.07, 0, 0, Math.PI * 2); ctx.fill();
+  // cap dome
+  ctx.fillStyle = cap;
+  ctx.beginPath(); ctx.arc(x, y - s * 1.22, s * 0.24, Math.PI, 0); ctx.fill();
+  ctx.fillStyle = capHi;
+  ctx.beginPath(); ctx.arc(x - s * 0.06, y - s * 1.28, s * 0.1, Math.PI, 0); ctx.fill();
+  // gold badge band across the cap front + small badge
+  ctx.fillStyle = badge;
+  ctx.fillRect(x - s * 0.24, y - s * 1.24, s * 0.48, s * 0.05);
+  ctx.beginPath(); ctx.arc(x, y - s * 1.30, Math.max(1.5, s * 0.05), 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = shadeColor(badge, -0.3);
+  ctx.beginPath(); ctx.arc(x, y - s * 1.30, Math.max(0.8, s * 0.025), 0, Math.PI * 2); ctx.fill();
+}
+
+// ============================================================================
+// Gated obstacle / negative pickups — recognizable, compact (Task 4)
+// ============================================================================
+
+// ---- bleaching cream: a small pale blue-white jar/tube with a lid ----
+function bleachingCream(ctx, x, y, s) {
+  const w = s * 0.62, h = s * 0.58, bx = x - w * 0.5, by = y - h * 0.7;
+  const body = '#cfe0ff', shade = '#9bb4dd';
+  ctx.fillStyle = 'rgba(0,0,0,0.2)'; ellipsePath(ctx, x + s * 0.03, by + h + s * 0.04, w * 0.5, s * 0.07); ctx.fill();
+  // squat jar body
+  rrectSprite(ctx, bx, by + h * 0.22, w, h * 0.78, w * 0.16);
+  ctx.fillStyle = body; ctx.fill();
+  ctx.strokeStyle = shade; ctx.lineWidth = Math.max(1, s * 0.04); ctx.stroke();
+  // lid
+  rrectSprite(ctx, bx - w * 0.04, by, w * 1.08, h * 0.26, w * 0.08);
+  ctx.fillStyle = shade; ctx.fill();
+  // sheen
+  ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.fillRect(bx + w * 0.14, by + h * 0.32, w * 0.12, h * 0.5);
+  if (s >= 14) {
+    ctx.fillStyle = '#5a78b0'; ctx.font = '700 ' + Math.round(s * 0.18) + 'px "Courier New", monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('Bl', x, by + h * 0.62);
+  }
+}
+
+// ---- tight pants: a pair of very tight dark-indigo jeans ----
+function tightPants(ctx, x, y, s) {
+  const w = s * 0.6, h = s * 0.95, bx = x - w * 0.5, by = y - h;
+  const col = '#3a3a5a', shade = shadeColor(col, -0.3), hi = shadeColor(col, 0.2);
+  ctx.fillStyle = 'rgba(0,0,0,0.2)'; ellipsePath(ctx, x + s * 0.03, y + s * 0.04, w * 0.5, s * 0.07); ctx.fill();
+  // waistband
+  rrectSprite(ctx, bx, by, w, h * 0.2, w * 0.1); ctx.fillStyle = shade; ctx.fill();
+  // two tapering legs (skinny — narrow at the ankle)
+  ctx.fillStyle = col;
+  ctx.beginPath();
+  ctx.moveTo(bx, by + h * 0.16); ctx.lineTo(x - w * 0.04, by + h * 0.16);
+  ctx.lineTo(x - w * 0.12, by + h); ctx.lineTo(bx + w * 0.02, by + h); ctx.closePath(); ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(x + w * 0.04, by + h * 0.16); ctx.lineTo(bx + w, by + h * 0.16);
+  ctx.lineTo(bx + w * 0.98, by + h); ctx.lineTo(x + w * 0.12, by + h); ctx.closePath(); ctx.fill();
+  // centre seam shadow + denim highlight
+  ctx.strokeStyle = shade; ctx.lineWidth = Math.max(1, s * 0.03);
+  ctx.beginPath(); ctx.moveTo(x, by + h * 0.18); ctx.lineTo(x, by + h * 0.7); ctx.stroke();
+  ctx.fillStyle = hi; ctx.fillRect(bx + w * 0.08, by + h * 0.24, w * 0.05, h * 0.6);
+}
+
+// ---- weed: a small green herb bud (clustered leaflets) ----
+function weedBud(ctx, x, y, s) {
+  const col = '#3f7a3a', dark = '#256020', hi = '#5fa050';
+  const cy = y - s * 0.4, r = s * 0.42;
+  ctx.fillStyle = 'rgba(0,0,0,0.18)'; ellipsePath(ctx, x + s * 0.03, y + s * 0.03, r * 0.7, s * 0.06); ctx.fill();
+  // stem
+  ctx.strokeStyle = dark; ctx.lineWidth = Math.max(1.5, s * 0.08); ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(x, cy); ctx.lineTo(x, y); ctx.stroke();
+  // a fan of pointed leaflets radiating up
+  for (const a of [-1.3, -0.9, -0.5, -1.05, -0.7]) {
+    const ex = x + Math.cos(a) * r, ey = cy + Math.sin(a) * r;
+    ctx.fillStyle = col;
+    ctx.beginPath();
+    ctx.moveTo(x, cy);
+    ctx.quadraticCurveTo(x + Math.cos(a) * r * 0.4 - s * 0.06, cy + Math.sin(a) * r * 0.5, ex, ey);
+    ctx.quadraticCurveTo(x + Math.cos(a) * r * 0.4 + s * 0.06, cy + Math.sin(a) * r * 0.5, x, cy);
+    ctx.closePath(); ctx.fill();
+  }
+  // central bud cluster
+  ctx.fillStyle = hi;
+  ctx.beginPath(); ctx.arc(x, cy - s * 0.04, r * 0.3, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = dark;
+  ctx.beginPath(); ctx.arc(x + s * 0.04, cy + s * 0.02, r * 0.16, 0, Math.PI * 2); ctx.fill();
+}
+
+// ---- molly: a couple of loose magenta capsules / pills ----
+function mollyPills(ctx, x, y, s) {
+  const col = '#e060c0', shade = '#a8308a', cap = '#ffffff';
+  ctx.fillStyle = 'rgba(0,0,0,0.18)'; ellipsePath(ctx, x + s * 0.03, y + s * 0.03, s * 0.5, s * 0.07); ctx.fill();
+  // capsule 1 (tilted)
+  ctx.save(); ctx.translate(x - s * 0.12, y - s * 0.34); ctx.rotate(-0.4);
+  rrectSprite(ctx, -s * 0.26, -s * 0.1, s * 0.52, s * 0.2, s * 0.1); ctx.fillStyle = col; ctx.fill();
+  ctx.fillStyle = cap; rrectSprite(ctx, -s * 0.26, -s * 0.1, s * 0.26, s * 0.2, s * 0.1); ctx.fill();
+  ctx.strokeStyle = shade; ctx.lineWidth = Math.max(1, s * 0.03);
+  rrectSprite(ctx, -s * 0.26, -s * 0.1, s * 0.52, s * 0.2, s * 0.1); ctx.stroke();
+  ctx.restore();
+  // round pill 2
+  ctx.beginPath(); ctx.arc(x + s * 0.18, y - s * 0.16, s * 0.16, 0, Math.PI * 2);
+  ctx.fillStyle = col; ctx.fill();
+  ctx.strokeStyle = shade; ctx.lineWidth = Math.max(1, s * 0.03); ctx.stroke();
+  ctx.strokeStyle = shade; ctx.beginPath(); ctx.moveTo(x + s * 0.06, y - s * 0.16); ctx.lineTo(x + s * 0.3, y - s * 0.16); ctx.stroke();
+  // highlight glints
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  ctx.beginPath(); ctx.arc(x + s * 0.13, y - s * 0.22, s * 0.04, 0, Math.PI * 2); ctx.fill();
+}
+
+// ---- teen sex (tasteful/abstract): a red-pink warning heart with a slash ----
+function warningHeart(ctx, x, y, s) {
+  const col = '#c0285a', dark = '#8a1840';
+  const cy = y - s * 0.42, r = s * 0.4;
+  ctx.fillStyle = 'rgba(0,0,0,0.18)'; ellipsePath(ctx, x + s * 0.03, y + s * 0.03, r * 0.8, s * 0.06); ctx.fill();
+  // heart shape (two lobes + point)
+  ctx.fillStyle = col;
+  ctx.beginPath();
+  ctx.moveTo(x, cy + r * 0.9);
+  ctx.bezierCurveTo(x - r * 1.2, cy - r * 0.2, x - r * 0.4, cy - r * 0.95, x, cy - r * 0.3);
+  ctx.bezierCurveTo(x + r * 0.4, cy - r * 0.95, x + r * 1.2, cy - r * 0.2, x, cy + r * 0.9);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = dark; ctx.lineWidth = Math.max(1, s * 0.04); ctx.stroke();
+  // warning slash across it
+  ctx.strokeStyle = '#f5f0f0'; ctx.lineWidth = Math.max(1.5, s * 0.08); ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(x - r * 0.7, cy + r * 0.55); ctx.lineTo(x + r * 0.7, cy - r * 0.55); ctx.stroke();
+  ctx.lineCap = 'butt';
+}
+
+// ---- obeah: a dark ritual charm — a little candle/skull-ish fetish token ----
+function obeahCharm(ctx, x, y, s) {
+  const col = '#5a2a6a', dark = '#3a1646', bone = '#d8d0c0';
+  const cy = y - s * 0.4;
+  ctx.fillStyle = 'rgba(0,0,0,0.2)'; ellipsePath(ctx, x + s * 0.03, y + s * 0.03, s * 0.4, s * 0.07); ctx.fill();
+  // cloth-wrapped charm body
+  rrectSprite(ctx, x - s * 0.28, cy - s * 0.08, s * 0.56, s * 0.5, s * 0.1);
+  ctx.fillStyle = col; ctx.fill();
+  ctx.strokeStyle = dark; ctx.lineWidth = Math.max(1, s * 0.04); ctx.stroke();
+  // binding cords across it
+  ctx.strokeStyle = '#2a1030'; ctx.lineWidth = Math.max(1, s * 0.04);
+  ctx.beginPath(); ctx.moveTo(x - s * 0.28, cy + s * 0.1); ctx.lineTo(x + s * 0.28, cy + s * 0.1);
+  ctx.moveTo(x - s * 0.28, cy + s * 0.24); ctx.lineTo(x + s * 0.28, cy + s * 0.24); ctx.stroke();
+  // little pale skull/bone token tied on top
+  ctx.fillStyle = bone;
+  ctx.beginPath(); ctx.arc(x, cy - s * 0.16, s * 0.14, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = dark; // eye sockets
+  ctx.beginPath(); ctx.arc(x - s * 0.05, cy - s * 0.18, s * 0.03, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(x + s * 0.05, cy - s * 0.18, s * 0.03, 0, Math.PI * 2); ctx.fill();
+}
+
+// ---- pork: a pink ham / pork cut with a bone end ----
+function porkCut(ctx, x, y, s) {
+  const col = '#e0a0a0', shade = '#c07878', rind = '#f0d0c8', bone = '#efe8da';
+  const cy = y - s * 0.4, w = s * 0.8, h = s * 0.6;
+  ctx.fillStyle = 'rgba(0,0,0,0.18)'; ellipsePath(ctx, x + s * 0.03, y + s * 0.03, w * 0.5, s * 0.07); ctx.fill();
+  // ham body (teardrop-ish oval)
+  ctx.fillStyle = col;
+  ctx.beginPath(); ctx.ellipse(x + s * 0.04, cy, w * 0.46, h * 0.5, -0.2, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = shade; ctx.lineWidth = Math.max(1, s * 0.04); ctx.stroke();
+  // rind highlight
+  ctx.fillStyle = rind;
+  ctx.beginPath(); ctx.ellipse(x - s * 0.06, cy - h * 0.18, w * 0.26, h * 0.18, -0.3, 0, Math.PI * 2); ctx.fill();
+  // scoring marks
+  ctx.strokeStyle = shade; ctx.lineWidth = Math.max(1, s * 0.025);
+  ctx.beginPath(); ctx.moveTo(x - s * 0.1, cy - s * 0.04); ctx.lineTo(x + s * 0.2, cy - s * 0.12);
+  ctx.moveTo(x - s * 0.08, cy + s * 0.08); ctx.lineTo(x + s * 0.22, cy + s * 0.0); ctx.stroke();
+  // protruding bone end
+  ctx.fillStyle = bone;
+  ctx.beginPath(); ctx.arc(x + w * 0.42, cy - h * 0.22, s * 0.09, 0, Math.PI * 2); ctx.fill();
+}
+
+// ---- jw: a cream "Watchtower"-style tract / booklet ----
+function jwTract(ctx, x, y, s) {
+  const cream = '#cfc8b0', shade = '#a89e80', ink = '#5a5440';
+  const w = s * 0.66, h = s * 0.86, bx = x - w * 0.5, by = y - h * 0.92;
+  ctx.fillStyle = 'rgba(0,0,0,0.2)'; ellipsePath(ctx, x + s * 0.03, by + h + s * 0.04, w * 0.5, s * 0.07); ctx.fill();
+  // back page peeking (booklet)
+  rrectSprite(ctx, bx + s * 0.05, by + s * 0.04, w, h, w * 0.05);
+  ctx.fillStyle = shade; ctx.fill();
+  // front cover
+  rrectSprite(ctx, bx, by, w, h, w * 0.05);
+  ctx.fillStyle = cream; ctx.fill();
+  ctx.strokeStyle = shade; ctx.lineWidth = Math.max(1, s * 0.035); ctx.stroke();
+  // spine line
+  ctx.strokeStyle = shade; ctx.lineWidth = Math.max(1, s * 0.03);
+  ctx.beginPath(); ctx.moveTo(bx + w * 0.1, by); ctx.lineTo(bx + w * 0.1, by + h); ctx.stroke();
+  // masthead bar + headline lines
+  ctx.fillStyle = '#8a7f5a'; ctx.fillRect(bx + w * 0.18, by + h * 0.1, w * 0.72, h * 0.12);
+  ctx.fillStyle = ink;
+  for (let i = 0; i < 3; i++) ctx.fillRect(bx + w * 0.18, by + h * (0.32 + i * 0.12), w * 0.66, h * 0.05);
+  if (s >= 14) {
+    ctx.fillStyle = '#3a3528'; ctx.font = '700 ' + Math.round(s * 0.13) + 'px "Courier New", monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('JW', bx + w * 0.54, by + h * 0.16);
+  }
+}
+
+// ---- roadfix: an orange roadwork cone + fresh-asphalt patch (money pit) ----
+function roadworkSign(ctx, x, y, s) {
+  const orange = '#e8821e', dark = '#b5610c';
+  // fresh dark asphalt patch on the ground
+  ctx.fillStyle = '#1f1c18';
+  ellipsePath(ctx, x, y - s * 0.04, s * 0.7, s * 0.22); ctx.fill();
+  ctx.fillStyle = '#34302a';
+  ellipsePath(ctx, x - s * 0.06, y - s * 0.06, s * 0.4, s * 0.12); ctx.fill();
+  // traffic cone
+  const baseY = y - s * 0.12, topY = y - s * 0.95;
+  ctx.fillStyle = orange;
+  ctx.beginPath();
+  ctx.moveTo(x - s * 0.34, baseY); ctx.lineTo(x - s * 0.08, topY);
+  ctx.lineTo(x + s * 0.08, topY); ctx.lineTo(x + s * 0.34, baseY); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = dark; ctx.lineWidth = Math.max(1, s * 0.035); ctx.stroke();
+  // white reflective bands
+  ctx.fillStyle = '#f2ede2';
+  ctx.beginPath(); ctx.moveTo(x - s * 0.24, baseY - s * 0.28); ctx.lineTo(x - s * 0.14, baseY - s * 0.52);
+  ctx.lineTo(x + s * 0.14, baseY - s * 0.52); ctx.lineTo(x + s * 0.24, baseY - s * 0.28); ctx.closePath(); ctx.fill();
+  // wide base slab
+  ctx.fillStyle = dark; rrectSprite(ctx, x - s * 0.4, baseY - s * 0.02, s * 0.8, s * 0.12, s * 0.04); ctx.fill();
+}
+
+// ---- constituent: an angry citizen with a raised placard ----
+function angryCitizen(ctx, x, y, s) {
+  person(ctx, x, y, s, '#b04a3c');
+  // raised placard on a stick (right hand up)
+  ctx.strokeStyle = '#6a4a2a'; ctx.lineWidth = Math.max(1.5, s * 0.05); ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(x + s * 0.28, y - s * 0.42); ctx.lineTo(x + s * 0.34, y - s * 1.3); ctx.stroke();
+  ctx.fillStyle = '#efe9da';
+  rrectSprite(ctx, x + s * 0.06, y - s * 1.66, s * 0.6, s * 0.36, s * 0.04); ctx.fill();
+  ctx.strokeStyle = '#9a9484'; ctx.lineWidth = Math.max(1, s * 0.03); ctx.stroke();
+  // angry red scrawl on the sign
+  ctx.strokeStyle = '#c0281e'; ctx.lineWidth = Math.max(1, s * 0.04);
+  for (let i = 0; i < 2; i++) { ctx.beginPath(); ctx.moveTo(x + s * 0.14, y - s * (1.54 - i * 0.14)); ctx.lineTo(x + s * 0.58, y - s * (1.54 - i * 0.14)); ctx.stroke(); }
+}
+
+// ---- lightpole: a fallen utility pole lying across the road, lamp head ----
+function fallenPole(ctx, x, y, s) {
+  const grey = '#8a8f96', dark = '#5a5f66', lamp = '#cfd6dc';
+  ctx.fillStyle = 'rgba(0,0,0,0.22)'; ellipsePath(ctx, x, y + s * 0.06, s * 1.1, s * 0.12); ctx.fill();
+  // the pole, lying diagonally
+  ctx.save(); ctx.translate(x, y - s * 0.2); ctx.rotate(-0.18);
+  rrectSprite(ctx, -s * 1.0, -s * 0.1, s * 1.8, s * 0.2, s * 0.08); ctx.fillStyle = grey; ctx.fill();
+  ctx.strokeStyle = dark; ctx.lineWidth = Math.max(1, s * 0.035); ctx.stroke();
+  // length shading
+  ctx.fillStyle = dark; ctx.fillRect(-s * 0.98, s * 0.0, s * 1.76, s * 0.08);
+  // lamp head at one end (right)
+  ctx.fillStyle = '#3a3f46';
+  rrectSprite(ctx, s * 0.7, -s * 0.16, s * 0.34, s * 0.16, s * 0.04); ctx.fill();
+  ctx.fillStyle = lamp;
+  ctx.beginPath(); ctx.ellipse(s * 0.92, -s * 0.04, s * 0.14, s * 0.08, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+}
+
+// ---- hustlerlunch: a hustler holding up a box-lunch food box ----
+function boxLunchHustler(ctx, x, y, s) {
+  person(ctx, x, y, s, '#d06a30');
+  // styrofoam box-lunch held up in both hands
+  ctx.fillStyle = '#eef0ee';
+  rrectSprite(ctx, x - s * 0.26, y - s * 0.66, s * 0.52, s * 0.26, s * 0.05); ctx.fill();
+  ctx.strokeStyle = '#b8bcb8'; ctx.lineWidth = Math.max(1, s * 0.035); ctx.stroke();
+  // box lid seam
+  ctx.strokeStyle = '#c8ccc8'; ctx.lineWidth = Math.max(1, s * 0.03);
+  ctx.beginPath(); ctx.moveTo(x - s * 0.26, y - s * 0.55); ctx.lineTo(x + s * 0.26, y - s * 0.55); ctx.stroke();
+  // a little steam rising
+  ctx.strokeStyle = 'rgba(230,230,220,0.6)'; ctx.lineWidth = Math.max(1, s * 0.03); ctx.lineCap = 'round';
+  for (const dx of [-0.1, 0.08]) {
+    ctx.beginPath();
+    ctx.moveTo(x + s * dx, y - s * 0.7);
+    ctx.quadraticCurveTo(x + s * (dx + 0.06), y - s * 0.82, x + s * dx, y - s * 0.94); ctx.stroke();
+  }
+  ctx.lineCap = 'butt';
+}
+
+// ---- voter: a person holding up a ballot / "X" sign ----
+function ballotVoter(ctx, x, y, s) {
+  person(ctx, x, y, s, '#2a7f7f');
+  // ballot card held up
+  ctx.fillStyle = '#f4f1e6';
+  rrectSprite(ctx, x - s * 0.02, y - s * 0.98, s * 0.42, s * 0.34, s * 0.04); ctx.fill();
+  ctx.strokeStyle = '#b8b49c'; ctx.lineWidth = Math.max(1, s * 0.03); ctx.stroke();
+  // a bold X marked on the ballot
+  ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = Math.max(1.5, s * 0.05); ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(x + s * 0.06, y - s * 0.92); ctx.lineTo(x + s * 0.32, y - s * 0.7);
+  ctx.moveTo(x + s * 0.32, y - s * 0.92); ctx.lineTo(x + s * 0.06, y - s * 0.7); ctx.stroke();
+  ctx.lineCap = 'butt';
+}
+
+// ---- contractor: a hard-hat worker holding a clipboard / invoice ----
+function hardHatContractor(ctx, x, y, s) {
+  person(ctx, x, y, s, '#caa65a');
+  // yellow hard hat over the head
+  ctx.fillStyle = '#e8c84a';
+  ctx.beginPath(); ctx.arc(x, y - s * 1.14, s * 0.24, Math.PI, 0); ctx.fill();
+  ctx.fillStyle = shadeColor('#e8c84a', 0.25);
+  ctx.beginPath(); ctx.arc(x - s * 0.06, y - s * 1.2, s * 0.1, Math.PI, 0); ctx.fill();
+  // brim
+  ctx.fillStyle = shadeColor('#e8c84a', -0.2);
+  ctx.beginPath(); ctx.ellipse(x, y - s * 1.14, s * 0.28, s * 0.06, 0, 0, Math.PI * 2); ctx.fill();
+  // centre ridge
+  ctx.strokeStyle = shadeColor('#e8c84a', -0.3); ctx.lineWidth = Math.max(1, s * 0.03);
+  ctx.beginPath(); ctx.moveTo(x, y - s * 1.36); ctx.lineTo(x, y - s * 1.14); ctx.stroke();
+  // clipboard / invoice in hand
+  ctx.fillStyle = '#c89a4a';
+  rrectSprite(ctx, x + s * 0.14, y - s * 0.66, s * 0.3, s * 0.36, s * 0.03); ctx.fill();
+  ctx.fillStyle = '#f4f1e6';
+  rrectSprite(ctx, x + s * 0.17, y - s * 0.63, s * 0.24, s * 0.3, s * 0.02); ctx.fill();
+  ctx.strokeStyle = '#9a9484'; ctx.lineWidth = Math.max(1, s * 0.02);
+  for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.moveTo(x + s * 0.2, y - s * (0.56 - i * 0.08)); ctx.lineTo(x + s * 0.38, y - s * (0.56 - i * 0.08)); ctx.stroke(); }
 }

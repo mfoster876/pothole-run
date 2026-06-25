@@ -1,14 +1,15 @@
-import { VIRTUAL, SHOULDER, SUPERCHARGE, IMPAIR, SPAWN_TUNE } from './constants.js';
+import { VIRTUAL, SHOULDER, SUPERCHARGE, IMPAIR, SPAWN_TUNE, POLICE, POLITICIAN } from './constants.js';
 import { setLetterboxColors } from './main.js';
 import { drinkWeightsFor } from './drinks.js';
 import { itemWeightsFor } from './charitems.js';
+import { negativesFor } from './negatives.js';
 import { makeRoad, renderRoad, projectEntity, curveOffsetAt, CART_Z } from './road.js';
 import { createCart, steer, updateCart, onShoulder, tipShoulder } from './cart.js';
 import { createField, spawn, advance, activeEntities } from './entities.js';
 import { spawnInterval, pickHazard, laneFor } from './spawner.js';
 import { createRun, resolveHits } from './run.js';
 import { isWrecked, applyDamage } from './wreck.js';
-import { renderHud, renderTouchZones } from './hud.js';
+import { renderHud, renderTouchZones, renderPickupToast } from './hud.js';
 import { drawEntity } from './sprites.js';
 import { drawCart } from './cartSprite.js';
 import { renderScenery } from './scenery.js';
@@ -16,7 +17,7 @@ import { getCharacter } from './characters.js';
 import { getStage } from './stages.js';
 import { VEHICLES, getVehicle } from './vehicles.js';
 import { STABILITY_UPGRADES, stabilityBonus, nextUpgrade } from './upgrades.js';
-import { pickMoney, nextBill, formatMoney } from './money.js';
+import { pickMoney, nextBill, biasBill, formatMoney } from './money.js';
 import { loadSave, writeSave, recordBest, addCoins, buyVehicle, selectVehicle, buyUpgrade, GENRES } from './save.js';
 import { emptyState as tapcodeEmpty, feedTap } from './tapcode.js';
 import { bankRun } from './economy.js';
@@ -34,6 +35,7 @@ import { purchaseAspiration, canBuy } from './aspirations.js';
 import { playCashPot } from './cashpot.js';
 import * as tithesScreen from './screens/tithes.js';
 import * as racesScreen from './screens/races.js';
+import * as legendScreen from './screens/legend.js';
 import { tierById, enterRace, tickRival, placement, settleRace } from './races.js';
 import { blessingEffects, decayBlessing, offeringAmount, giveTithe, pray, readBible } from './tithes.js';
 import { renderPortrait } from './portrait.js';
@@ -51,7 +53,8 @@ const BTN = {
   genrePrev:  arrow(0.15, 0.70),  genreNext:  arrow(0.80, 0.70),
   genreValue: { x: W * 0.30, y: H * 0.70 - 20, w: W * 0.40, h: 40 }, // tap to upload when "My Music"
   start:      { x: W * 0.5 - 130, y: H * 0.795 - 28, w: 260, h: 54 },
-  back:       { x: 24, y: 18, w: 80, h: 36 }
+  back:       { x: 24, y: 18, w: 80, h: 36 },
+  legend:     { x: W - 150, y: 18, w: 122, h: 36 }   // per-driver legend (play screen)
 };
 function inRect(r, x, y) { return x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h; }
 
@@ -83,6 +86,7 @@ export function createGame(audio) {
   let cashpotResult = null; // last result from playCashPot
   let race = null;          // active street-race state ({tier, finish, rivals}) or null
   let raceResult = null;    // last race result banner for the races screen
+  let pickupToast = null;   // transient HUD toast naming the last pick-up / negative hit
   let myMusicCount = 0; // how many of the player's own tracks are stored (for the riddim picker)
   const rng = Math.random;
   function refreshMusicCount() { try { countMusic().then((n) => { myMusicCount = n || 0; }).catch(() => {}); } catch (_) {} }
@@ -111,13 +115,24 @@ export function createGame(audio) {
     // windscreen youths only appear when you drive a car (a windscreen to wash);
     // drinks the current driver is allowed to pick up are mixed into the spawn pool
     // (a School Yute, a minor, only ever sees sodas — never rum).
+    // The Politician's motorcade rolls on freshly-paved roads — far fewer craters.
+    const ch = cart.character;
+    const potholeMult = ch.id === 'politician' ? POLITICIAN.potholeMult : 1;
     activeWeights = (cart.vehicle.isCar
       ? stage.hazardWeights.concat([{ type: 'wiper', weight: 3 }])
       : stage.hazardWeights.slice()
-    ).concat(drinkWeightsFor(cart.character))
-      .concat(itemWeightsFor(cart.character))    // character-specific bleach / wholesome items
-      // Repair tools are the in-run lifeline — spawn them 20% more often.
-      .map(w => w.type === 'tools' ? { type: 'tools', weight: w.weight * SPAWN_TUNE.toolMult } : w);
+    ).concat(drinkWeightsFor(ch))
+      .concat(itemWeightsFor(ch))      // character-specific bleach / wholesome items
+      .concat(negativesFor(ch))        // character-gated temptations / responsibilities
+      .map(w => {
+        // Repair tools are the in-run lifeline — spawn them 20% more often.
+        if (w.type === 'tools') return { type: 'tools', weight: w.weight * SPAWN_TUNE.toolMult };
+        // cashFind dials how OFTEN money appears (reckless drivers see it rarely).
+        if (w.type === 'coin') return { type: 'coin', weight: w.weight * (ch.cashFind || 1) };
+        // Politician's paved roads thin out potholes/manholes (still full damage on hit).
+        if (w.type === 'pothole' || w.type === 'manhole') return { type: w.type, weight: w.weight * potholeMult };
+        return w;
+      });
     // Faith upkeep resets each run — pray/read-bible become available again.
     save.prayedSinceRun = false;
     save.readBibleSinceRun = false;
@@ -239,15 +254,22 @@ export function createGame(audio) {
       const lane = type === 'bus' ? 0 : laneFor(rng, 3); // JUTC buses overtake on the left
       const e = spawn(field, type, lane, 5200);
       if (type === 'coin') {
-        // During coffee window bias to $5000 notes; supercharge bumps each note up one
-        // bill tier (keeps denominations strictly on the $100–$5000 ladder).
-        e.value = inCoffeeWindow ? 5000
-          : (supercharged ? nextBill(pickMoney(run.distance, rng)) : pickMoney(run.distance, rng));
+        if (inCoffeeWindow) {
+          e.value = 5000;                                  // coffee window floods $5000 notes
+        } else if (cart.character.id === 'politician') {
+          // The Politician deals almost exclusively in $5000 notes (else a big note).
+          e.value = (supercharged || rng() < POLITICIAN.cashBillChance) ? 5000 : 2000;
+        } else {
+          let v = pickMoney(run.distance, rng);
+          if (supercharged) v = nextBill(v);               // supercharge fattens each note a tier
+          e.value = biasBill(v, cart.character.billBias);  // reckless drivers see fatter notes
+        }
       }
       spawnZ = spawnInterval(run.distance, undefined, undefined, cart.speed) * 8;
     }
     const coinsBefore = run.coins, condBefore = cart.condition.value;
     cart.gusted = false; cart.washed = false; cart.pickupValue = 0; cart.nearMiss = false;
+    cart.pickupLabel = null; cart.hitNegative = null; cart.fined = false;
     resolveHits(run, cart, field, effects);
     if (run.coins > coinsBefore) audio && audio.sfx(cart.pickupValue >= 100 ? 'cash' : 'coin');
     // any damage event ratchets the permanent rattle up
@@ -255,6 +277,12 @@ export function createGame(audio) {
     if (cart.washed) { audio && audio.sfx('wash'); hitShake = Math.max(hitShake, 0.4); }
     else if (cart.condition.value < condBefore) { audio && audio.sfx('hit'); hitShake = 1; }
     if (cart.gusted) { audio && audio.sfx('whoosh'); hitShake = Math.max(hitShake, 0.55); }
+    // Name the exact pick-up / negative / fine for the HUD toast — clear feedback, not
+    // a vague "irie boost". A fresh event overrides whatever toast is fading.
+    if (pickupToast) { pickupToast.t -= dt; if (pickupToast.t <= 0) pickupToast = null; }
+    if (cart.pickupLabel) pickupToast = { label: cart.pickupLabel, good: true, t: 1.4 };
+    else if (cart.hitNegative) pickupToast = { label: cart.hitNegative, good: false, t: 1.8 };
+    else if (cart.fined) pickupToast = { label: 'Police Fine −' + formatMoney(POLICE.fine), good: false, t: 1.6 };
     squeakAccum += dz;
     const shoulder = onShoulder(cart);
     if (squeakAccum >= (shoulder ? 120 : 215)) { squeakAccum -= (shoulder ? 120 : 215); audio && audio.sfx('squeak'); }
@@ -311,6 +339,7 @@ export function createGame(audio) {
     drawCart(ctx, cart, cp.x + cartCurve + jitX, cp.y + 6 + bobPx, cp.size * 0.9);
     renderTouchZones(ctx, W, H);
     renderHud(ctx, { stageName: stage.name, coins: run.coins, distance: run.distance, condition: cart.condition, effects }, W, H);
+    renderPickupToast(ctx, pickupToast, W, H);
     if (race) renderRaceHud(ctx);
   }
 
@@ -417,6 +446,7 @@ export function createGame(audio) {
     // Play: existing driver/stage/genre pickers + START
     if (screen === 'play') {
       if (inRect(BTN.back, vx, vy)) { router.go('hub'); return; }
+      if (inRect(BTN.legend, vx, vy)) { router.go('legend'); return; }
       if (inRect(BTN.driverPrev, vx, vy)) cycleDriver(-1);
       else if (inRect(BTN.driverNext, vx, vy)) cycleDriver(1);
       else if (inRect(BTN.stagePrev, vx, vy)) cycleStage(-1);
@@ -490,6 +520,12 @@ export function createGame(audio) {
       return;
     }
 
+    // Legend — per-driver pick-ups vs negatives
+    if (screen === 'legend') {
+      if (legendScreen.hit(vx, vy, { W, H }) === 'back') { router.go('play'); return; }
+      return;
+    }
+
     // Faith & Offerings — pray, read the Bible, or tithe to sustain the blessing
     if (screen === 'tithes') {
       const action = tithesScreen.hit(vx, vy, { W, H });
@@ -549,6 +585,10 @@ export function createGame(audio) {
     }
     if (screen === 'help') {
       if (key === 'Escape') router.go('hub');
+      return;
+    }
+    if (screen === 'legend') {
+      if (key === 'Escape') router.go('play');
       return;
     }
     if (screen === 'ending') {
@@ -616,6 +656,10 @@ export function createGame(audio) {
       if (state.popup) renderPopup(ctx, state.popup);
       return;
     }
+    if (screen === 'legend') {
+      legendScreen.render(ctx, { characterId: menuChoice.character, W, H });
+      return;
+    }
     if (screen === 'help') {
       help.render(ctx, { save, W, H });
       return;
@@ -636,8 +680,9 @@ export function createGame(audio) {
     ctx.fillStyle = '#9fb8a3'; ctx.font = '500 16px "Courier New", monospace';
     ctx.fillText('dodge di potholes — bank coins — upgrade di ride', W / 2, H * 0.15);
 
-    // Back button
+    // Back button + per-driver legend
     button(ctx, BTN.back, '‹ HUB', { font: '700 18px "Courier New", monospace', stroke: '#9fb8a3', text: '#9fb8a3' });
+    button(ctx, BTN.legend, 'ⓘ LEGEND', { font: '700 18px "Courier New", monospace', stroke: '#f0c020', text: '#f0c020' });
 
     const driver = getCharacter(menuChoice.character);
     const stg = getStage(menuChoice.stage);

@@ -63,6 +63,13 @@ export function applyDrink(effects, cart, id) {
   return boostDur;
 }
 
+/** { id, label } pairs of the drinks this character can pick up — for the legend. */
+export function eligibleDrinks(character) {
+  if (!character) return [];
+  const list = ELIGIBLE[character.id] || [];
+  return list.map(id => ({ id, label: DRINKS[id].label }));
+}
+
 /**
  * Returns an array of { type, weight } for the drinks this character can pick up.
  * Used by the spawner to build a weighted drink list.
