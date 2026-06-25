@@ -170,20 +170,42 @@ function drawRider(ctx, ch, s, seatY) {
 
 // The driver behind the handcart (taller than the box). Headgear by persona.
 function drawDriver(ctx, ch, s) {
+  const id = ch && ch.id;
   const skin = '#7a4a28', shirt = shirtColor(ch);
   ctx.fillStyle = shirt; ctx.fillRect(-s * 0.3, -s * 1.18, s * 0.6, s * 0.5);
   ctx.strokeStyle = shirt; ctx.lineWidth = s * 0.13; ctx.lineCap = 'round';
   ctx.beginPath(); ctx.moveTo(-s * 0.18, -s * 1.02); ctx.lineTo(s * 0.08, -s * 1.0); ctx.stroke();
-  ctx.strokeStyle = skin; ctx.lineWidth = s * 0.1;
+  // Bleachaz conductor: left arm stays original un-bleached black, right arm is lighter
+  const rightArmSkin = id === 'conductor' ? '#e8d4b8' : skin;
+  const leftArmSkin  = id === 'conductor' ? '#1c1208'  : skin;  // un-bleached arm
+  ctx.strokeStyle = rightArmSkin; ctx.lineWidth = s * 0.1;
   ctx.beginPath(); ctx.moveTo(s * 0.05, -s * 1.0); ctx.lineTo(s * 0.2, -s * 0.98); ctx.stroke();
-  ctx.fillStyle = skin; ctx.fillRect(-s * 0.06, -s * 1.26, s * 0.12, s * 0.12);
+  // neck stub — lighter for conductor (bleached)
+  const neckSkin = id === 'conductor' ? '#e8d4b8' : skin;
+  ctx.fillStyle = neckSkin; ctx.fillRect(-s * 0.06, -s * 1.26, s * 0.12, s * 0.12);
+  // Neck tattoos for conductor: small geometric lines on the neck
+  if (id === 'conductor') {
+    ctx.strokeStyle = '#2a2a30'; ctx.lineWidth = Math.max(0.8, s * 0.03); ctx.lineCap = 'butt';
+    // two small horizontal bars on the neck
+    ctx.beginPath();
+    ctx.moveTo(-s * 0.055, -s * 1.22); ctx.lineTo(s * 0.055, -s * 1.22);
+    ctx.moveTo(-s * 0.04,  -s * 1.17); ctx.lineTo(s * 0.04,  -s * 1.17);
+    ctx.stroke();
+    // a small left-arm sleeve tattoo on the visible un-bleached arm stub
+    ctx.strokeStyle = '#3a3050'; ctx.lineWidth = Math.max(0.8, s * 0.025);
+    ctx.beginPath();
+    ctx.moveTo(-s * 0.16, -s * 1.04); ctx.lineTo(-s * 0.09, -s * 1.06);
+    ctx.stroke();
+  }
   drawHead(ctx, ch, s, 0, -s * 1.38);
 }
 
 // Head + persona headgear, reusable across rides. (x,y) = head centre, scale = s.
 function drawHead(ctx, ch, s, x, y) {
   const id = ch && ch.id, skin = '#7a4a28';
-  ctx.beginPath(); ctx.arc(x, y, s * 0.145, 0, Math.PI * 2); ctx.fillStyle = skin; ctx.fill();
+  // Bleachaz conductor: white/bleached face instead of standard skin
+  const faceSkin = id === 'conductor' ? '#f0e6d8' : skin;
+  ctx.beginPath(); ctx.arc(x, y, s * 0.145, 0, Math.PI * 2); ctx.fillStyle = faceSkin; ctx.fill();
   if (id === 'rasta') {
     ctx.fillStyle = '#2a8a3a'; ctx.beginPath(); ctx.arc(x, y - s * 0.04, s * 0.21, Math.PI, 0); ctx.fill();
     ctx.fillStyle = '#e0b020'; ctx.fillRect(x - s * 0.21, y - s * 0.04, s * 0.42, s * 0.05);
@@ -192,8 +214,21 @@ function drawHead(ctx, ch, s, x, y) {
     ctx.beginPath(); ctx.moveTo(x - s * 0.16, y + s * 0.08); ctx.lineTo(x - s * 0.22, y + s * 0.34); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(x + s * 0.16, y + s * 0.08); ctx.lineTo(x + s * 0.22, y + s * 0.34); ctx.stroke();
   } else if (id === 'conductor') {
+    // Flat conductor cap (dark)
     ctx.fillStyle = '#2b2b30'; ctx.beginPath(); ctx.arc(x, y - s * 0.04, s * 0.19, Math.PI, 0); ctx.fill();
     ctx.fillRect(x - s * 0.2, y - s * 0.04, s * 0.32, s * 0.04);
+    // Black lips with a pink centre — drawn at the lower third of the face
+    const lipY = y + s * 0.07;
+    const lipW = s * 0.09;
+    // outer black lip shape
+    ctx.fillStyle = '#1a1a1a';
+    ctx.beginPath(); ctx.ellipse(x, lipY, lipW, s * 0.038, 0, 0, Math.PI * 2); ctx.fill();
+    // pink centre highlight (the inner wet lip colour)
+    ctx.fillStyle = '#e0607a';
+    ctx.beginPath(); ctx.ellipse(x, lipY, lipW * 0.55, s * 0.018, 0, 0, Math.PI * 2); ctx.fill();
+    // subtle facial tattoo: a small mark under the right eye
+    ctx.fillStyle = '#2a2a50';
+    ctx.beginPath(); ctx.arc(x + s * 0.07, y - s * 0.02, Math.max(0.8, s * 0.02), 0, Math.PI * 2); ctx.fill();
   } else if (id === 'jonkonnu') {
     ctx.fillStyle = '#c0392b'; ctx.fillRect(x - s * 0.18, y - s * 0.36, s * 0.36, s * 0.32);
     ctx.fillStyle = '#e0b020'; ctx.fillRect(x - s * 0.18, y - s * 0.26, s * 0.36, s * 0.06);
