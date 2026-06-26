@@ -15,22 +15,28 @@ export const JA_DEATHS_YEAR = 2025;
 // a teaching tool — the toll is real, but so is the message that it can be changed (2026 is
 // trending down). All shown on GREEN billboards with white text (see drawSafetyBillboard).
 export const SAFETY_MESSAGES = [
-  { head: String(JA_ROAD_DEATHS) + ' KILLED', sub: 'ON OUR ROADS IN ' + JA_DEATHS_YEAR },
+  { head: String(JA_ROAD_DEATHS) + ' KILLED', sub: 'IN ' + JA_DEATHS_YEAR },
   { head: 'SPEEDING', sub: 'KILLS' },
   { head: 'ARRIVE', sub: 'ALIVE' },
   { head: 'SLOW DOWN', sub: 'REACH HOME SAFE' },
   { head: "DON'T DRINK", sub: '& DRIVE' },
-  { head: 'ROAD DEATHS', sub: 'DOWN IN 2026 — KEEP IT' },
+  { head: 'ROAD DEATHS', sub: 'DOWN IN 2026' },
 ];
 
 // Deterministic roadside cadence by row index — kept SPARSE so signs don't crowd the drive:
 // roughly one feature every ~18 rows per side, mostly the stage's own prop. Callers pass a
 // phase-shifted rowIdx for the FAR side so the two verges never mirror.
 //   → { kind: 'speed', limit } | { kind: 'billboard', idx } | null  (null = draw the prop)
+// The billboard message cycles by its ORDINAL (floor(rowIdx/18)), not rowIdx%len — with a
+// period that's a multiple of the message count, a residue-keyed index would freeze on one
+// message and the fatality figure would never show.
 export function roadsideFeature(rowIdx, limit) {
   const m = ((rowIdx % 18) + 18) % 18;
   if (m === 5) return { kind: 'speed', limit };
-  if (m === 13) return { kind: 'billboard', idx: ((rowIdx % SAFETY_MESSAGES.length) + SAFETY_MESSAGES.length) % SAFETY_MESSAGES.length };
+  if (m === 13) {
+    const ord = Math.floor(rowIdx / 18);
+    return { kind: 'billboard', idx: ((ord % SAFETY_MESSAGES.length) + SAFETY_MESSAGES.length) % SAFETY_MESSAGES.length };
+  }
   return null;
 }
 
