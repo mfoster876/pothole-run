@@ -41,7 +41,7 @@ export const HAZARD_TYPES = {
   fruit:    { damage: 0, collectible: true, powerup: 'fruit',  depth: 3, color: '#f4a020', label: 'Vendor Fruit' },
   // Drink collectibles — character-gated; routed to applyDrink via powerup:'drink'
   ting:       { damage: 0, collectible: true, powerup: 'drink', drink: 'ting',       depth: 3, color: '#7ec850', label: 'Ting' },
-  boom:       { damage: 0, collectible: true, powerup: 'drink', drink: 'boom',       depth: 3, color: '#1f78d1', label: 'Boom' },
+  boom:       { damage: 0, collectible: true, powerup: 'drink', drink: 'boom',       depth: 3, color: '#141414', label: 'Boom' },
   redstripe:  { damage: 0, collectible: true, powerup: 'drink', drink: 'redstripe',  depth: 3, color: '#d12b1f', label: 'Red Stripe' },
   whiterum:   { damage: 0, collectible: true, powerup: 'drink', drink: 'whiterum',   depth: 3, color: '#eef2f5', label: 'White Rum' },
   spirulina:  { damage: 0, collectible: true, powerup: 'drink', drink: 'spirulina',  depth: 3, color: '#1f8a4c', label: 'Spirulina' },

@@ -49,6 +49,12 @@ export function resolveHits(run, cart, field, effects = cart._effects || {}, sav
       continue;
     }
     e.active = false;
+    // Run-over: hitting a person/animal while grounded (you didn't hop over them) plows
+    // straight through — flag it so the game can play the graphic injury reaction, no
+    // matter whether the driver themselves takes damage (the reckless toll on others).
+    if (!info.collectible && (info.category === 'pedestrian' || info.category === 'animal') && !((cart.jumpT || 0) > 0)) {
+      cart.roadkill = { cat: info.category, variation: Math.floor((cart.x * 1000 + run.distance) % 4 + 4) % 4, x: e.x };
+    }
     if (info.collectible) {
       const mult = 1 + run.combo * COMBO.bonusPer;
       const value = Math.round((e.value || 1) * mult);

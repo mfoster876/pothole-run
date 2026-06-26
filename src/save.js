@@ -28,6 +28,7 @@ export function defaultSave() {
     garage: ['handcart'],
     vehicle: 'handcart',
     upgrades: {},                 // per-vehicle owned upgrades: { [vehicleId]: [ids] } (see upgrades.js)
+    busted: {},                   // per-vehicle BUSTED upgrades awaiting a paid re-fit: { [vehicleId]: [ids] }
     seenCarTip: false,            // has the windscreen-youth pop-up been shown?
     unlocks: { characters: ['yute', 'rasta'], stages: ['fern-gully'] },
     settings: { muted: false, genre: 'reggae', radioStation: 0, graphics: 'smooth' },
@@ -58,6 +59,7 @@ export function loadSave(storage = globalThis.localStorage) {
       aspirations: { achieved: Array.isArray(parsed.aspirations?.achieved) ? parsed.aspirations.achieved : [] },
       garage: Array.isArray(parsed.garage) && parsed.garage.length ? parsed.garage : base.garage,
       upgrades: migrateUpgrades(parsed.upgrades),
+      busted: migrateUpgrades(parsed.busted),
       unlocks: { ...base.unlocks, ...(parsed.unlocks || {}) },
       settings: { ...base.settings, ...(parsed.settings || {}) },
       blessing: Number.isFinite(parsed.blessing) ? Math.max(0, Math.min(1, parsed.blessing)) : 0,
@@ -108,5 +110,46 @@ export function buyUpgrade(state, upgrade, vehicleId) {
   if (state.wallet < upgrade.price) return false;
   state.wallet -= upgrade.price;
   owned.push(upgrade.id);
+  return true;
+}
+
+// --- Bustable tune-ups: the mech shop's recurring shakedown ----------------------------
+// A hard crash can shake a fitted part loose; it drops off the OWNED list (so its grip +
+// handling are lost) and onto the BUSTED list, where the shop charges a discounted RE-FIT
+// to bolt it back on. Chances scale with how badly the run ended.
+export const BUST_CHANCE_WRECK    = 0.5;   // ended in a full wreck
+export const BUST_CHANCE_BATTERED = 0.22;  // limped home badly damaged (condition < 40)
+
+/** The upgrade ids currently busted (awaiting re-fit) for a given vehicle. */
+export function bustedParts(state, vehicleId) {
+  return (state.busted && state.busted[vehicleId]) || [];
+}
+
+// Decide whether a part busts this run and, if so, bust a RANDOM owned one. Mutates state
+// (owned → busted) and returns the busted id, or null. rng is injectable for tests.
+export function maybeBustPart(state, vehicleId, wrecked, conditionValue, rng = Math.random) {
+  const owned = (state.upgrades && state.upgrades[vehicleId]) || [];
+  if (!owned.length) return null;
+  const chance = wrecked ? BUST_CHANCE_WRECK : (conditionValue < 40 ? BUST_CHANCE_BATTERED : 0);
+  if (chance <= 0 || rng() >= chance) return null;
+  const idx = Math.min(owned.length - 1, Math.floor(rng() * owned.length));
+  const id = owned[idx];
+  owned.splice(idx, 1);
+  if (!state.busted) state.busted = {};
+  const b = state.busted[vehicleId] || (state.busted[vehicleId] = []);
+  if (!b.includes(id)) b.push(id);
+  return id;
+}
+
+// Pay to re-fit a busted part: moves it busted → owned if affordable. Returns true on success.
+export function refitPart(state, upgrade, vehicleId, price) {
+  const b = (state.busted && state.busted[vehicleId]) || [];
+  const i = b.indexOf(upgrade.id);
+  if (i < 0) return false;                 // not busted — nothing to re-fit
+  if (state.wallet < price) return false;
+  state.wallet -= price;
+  b.splice(i, 1);
+  const owned = state.upgrades[vehicleId] || (state.upgrades[vehicleId] = []);
+  if (!owned.includes(upgrade.id)) owned.push(upgrade.id);
   return true;
 }

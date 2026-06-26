@@ -3,7 +3,7 @@ import { DRINK, SPAWN_TUNE } from './constants.js';
 
 export const DRINKS = {
   ting:       { id: 'ting',       label: 'Ting',          potency: 0.40, alcohol: 0,    color: '#7ec850' },
-  boom:       { id: 'boom',       label: 'Boom',          potency: 0.70, alcohol: 0,    color: '#1f78d1' },
+  boom:       { id: 'boom',       label: 'Boom',          potency: 0.70, alcohol: 0,    color: '#141414' },
   redstripe:  { id: 'redstripe',  label: 'Red Stripe',    potency: 0.80, alcohol: 0.40, color: '#d12b1f' },
   whiterum:   { id: 'whiterum',   label: 'White Rum',     potency: 1.0,  alcohol: 0.85, color: '#eef2f5' },
   spirulina:  { id: 'spirulina',  label: 'Spirulina',     potency: 0.80, alcohol: 0,    color: '#1f8a4c' },

@@ -1,4 +1,29 @@
 import { projectEntity, curveOffsetAt } from './road.js';
+import { roadsideFeature, drawSpeedLimit, drawSafetyBillboard } from './signs.js';
+
+// Posted speed limit by stage character: urban New Kingston + the rural gorge are 50,
+// the open highways (Holland Bamboo, Negril) are 80. Drives the roadside roundels.
+function limitForStage(stage) {
+  const sc = stage && stage.scenery;
+  return (sc === 'palm' || sc === 'bamboo') ? 80 : 50;
+}
+
+// The FAR verge is phase-shifted by this many rows so the two sides of the road never
+// mirror each other — different props, and signs/billboards land at different points.
+const FAR_PHASE = 7;
+
+// Draw one roadside slot: either a road-safety sign (speed roundel / billboard) when the
+// cadence calls for one at this row, or the stage's own prop. Returns true if a sign was
+// drawn (so the caller can skip the prop). `limit` is the posted km/h for speed signs.
+function drawRoadside(ctx, kind, normX, camZ, position, W, H, rowIdx, limit) {
+  const feat = roadsideFeature(rowIdx, limit);
+  if (!feat) { drawProp(ctx, kind, normX, camZ, position, W, H, rowIdx); return; }
+  const p = projectEntity(normX, camZ, W, H);
+  if (!p.visible || p.y < H * 0.5 || p.size < 2) return;
+  p.x += curveOffsetAt(position, camZ);
+  if (feat.kind === 'speed') drawSpeedLimit(ctx, p.x, p.y, p.size, feat.limit);
+  else drawSafetyBillboard(ctx, p.x, p.y, p.size, feat.idx);
+}
 
 // Roadside props that scroll with the road to give depth, speed and a sense of
 // place. Each stage picks a `scenery` kind; props are drawn off both edges, beyond
@@ -57,12 +82,15 @@ export function renderScenery(ctx, stage, position, W, H) {
       drawFernBack(ctx, -FERN_BACK, camZ, position, W, H);
       drawFernBack(ctx, FERN_BACK,  camZ, position, W, H);
     }
-    // Main bank
+    // Main bank — the two sides run on phase-shifted rows so they never mirror, and the
+    // road-safety signs / fatality billboards punch in along the gorge.
+    const fLimit = limitForStage(stage);
     for (let n = FERN_COUNT; n >= 1; n--) {
       const camZ = n * FERN_GAP - offMain;
       if (camZ <= 1) continue;
-      drawProp(ctx, kind, -FERN_EDGE, camZ, position, W, H);
-      drawProp(ctx, kind, FERN_EDGE,  camZ, position, W, H);
+      const rowIdx = Math.floor((position + n * FERN_GAP - offMain) / FERN_GAP);
+      drawRoadside(ctx, kind, -FERN_EDGE, camZ, position, W, H, rowIdx, fLimit);
+      drawRoadside(ctx, kind, FERN_EDGE,  camZ, position, W, H, rowIdx + FAR_PHASE, fLimit);
     }
     return;
   }
@@ -72,24 +100,32 @@ export function renderScenery(ctx, stage, position, W, H) {
     // silhouetted against the sky), then the near roadside prop cycle.
     drawNKSkyline(ctx, W, H);
     const off = ((position % GAP) + GAP) % GAP;
+    const nkLimit = limitForStage(stage);
     for (let n = COUNT; n >= 1; n--) {
       const camZ = n * GAP - off;
       if (camZ <= 1) continue;
-      // Row index is derived from integer position so props persist correctly.
+      // Row index is derived from integer position so props persist correctly. The two
+      // sides run on phase-shifted rows so opposite verges show different storefronts,
+      // and the road-safety signs / billboards land at different points on each side.
       const rowIdx = Math.floor((position + n * GAP - off) / GAP);
-      const propKind = NK_PROPS[((rowIdx % NK_LEN) + NK_LEN) % NK_LEN];
-      drawProp(ctx, propKind, -EDGE, camZ, position, W, H, rowIdx);
-      drawProp(ctx, propKind,  EDGE, camZ, position, W, H, rowIdx);
+      const farIdx = rowIdx + FAR_PHASE;
+      const nearKind = NK_PROPS[((rowIdx % NK_LEN) + NK_LEN) % NK_LEN];
+      const farKind  = NK_PROPS[((farIdx % NK_LEN) + NK_LEN) % NK_LEN];
+      drawRoadside(ctx, nearKind, -EDGE, camZ, position, W, H, rowIdx, nkLimit);
+      drawRoadside(ctx, farKind,   EDGE, camZ, position, W, H, farIdx, nkLimit);
     }
     return;
   }
 
   const off = ((position % GAP) + GAP) % GAP;
+  const limit = limitForStage(stage);
   for (let n = COUNT; n >= 1; n--) {
     const camZ = n * GAP - off;
     if (camZ <= 1) continue;
-    drawProp(ctx, kind, -EDGE, camZ, position, W, H);
-    drawProp(ctx, kind, EDGE, camZ, position, W, H);
+    // Phase-shifted sides so opposite verges vary, with speed signs / safety billboards.
+    const rowIdx = Math.floor((position + n * GAP - off) / GAP);
+    drawRoadside(ctx, kind, -EDGE, camZ, position, W, H, rowIdx, limit);
+    drawRoadside(ctx, kind, EDGE, camZ, position, W, H, rowIdx + FAR_PHASE, limit);
   }
 }
 

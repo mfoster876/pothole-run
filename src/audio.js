@@ -257,6 +257,20 @@ export function createAudio() {
     if (kind === 'creak') { const b = 120 + Math.random() * 70; rub(t, b, b * 1.5, 0.08, 0.2, 380, 3); }
     // bright rising shimmer when SUPERCHARGE activates
     if (kind === 'super') { note(880, t, 0.1, 'sine', 0.2); note(1320, t + 0.06, 0.1, 'sine', 0.18); note(1760, t + 0.12, 0.14, 'sine', 0.16); }
+    // heavy thud of plowing through a body — a low boom + a dull wet smack
+    if (kind === 'thud') { drum(t, false); note(56, t, 0.24, 'sawtooth', 0.3); noiseHit(t, 0.14, 280, 0.16); }
+    // PER-DAMAGE vehicle voice — a busted ride that's barely hanging on rattles itself
+    // apart; a single labouring knock for a half-dead motor. game.js picks these by the
+    // cart's condition so you HEAR the difference between a new ride and a wreck.
+    if (kind === 'clatter') {
+      for (let i = 0; i < 4; i++) {
+        const tt = t + i * (0.045 + Math.random() * 0.03);
+        const f = 140 + Math.random() * 180;
+        note(f, tt, 0.05, 'square', 0.06);
+        noiseHit(tt, 0.04, 2400 + Math.random() * 1500, 0.05);
+      }
+    }
+    if (kind === 'knock') { note(70, t, 0.1, 'square', 0.12); noiseHit(t, 0.05, 500, 0.06); }
     // airy whoosh of a vehicle blasting past (sweeping band-passed wash)
     if (kind === 'whoosh') {
       const o = ctx.createOscillator(), g = ctx.createGain(), bp = ctx.createBiquadFilter();

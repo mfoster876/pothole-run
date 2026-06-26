@@ -96,6 +96,14 @@ export const IMPAIR = { handlingDrop: 0.55, wander: 0.9 };
 // are the lifeline (spawn 20% more) so a battered cart can claw its way back to 100%.
 export const SPAWN_TUNE = { drinkMult: 0.85, toolMult: 1.20 };
 
+// Speed punishes control — the joyride's core lesson. Up to a calm cruise (`safeSpeed`)
+// the ride handles normally; PAST it, it gets twitchier and harder to place the faster it
+// goes, and NO amount of mech-shop grip buys that back — this factor multiplies the FINAL
+// lane-lerp (after handling + stability), so it bites a fully-kitted ride too.
+// factor = 1 / (1 + dragK·max(0,(speed−safeSpeed)/maxSpeed)^dragExp): ≈1.0 at/below the
+// cruise, ~0.7 at top capability, ~0.5 in a deep sprint past it. The reckless-speed tax.
+export const CONTROL = { safeSpeed: 95, dragK: 1.0, dragExp: 1.4 };
+
 // Vehicle wear → performance. A fresh rig (condition 100%) drives at full capability;
 // as it takes hits, handling and (less so) top speed degrade — a noticeable malfunction.
 // Picking up tools heals condition, so the cart visibly tightens back up toward like-new.

@@ -32,7 +32,7 @@ export function drawEntity(ctx, type, sx, sy, size, seed = 0.137, value = 1) {
     case 'fruit':  drawFruit(ctx, sx, sy, s); break;
     // Drink pickups — soda cans vs spirit bottles by alcohol content
     case 'ting':       drinkCan(ctx, sx, sy, s, '#7ec850', '#5a9e30', 'T'); break;
-    case 'boom':       drinkCan(ctx, sx, sy, s, '#1f78d1', '#0a4e9a', 'B'); break;
+    case 'boom':       drinkCan(ctx, sx, sy, s, '#161616', '#000000', 'B'); break;
     case 'redstripe':  drinkBottle(ctx, sx, sy, s, '#d12b1f', '#8a0f08', 'RS'); break;
     case 'whiterum':   drinkBottle(ctx, sx, sy, s, '#eef2f5', '#b0bcc8', 'WR'); break;
     case 'spirulina':  drinkBottle(ctx, sx, sy, s, '#1f8a4c', '#0f5a2e', 'SP'); break;
@@ -1315,6 +1315,70 @@ function porkCut(ctx, x, y, s) {
       ctx.stroke();
     }
   }
+}
+
+// A run-over victim drawn at the cart plane — the reckless joyride's consequence made
+// literal. `t` = seconds of the effect remaining (~0.7→0); prog runs 0 (fresh impact)
+// →1 (settled). `variation` picks one of several micro-reactions so plowing through
+// people never looks the same twice; `cat` is 'pedestrian' or 'animal'.
+export function drawRoadkill(ctx, x, y, s, variation, cat, t) {
+  const prog = Math.max(0, Math.min(1, 1 - (t || 0) / 0.7));
+  const v = ((variation % 4) + 4) % 4;
+  ctx.save();
+  // spreading blood pool on the asphalt + a few thrown droplets (deterministic by v)
+  const pool = s * (0.28 + 0.5 * prog);
+  ctx.fillStyle = 'rgba(120,18,14,0.82)';
+  ctx.beginPath(); ctx.ellipse(x, y + s * 0.12, pool, pool * 0.4, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#9a1810';
+  for (let i = 0; i < 5; i++) {
+    const a = (i * 1.7 + v) * 1.3, rr = pool * (0.9 + 0.5 * (((i * 37) % 10) / 10));
+    ctx.beginPath(); ctx.arc(x + Math.cos(a) * rr, y + s * 0.12 + Math.sin(a) * rr * 0.4, Math.max(1, s * 0.05), 0, Math.PI * 2); ctx.fill();
+  }
+
+  if (cat === 'animal') {
+    // a squashed carcass — flattened body with stiff legs sticking up
+    ctx.fillStyle = '#6a4a2c';
+    ctx.beginPath(); ctx.ellipse(x, y + s * 0.06, s * 0.46, s * 0.16, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#3a2616'; ctx.lineWidth = Math.max(1.5, s * 0.07); ctx.lineCap = 'round';
+    for (const dx of [-0.22, -0.06, 0.1, 0.26]) {
+      ctx.beginPath(); ctx.moveTo(x + s * dx, y + s * 0.02); ctx.lineTo(x + s * dx, y - s * 0.2); ctx.stroke();
+    }
+    ctx.lineCap = 'butt'; ctx.restore(); return;
+  }
+
+  // a person, sprawled. The torso lies at a per-variation tilt; even variations throw
+  // their arms straight up — the flailing hands in the air at the moment of impact.
+  const skin = '#7a4a28', shirt = '#b0533f';
+  const tilt = [-0.45, 0.15, 0.95, -1.05][v];
+  const armsUp = v % 2 === 0;
+  const flail = Math.sin(prog * Math.PI * 5) * 0.4 * (1 - prog * 0.6);
+  ctx.translate(x, y - s * 0.02);
+  ctx.rotate(tilt * 0.32);
+  // torso lying down
+  ctx.fillStyle = shirt;
+  rrect(ctx, -s * 0.28, -s * 0.16, s * 0.56, s * 0.3, s * 0.08); ctx.fill();
+  // legs splayed
+  ctx.strokeStyle = '#2a2a30'; ctx.lineWidth = Math.max(2, s * 0.1); ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(s * 0.2, 0); ctx.lineTo(s * 0.5, s * 0.16 + flail * s * 0.2);
+  ctx.moveTo(s * 0.2, s * 0.04); ctx.lineTo(s * 0.52, -s * 0.12 - flail * s * 0.2);
+  ctx.stroke();
+  // arms — up & flailing (even) or flung out to the side (odd)
+  ctx.strokeStyle = skin; ctx.lineWidth = Math.max(2, s * 0.09);
+  ctx.beginPath();
+  if (armsUp) {
+    ctx.moveTo(-s * 0.18, -s * 0.08); ctx.lineTo(-s * 0.34, -s * 0.5 + flail * s * 0.18);
+    ctx.moveTo(-s * 0.1, -s * 0.08);  ctx.lineTo(-s * 0.06, -s * 0.56 - flail * s * 0.18);
+  } else {
+    ctx.moveTo(-s * 0.18, -s * 0.06); ctx.lineTo(-s * 0.5, -s * 0.18 + flail * s * 0.2);
+    ctx.moveTo(-s * 0.12, s * 0.04);  ctx.lineTo(-s * 0.46, s * 0.2);
+  }
+  ctx.stroke(); ctx.lineCap = 'butt';
+  // head, with a little blood at the temple
+  ctx.fillStyle = skin; ctx.beginPath(); ctx.arc(-s * 0.32, -s * 0.04, s * 0.13, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#1c1208'; ctx.beginPath(); ctx.arc(-s * 0.32, -s * 0.08, s * 0.13, Math.PI, 0); ctx.fill();
+  ctx.fillStyle = '#9a1810'; ctx.beginPath(); ctx.arc(-s * 0.4, -s * 0.02, s * 0.04, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
 }
 
 // ---- jw: a cream "Watchtower"-style tract / booklet ----

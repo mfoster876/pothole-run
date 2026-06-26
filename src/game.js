@@ -8,17 +8,17 @@ import { createCart, steer, updateCart, onShoulder, tipShoulder } from './cart.j
 import { createField, spawn, advance, activeEntities } from './entities.js';
 import { spawnInterval, pickHazard, laneFor } from './spawner.js';
 import { createRun, resolveHits } from './run.js';
-import { isWrecked, applyDamage } from './wreck.js';
+import { isWrecked, applyDamage, conditionTier } from './wreck.js';
 import { renderHud, renderTouchZones, renderPickupToast } from './hud.js';
-import { drawEntity } from './sprites.js';
+import { drawEntity, drawRoadkill } from './sprites.js';
 import { drawCart } from './cartSprite.js';
 import { renderScenery } from './scenery.js';
 import { getCharacter } from './characters.js';
 import { getStage } from './stages.js';
 import { VEHICLES, getVehicle } from './vehicles.js';
-import { upgradesForVehicle, stabilityBonus } from './upgrades.js';
+import { upgradesForVehicle, stabilityBonus, handlingBonus } from './upgrades.js';
 import { pickMoney, pickPoliticianMoney, nextBill, biasBill, formatMoney } from './money.js';
-import { loadSave, writeSave, recordBest, addCoins, buyVehicle, selectVehicle, buyUpgrade, ownedUpgrades, GENRES } from './save.js';
+import { loadSave, writeSave, recordBest, addCoins, buyVehicle, selectVehicle, buyUpgrade, ownedUpgrades, refitPart, maybeBustPart, GENRES } from './save.js';
 import { emptyState as tapcodeEmpty, feedTap } from './tapcode.js';
 import { bankRun } from './economy.js';
 import { createEffects, tickEffects, effectActive, applyPowerup } from './powerups.js';
@@ -106,6 +106,8 @@ export function createGame(audio) {
   let race = null;          // active street-race state ({tier, finish, rivals}) or null
   let raceResult = null;    // last race result banner for the races screen
   let pickupToast = null;   // transient HUD toast naming the last pick-up / negative hit
+  let gore = null;          // transient run-over reaction ({ cat, variation, x, t }) at the cart plane
+  let lastBust = null;      // name of the tune-up busted by the run that just ended (game-over notice)
   let myMusicCount = 0; // how many of the player's own tracks are stored (for the riddim picker)
   const rng = Math.random;
   function refreshMusicCount() { try { countMusic().then((n) => { myMusicCount = n || 0; }).catch(() => {}); } catch (_) {} }
@@ -116,7 +118,7 @@ export function createGame(audio) {
     stage = getStage(stageId);
     // Match the letterbox bars to this stage so wide phones read full, not black-barred.
     setLetterboxColors(stage.palette.sky, stage.palette.ground);
-    cart = createCart(getCharacter(characterId), getVehicle(save.vehicle), stabilityBonus(ownedUpgrades(save, save.vehicle), save.vehicle), save.condition);
+    cart = createCart(getCharacter(characterId), getVehicle(save.vehicle), stabilityBonus(ownedUpgrades(save, save.vehicle), save.vehicle), save.condition, handlingBonus(ownedUpgrades(save, save.vehicle), save.vehicle));
     cart.goldHandcart = !!(save.goldHandcart && save.vehicle === 'handcart');
     field = createField();
     run = createRun();
@@ -245,6 +247,10 @@ export function createGame(audio) {
     bankRun(save, run.coins);
     addCoins(save, Math.max(0, run.coins));   // progress currency never drops on a bad run
     recordBest(save, stage.id, Math.floor(run.distance));
+    // The crash may BUST a fitted tune-up — the mech shop's recurring shakedown. The
+    // rougher the run ended, the likelier a part shook loose; you pay to re-fit it.
+    const bustedId = maybeBustPart(save, save.vehicle, isWrecked(cart.condition), cart.condition.value, rng);
+    lastBust = bustedId ? (upgradesForVehicle(save.vehicle).find(u => u.id === bustedId) || {}).name || null : null;
     maybeUnlock();
     writeSave(save);
     audio && audio.stop();
@@ -341,7 +347,12 @@ export function createGame(audio) {
     const coinsBefore = run.coins, condBefore = cart.condition.value;
     cart.gusted = false; cart.washed = false; cart.pickupValue = 0; cart.nearMiss = false;
     cart.pickupLabel = null; cart.hitNegative = null; cart.fined = false; cart.washCharge = 0; cart.bribed = false;
+    cart.roadkill = null;
     resolveHits(run, cart, field, effects, save);
+    // Graphic run-over: a fresh impact spawns the injury reaction at the cart plane and a
+    // heavy thud — the consequence of plowing through, even when the driver shrugs it off.
+    if (cart.roadkill) { gore = { ...cart.roadkill, t: 0.7 }; audio && audio.sfx('thud'); }
+    else if (gore) { gore.t -= dt; if (gore.t <= 0) gore = null; }
     if (run.coins > coinsBefore) audio && audio.sfx(cart.pickupValue >= 100 ? 'cash' : 'coin');
     // any damage event ratchets the permanent rattle up — but a steadier, upgraded ride
     // holds its composure, ratcheting (and so visibly shaking) noticeably less per hit.
@@ -362,7 +373,19 @@ export function createGame(audio) {
     else if (cart.washed) pickupToast = { label: 'Windscreen Wash −' + formatMoney(cart.washCharge || 0), good: false, t: 1.4 };
     squeakAccum += dz;
     const shoulder = onShoulder(cart);
-    if (squeakAccum >= (shoulder ? 120 : 215)) { squeakAccum -= (shoulder ? 120 : 215); audio && audio.sfx('squeak'); }
+    // The ride's running voice tracks its condition: a mint ride just squeaks; a battered
+    // one knocks; a near-wrecked one clatters loudly and more often — barely hanging on.
+    const runTier = conditionTier(cart.condition);
+    const squeakGap = shoulder ? 120 : (runTier === 'critical' ? 150 : 215);
+    if (squeakAccum >= squeakGap) {
+      squeakAccum -= squeakGap;
+      const knock = audio && audio.sfx ? audio.sfx.bind(audio) : null;
+      if (knock) {
+        if (runTier === 'critical') knock(Math.random() < 0.6 ? 'clatter' : 'squeak');
+        else if (runTier === 'warn') knock(Math.random() < 0.3 ? 'knock' : 'squeak');
+        else knock('squeak');
+      }
+    }
     // Soft-shoulder tipping: lean grows while out there, recovers back on the road.
     // Tip too far for too long and the cart topples — an instant wreck.
     if (tipShoulder(cart, shoulder, dt)) {
@@ -426,6 +449,12 @@ export function createGame(audio) {
     const jr = lite ? 0 : 1;
     const bobPx = (wob + jr * (Math.random() - 0.5) * 0.54 * sway) * cp.size * 0.063 + kickY;
     const jitX = jr * (Math.random() - 0.5) * cp.size * 0.0225 * sway + rockX;
+    // Run-over reaction sits at the victim's lane on the cart plane — drawn BEFORE the
+    // cart so the ride plows over the body.
+    if (gore) {
+      const gp = projectEntity(gore.x, CART_Z, W, H);
+      drawRoadkill(ctx, gp.x + curveOffsetAt(camZ, CART_Z), gp.y + 6, cp.size * 0.9, gore.variation, gore.cat, gore.t);
+    }
     drawCart(ctx, cart, cp.x + cartCurve + jitX, cp.y + 6 + bobPx, cp.size * 0.9);
     renderTouchZones(ctx, W, H);
     renderHud(ctx, { stageName: stage.name, coins: run.coins, distance: run.distance, condition: cart.condition, effects, lite, speed: cart.speed, throttle: throttleInput }, W, H);
@@ -595,6 +624,14 @@ export function createGame(audio) {
     if (buyUpgrade(save, upgrade, save.vehicle)) { audio && audio.sfx('cash'); writeSave(save); }
     else state.popup = { title: 'NUH RICH YET', lines: [upgrade.name + ' cost ' + formatMoney(upgrade.price) + '.', 'Grind some more money pon di road first.'] };
   }
+  // Pay the mech to re-fit a part the last crash busted (discounted vs buying new).
+  function doRefit(upgradeId) {
+    const upgrade = upgradesForVehicle(save.vehicle).find(u => u.id === upgradeId);
+    if (!upgrade) return;
+    const price = mechshop.refitCost(upgrade);
+    if (refitPart(save, upgrade, save.vehicle, price)) { audio && audio.sfx('cash'); writeSave(save); }
+    else state.popup = { title: 'NUH RICH YET', lines: ['Re-fit di ' + upgrade.name + ' cost ' + formatMoney(price) + '.', 'Bank more coins pon di road first.'] };
+  }
 
   // Car dealer handlers
   function doBuyVehicle(v) {
@@ -668,6 +705,7 @@ export function createGame(audio) {
       if (action === 'back') { router.go('hub'); return; }
       if (action === 'repair100') { doRepair(); return; }
       if (action && action.startsWith('buy:')) { doBuyUpgrade(action.slice(4)); return; }
+      if (action && action.startsWith('refit:')) { doRefit(action.slice(6)); return; }
       return;
     }
 
@@ -995,6 +1033,11 @@ export function createGame(audio) {
     // Rank display on gameover
     ctx.fillStyle = '#3fae54'; ctx.font = '700 20px "Courier New", monospace';
     ctx.fillText('rank: ' + rankFor(save.lifetimeEarned).label, W / 2, H * 0.68);
+    // A crash that shook a tune-up loose is called out here — head to the Mech Shop to re-fit it.
+    if (lastBust) {
+      ctx.fillStyle = '#e0584a'; ctx.font = '700 18px "Courier New", monospace';
+      ctx.fillText('⚠ ' + lastBust.toUpperCase() + ' BUST — RE-FIT AT DI MECH SHOP', W / 2, H * 0.735);
+    }
     ctx.fillStyle = '#f0c020'; ctx.font = '700 26px "Courier New", monospace';
     ctx.fillText('TAP / PRESS TO CONTINUE', W / 2, H * 0.78);
   }

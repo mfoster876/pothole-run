@@ -1,4 +1,4 @@
-const CACHE = 'pothole-run-v33';
+const CACHE = 'pothole-run-v34';
 const ASSETS = [
   './', './index.html', './styles.css', './manifest.webmanifest',
   './src/main.js', './src/constants.js', './src/game.js', './src/road.js',
@@ -25,6 +25,7 @@ const ASSETS = [
   // Phase 3: rebalance + negatives framework, police, politician mechanics, legend
   './src/negatives.js', './src/legend.js', './src/screens/legend.js',
   './src/screens/prefs.js',   // game Preferences: graphics quality + sound
+  './src/signs.js',           // road-safety signage: speed limits + fatality billboards
   './assets/icons/icon-192.png', './assets/icons/icon-512.png'
 ];
 self.addEventListener('install', (e) => {

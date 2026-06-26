@@ -5,26 +5,31 @@
 // tuning, an EV its own kit. Each vehicle owns its upgrades SEPARATELY (buying a brake
 // kit for the Probox doesn't carry to the handcart) — see save.js `upgrades` map.
 //
-// Each set is a 4-rung ladder of +0.2 stability, priced to suit the class (cheap rig
-// parts for the free cart; pricier tuning for the cars you paid millions for).
+// Each set is a 4-rung ladder, priced to suit the class (cheap rig parts for the free
+// cart; pricier tuning for the cars you paid millions for). Each part adds BOTH:
+//   stability — damps wobble/wander and soaks up passing-traffic gusts (the GRIP meter)
+//   handling  — sharpens the steering response (a fully-kitted ride turns ~+24% snappier)
+// so a tune-up RADICALLY changes how the ride feels on the road, not just its steadiness.
+// (Speed still steals control back at pace — see CONTROL in cart.js — so no kit makes a
+// reckless top-speed run safe.) Parts can also get BUSTED in a crash (see save.js).
 const SETS = {
   rig: [   // handcart, bicycle, yeng-yeng — the improvised rides
-    { id: 'weighted-base', name: 'Weighted Base',   price: 2500,  stability: 0.2 },
-    { id: 'shock-pads',    name: 'Shock Pads',      price: 9000,  stability: 0.2 },
-    { id: 'true-wheels',   name: 'True-Rim Wheels', price: 28000, stability: 0.2 },
-    { id: 'wide-axle',     name: 'Wide Axle',       price: 70000, stability: 0.2 },
+    { id: 'weighted-base', name: 'Weighted Base',   price: 2500,  stability: 0.2, handling: 0.06 },
+    { id: 'shock-pads',    name: 'Shock Pads',      price: 9000,  stability: 0.2, handling: 0.06 },
+    { id: 'true-wheels',   name: 'True-Rim Wheels', price: 28000, stability: 0.2, handling: 0.06 },
+    { id: 'wide-axle',     name: 'Wide Axle',       price: 70000, stability: 0.2, handling: 0.06 },
   ],
   car: [   // Probox, Swift, X6, Audi, Porsche, pickup
-    { id: 'sport-tyres',      name: 'Sport Tyres',      price: 40000,  stability: 0.2 },
-    { id: 'brake-kit',        name: 'Brake Kit',        price: 120000, stability: 0.2 },
-    { id: 'stiff-suspension', name: 'Stiff Suspension', price: 300000, stability: 0.2 },
-    { id: 'roll-cage',        name: 'Roll Cage',        price: 600000, stability: 0.2 },
+    { id: 'sport-tyres',      name: 'Sport Tyres',      price: 40000,  stability: 0.2, handling: 0.06 },
+    { id: 'brake-kit',        name: 'Brake Kit',        price: 120000, stability: 0.2, handling: 0.06 },
+    { id: 'stiff-suspension', name: 'Stiff Suspension', price: 300000, stability: 0.2, handling: 0.06 },
+    { id: 'roll-cage',        name: 'Roll Cage',        price: 600000, stability: 0.2, handling: 0.06 },
   ],
   ev: [    // Jetour, Cybertruck — heavy, low-slung, high-tech
-    { id: 'low-cg-battery',   name: 'Low-CG Battery',   price: 80000,  stability: 0.2 },
-    { id: 'regen-brakes',     name: 'Regen Brakes',     price: 200000, stability: 0.2 },
-    { id: 'air-suspension',   name: 'Air Suspension',   price: 450000, stability: 0.2 },
-    { id: 'ballistic-panels', name: 'Ballistic Panels', price: 900000, stability: 0.2 },
+    { id: 'low-cg-battery',   name: 'Low-CG Battery',   price: 80000,  stability: 0.2, handling: 0.06 },
+    { id: 'regen-brakes',     name: 'Regen Brakes',     price: 200000, stability: 0.2, handling: 0.06 },
+    { id: 'air-suspension',   name: 'Air Suspension',   price: 450000, stability: 0.2, handling: 0.06 },
+    { id: 'ballistic-panels', name: 'Ballistic Panels', price: 900000, stability: 0.2, handling: 0.06 },
   ],
 };
 
@@ -47,6 +52,13 @@ export const STABILITY_UPGRADES = SETS.rig;
 export function stabilityBonus(ownedIds = [], vehicleId = 'handcart') {
   const set = upgradesForVehicle(vehicleId);
   return set.filter(u => ownedIds.includes(u.id)).reduce((s, u) => s + u.stability, 0);
+}
+
+/** Total HANDLING bonus from the upgrades OWNED for that vehicle (fraction added to the
+ *  ride's steering response in cart.js — this is what makes a tune-up FEEL different). */
+export function handlingBonus(ownedIds = [], vehicleId = 'handcart') {
+  const set = upgradesForVehicle(vehicleId);
+  return set.filter(u => ownedIds.includes(u.id)).reduce((s, u) => s + (u.handling || 0), 0);
 }
 
 /** The next unowned upgrade for that vehicle, or null when fully kitted. */

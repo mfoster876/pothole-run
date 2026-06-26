@@ -4,12 +4,17 @@
 // RIG upgrades moved here from the start menu.
 import { spend } from '../economy.js';
 import { upgradesForVehicle, stabilityBonus } from '../upgrades.js';
-import { ownedUpgrades } from '../save.js';
+import { ownedUpgrades, bustedParts } from '../save.js';
 import { getVehicle } from '../vehicles.js';
 import { UPKEEP } from '../constants.js';
 import { formatMoney } from '../money.js';
 
 export const REPAIR_PRICE = 50; // base $ per condition point above current
+
+// A busted part is re-fitted for a fraction of its original price — cheaper than buying
+// new, but a recurring drain every time a crash shakes one loose.
+export const REFIT_FACTOR = 0.45;
+export function refitCost(upgrade) { return Math.max(1, Math.round((upgrade.price || 0) * REFIT_FACTOR)); }
 
 // Repairs are proportionally dearer on a pricier ride — fixing a Porsche costs many
 // times what patching a handcart does.
@@ -99,9 +104,13 @@ export function render(ctx, { save, W, H }) {
   const set = upgradesForVehicle(save.vehicle);
   ctx.fillStyle = '#cbe7cf'; ctx.font = '700 18px "Courier New", monospace';
   ctx.textAlign = 'center';
-  ctx.fillText('UPGRADES — ' + getVehicle(save.vehicle).name.toUpperCase(), W / 2, H * 0.46);
+  ctx.fillText('TUNE-UPS — ' + getVehicle(save.vehicle).name.toUpperCase(), W / 2, H * 0.435);
+  // Tell the player what the parts now DO, and that a crash can bust one (the shakedown).
+  ctx.fillStyle = '#9fb8a3'; ctx.font = '500 12px "Courier New", monospace';
+  ctx.fillText('sharpen handling & grip — but a hard crash can BUST a part (pay to re-fit)', W / 2, H * 0.47);
 
   const owned = ownedUpgrades(save, save.vehicle);
+  const busted = bustedParts(save, save.vehicle);
   const total = set.length;
 
   // GRIP meter — every part you buy visibly raises GRIP, and GRIP is what you FEEL on the
@@ -117,9 +126,18 @@ export function render(ctx, { save, W, H }) {
   for (let i = 0; i < total; i++) {
     const u = set[i];
     const isOwned = owned.includes(u.id);
+    const isBusted = busted.includes(u.id);
     const { rect } = R.upgrades[i];
     if (isOwned) {
       btn(ctx, rect, u.name + '  ✓ OWNED', { stroke: '#3fae54', text: '#3fae54', font: '700 20px "Courier New", monospace' });
+    } else if (isBusted) {
+      const cost = refitCost(u);
+      const afford = save.wallet >= cost;
+      btn(ctx, rect, u.name + '  BUST! RE-FIT ' + formatMoney(cost), {
+        font: '700 18px "Courier New", monospace',
+        stroke: afford ? '#e0584a' : '#5a5a5a',
+        text: afford ? '#ffae9e' : '#7a7a7a'
+      });
     } else {
       const canBuy = save.wallet >= u.price;
       btn(ctx, rect, u.name + '  ' + formatMoney(u.price), {
@@ -136,8 +154,10 @@ export function hit(x, y, { W, H, save }) {
   if (inRect(R.back, x, y)) return 'back';
   if (inRect(R.repair, x, y) && save.condition < 100) return 'repair100';
   const owned = ownedUpgrades(save, save.vehicle);
+  const busted = bustedParts(save, save.vehicle);
   for (const { id, rect } of R.upgrades) {
-    if (inRect(rect, x, y) && !owned.includes(id)) return 'buy:' + id;
+    if (!inRect(rect, x, y) || owned.includes(id)) continue;
+    return busted.includes(id) ? 'refit:' + id : 'buy:' + id;
   }
   return null;
 }

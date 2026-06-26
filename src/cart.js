@@ -1,4 +1,4 @@
-import { CART_SLOTS, CART, PLAYER_HALF_WIDTH, FLOOR_CONDITION, IMPAIR, WEAR, SHOULDER, THROTTLE, PACE } from './constants.js';
+import { CART_SLOTS, CART, PLAYER_HALF_WIDTH, FLOOR_CONDITION, IMPAIR, WEAR, SHOULDER, THROTTLE, PACE, CONTROL } from './constants.js';
 import { createCondition } from './wreck.js';
 import { getVehicle } from './vehicles.js';
 
@@ -14,10 +14,11 @@ export function startCondition(saved) {
   return Math.max(FLOOR_CONDITION, Math.min(CART.maxCondition, saved));
 }
 
-export function createCart(character, vehicle = getVehicle('handcart'), stabilityBonus = 0, savedCondition = null) {
+export function createCart(character, vehicle = getVehicle('handcart'), stabilityBonus = 0, savedCondition = null, handlingBonus = 0) {
   return {
     character,
     vehicle,
+    handlingBonus,    // additive steering-response bonus from owned mech-shop tune-ups
     laneIndex: CENTRE,
     x: CART_SLOTS[CENTRE],
     vx: 0,            // lateral velocity from gusts (decays)
@@ -38,6 +39,15 @@ export function createCart(character, vehicle = getVehicle('handcart'), stabilit
     toppleT: 0,       // soft-shoulder topple death animation progress 0..1 (0 = upright)
     blessing: null    // { resist, invincExtend, startGrace } — set by game.js at run start
   };
+}
+
+// Speed → control: how much of the lane-lerp survives at a given speed. Full response up
+// to a calm cruise (CONTROL.safeSpeed); past it, control falls away the faster the ride
+// goes — twitchier, harder to place. Multiplies the FINAL lane response, so even a fully
+// grip-kitted ride loses bite at speed: you can never buy your way out of a reckless pace.
+export function speedControlFactor(speed) {
+  const over = Math.max(0, ((speed || 0) - CONTROL.safeSpeed) / CART.maxSpeed);
+  return 1 / (1 + CONTROL.dragK * Math.pow(over, CONTROL.dragExp));
 }
 
 // Pace multiplier for the current run distance: the deeper you get, the faster the whole
@@ -89,6 +99,8 @@ function effSpeed(cart) {
 }
 function effHandling(cart) {
   let h = cart.character.handling * cart.vehicle.handling * wearFactor(cart, WEAR.minHandling);
+  // Mech-shop tune-ups sharpen the steering — a fully-kitted ride feels markedly snappier.
+  h *= (1 + (cart.handlingBonus || 0));
   if (cart.tipsy > 0) {
     // Alcohol makes steering sluggish: reduce handling proportional to impairment.
     h *= (1 - IMPAIR.handlingDrop * cart.tipsy);
@@ -118,7 +130,10 @@ export function updateCart(cart, dt, distance = 0, overrideTarget = null) {
   // Square the handling spread, then let stability tighten (or loosen) the settle — a
   // wider weight so mech-shop parts make the steering noticeably snappier and more planted.
   // Centred so the stock handcart (0.70) keeps its original responsiveness; parts add snap.
-  const k = CART.laneLerp * Math.pow(effHandling(cart), 1.6) * (0.6 + 0.45 * stability);
+  // …then speed steals control back: the faster the cart, the less of that response
+  // survives (CONTROL), and no grip upgrade can fully offset it. The reckless lesson.
+  const k = CART.laneLerp * Math.pow(effHandling(cart), 1.6) * (0.6 + 0.45 * stability)
+    * speedControlFactor(cart.speed);
   const t = 1 - Math.exp(-k * dt);
   cart.x += (targetX - cart.x) * t;
   cart.lean = (targetX - cart.x);

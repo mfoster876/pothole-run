@@ -2,6 +2,14 @@ import { conditionTier } from './wreck.js';
 import { formatMoney } from './money.js';
 import { SUPERCHARGE, CART } from './constants.js';
 
+// The cart's internal speed is an abstract unit; this turns it into a "theoretical"
+// km/h for the speedometer. Tuned so an easy cruise already sits at the 50 km/h urban
+// limit and a deep, reckless run reads well into triple digits — the joyride creeping
+// past every limit. URBAN_LIMIT is what the in-game speed-limit signs post.
+export const KMH_PER_UNIT = 0.7;
+export const URBAN_LIMIT_KMH = 50;
+export function speedToKmh(speed) { return Math.round(Math.max(0, speed || 0) * KMH_PER_UNIT); }
+
 export function renderHud(ctx, { stageName, coins, distance, condition, effects = {}, lite = false, speed = 0, throttle = 0 }, W, H = 540) {
   ctx.font = '700 26px "Courier New", monospace';
   ctx.textBaseline = 'middle';
@@ -49,6 +57,12 @@ export function renderHud(ctx, { stageName, coins, distance, condition, effects 
     else       { ctx.moveTo(ax, ay + 6); ctx.lineTo(ax - 6, ay - 5); ctx.lineTo(ax + 6, ay - 5); }
     ctx.closePath(); ctx.fill();
   }
+  // Numeric "theoretical" speed under the gauge — RED once over the 50 km/h urban limit
+  // (the speed-limit signs along the road), driving home how reckless the pace really is.
+  const kmh = speedToKmh(speed);
+  ctx.font = '700 17px "Courier New", monospace'; ctx.textAlign = 'left';
+  ctx.fillStyle = kmh > URBAN_LIMIT_KMH ? '#e0584a' : '#cbe7cf';
+  ctx.fillText(kmh + ' KM/H', 24, sy + 30);
 
   // Supercharge (water / boozy drink boost): glowing frame + countdown so the
   // player can see they're invincible and exactly how long it lasts.

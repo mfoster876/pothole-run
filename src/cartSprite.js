@@ -44,13 +44,15 @@ export function drawCart(ctx, cart, cx, cy, s) {
     case 'cybertruck': drawCyber(ctx, cart, s, bleach); break;
     default:           drawHandcart(ctx, cart, s, tier, cart.goldHandcart, bleach); break;
   }
-  // shared damage hint for non-handcart rides (handcart draws its own)
-  if (veh.sprite !== 'handcart' && tier !== 'good') {
-    ctx.strokeStyle = tier === 'critical' ? 'rgba(20,12,6,0.8)' : 'rgba(40,30,18,0.7)';
-    ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(-s * 0.3, -s * 0.2); ctx.lineTo(-s * 0.05, s * 0.1);
-    ctx.lineTo(s * 0.15, -s * 0.1); ctx.stroke();
-  }
+  // Coherent, escalating battle damage by tier — drawn in the same local frame as the
+  // body and tailored to the vehicle family (cracked glass + smoke for cars, snapped
+  // slats for the handcart, a buckled wheel for the two-wheelers). The worse the ride
+  // looks, the closer the joyride is to ending in a wreck.
+  const fam = veh.sprite === 'handcart' ? 'handcart'
+    : veh.sprite === 'cybertruck' ? 'cyber'
+    : (veh.sprite === 'bicycle' || veh.sprite === 'yengyeng') ? 'bike'
+    : 'car';
+  vehicleDamage(ctx, s, tier, fam);
   ctx.restore();
 }
 
@@ -190,9 +192,50 @@ function drawHandcart(ctx, cart, s, tier, gold = false, bleach = 0) {
   ctx.beginPath(); ctx.moveTo(s * 0.1, -s * 0.2); ctx.lineTo(s * 0.2, -s * 0.95); ctx.stroke();
   ctx.beginPath(); ctx.arc(s * 0.22, -s * 1.02, s * 0.18, 0, Math.PI * 2);
   ctx.strokeStyle = wheelRim; ctx.lineWidth = s * 0.06; ctx.stroke();
-  if (tier !== 'good') {
-    ctx.strokeStyle = tier === 'critical' ? '#2a160a' : '#3a2412'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(-s * 0.3, -s * 0.1); ctx.lineTo(-s * 0.1, s * 0.15); ctx.lineTo(s * 0.1, -s * 0.05); ctx.stroke();
+  // (battle damage now drawn uniformly by vehicleDamage() in drawCart)
+}
+
+// Escalating, family-coherent battle damage drawn in the body's local frame. `tier`:
+// 'good' = pristine (nothing), 'warn' = dented & scratched, 'critical' = falling apart
+// (cracked glass, smoke, a hanging part). `family`: 'car' | 'cyber' | 'handcart' | 'bike'.
+function vehicleDamage(ctx, s, tier, family) {
+  if (tier === 'good') return;
+  const heavy = tier === 'critical';
+  // dents — dark crumple blotches on the bodywork (all families)
+  ctx.fillStyle = 'rgba(20,14,8,0.42)';
+  ctx.beginPath(); ctx.ellipse(-s * 0.55, s * 0.04, s * 0.16, s * 0.1, 0.3, 0, Math.PI * 2); ctx.fill();
+  if (heavy) { ctx.beginPath(); ctx.ellipse(s * 0.46, -s * 0.04, s * 0.2, s * 0.12, -0.2, 0, Math.PI * 2); ctx.fill(); }
+  // a raking scratch
+  ctx.strokeStyle = heavy ? 'rgba(10,8,4,0.8)' : 'rgba(40,30,18,0.6)'; ctx.lineWidth = Math.max(1.5, s * 0.03);
+  ctx.beginPath(); ctx.moveTo(-s * 0.3, -s * 0.18); ctx.lineTo(-s * 0.05, s * 0.08); ctx.lineTo(s * 0.16, -s * 0.08); ctx.stroke();
+
+  if (family === 'car' || family === 'cyber') {
+    // spider-cracked rear glass across the window band
+    ctx.strokeStyle = 'rgba(228,234,240,0.55)'; ctx.lineWidth = Math.max(0.8, s * 0.018);
+    const gx = 0, gy = -s * 0.55;
+    for (let a = 0; a < 6; a++) {
+      const ang = a * 1.05;
+      ctx.beginPath(); ctx.moveTo(gx, gy); ctx.lineTo(gx + Math.cos(ang) * s * 0.3, gy + Math.sin(ang) * s * 0.16); ctx.stroke();
+    }
+    if (heavy) { ctx.beginPath(); ctx.arc(gx, gy, s * 0.13, 0, Math.PI * 2); ctx.stroke(); }
+    // smashed tail-light (dark wedge over a light)
+    ctx.fillStyle = 'rgba(10,6,4,0.6)'; ctx.fillRect(-s * 0.9, s * 0.04, s * 0.18, s * 0.1);
+    if (heavy) {
+      // a bumper piece left dangling
+      ctx.strokeStyle = '#3a3a40'; ctx.lineWidth = Math.max(2, s * 0.06); ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(s * 0.5, s * 0.2); ctx.lineTo(s * 0.66, s * 0.4); ctx.stroke(); ctx.lineCap = 'butt';
+      // smoke from a dying engine, rising off the rear
+      ctx.fillStyle = 'rgba(60,60,64,0.38)';
+      for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.arc(s * 0.1 + i * s * 0.12, -s * (0.7 + i * 0.34), s * (0.15 + i * 0.09), 0, Math.PI * 2); ctx.fill(); }
+    }
+  } else if (family === 'handcart') {
+    // a snapped slat + (heavy) a missing board gap
+    ctx.strokeStyle = '#2a1a0c'; ctx.lineWidth = Math.max(2, s * 0.05);
+    ctx.beginPath(); ctx.moveTo(-s * 0.2, -s * 0.18); ctx.lineTo(-s * 0.34, s * 0.2); ctx.stroke();
+    if (heavy) { ctx.fillStyle = 'rgba(0,0,0,0.4)'; ctx.fillRect(s * 0.2, -s * 0.18, s * 0.16, s * 0.38); }
+  } else { // bike / yengyeng — a buckled wheel rim
+    ctx.strokeStyle = '#15151a'; ctx.lineWidth = Math.max(1.5, s * 0.05);
+    ctx.beginPath(); ctx.arc(-s * 0.55, s * 0.35, s * 0.3, 0.5, 2.5); ctx.stroke();
   }
 }
 
