@@ -1,4 +1,4 @@
-const CACHE = 'pothole-run-v32';
+const CACHE = 'pothole-run-v33';
 const ASSETS = [
   './', './index.html', './styles.css', './manifest.webmanifest',
   './src/main.js', './src/constants.js', './src/game.js', './src/road.js',
@@ -6,7 +6,7 @@ const ASSETS = [
   './src/run.js', './src/collision.js', './src/wreck.js', './src/spawner.js',
   './src/hazardTypes.js', './src/input.js', './src/hud.js', './src/audio.js',
   './src/characters.js', './src/stages.js', './src/vehicles.js', './src/money.js',
-  './src/upgrades.js', './src/save.js',
+  './src/upgrades.js', './src/save.js', './src/coords.js',
   // Wave 1 additions: economy/power-ups/bounties/solvability + the screen modules
   './src/economy.js', './src/powerups.js', './src/bounties.js', './src/solvability.js',
   './src/screens/router.js', './src/screens/hub.js', './src/screens/mechshop.js',

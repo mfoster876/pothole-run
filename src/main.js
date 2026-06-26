@@ -1,5 +1,6 @@
 import { VIRTUAL, MAX_DPR } from './constants.js';
 import { renderRotatePrompt } from './screens/rotatePrompt.js';
+import { clientToVirtual } from './coords.js';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d', { alpha: false });
@@ -129,16 +130,11 @@ if (musicInput) {
 // Play-mode steering (hold-repeat lane slides). Acts only while playing.
 const input = createInput(canvas, { onSteer: (d) => game.onSteer(d), onTap: () => audio.unlock() });
 
-// Convert a client point into virtual stage coords, accounting for letterbox offset.
+// Convert a client point into virtual stage coords. Uses the canvas's real rendered rect
+// (via clientToVirtual) so hit-testing stays correct under the Fast-graphics DPR cap,
+// Retina scaling, and browser zoom — not a guessed devicePixelRatio.
 function toVirtual(clientX, clientY) {
-  const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
-  // Physical pixel position within the canvas
-  const px = clientX * dpr - viewport.offsetX;
-  const py = clientY * dpr - viewport.offsetY;
-  return {
-    x: px / viewport.scale,
-    y: py / viewport.scale
-  };
+  return clientToVirtual(clientX, clientY, canvas.getBoundingClientRect(), canvas.width, canvas.height, viewport);
 }
 function handlePoint(clientX, clientY) {
   if (paused) return;   // ignore taps while portrait overlay is showing
