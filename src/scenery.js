@@ -1,5 +1,6 @@
 import { projectEntity, curveOffsetAt } from './road.js';
 import { roadsideFeature, drawSpeedLimit, drawSafetyBillboard } from './signs.js';
+import { LIGHT } from './constants.js';
 
 // Posted speed limit by stage character: urban New Kingston + the rural gorge are 50,
 // the open highways (Holland Bamboo, Negril) are 80. Drives the roadside roundels.
@@ -70,6 +71,7 @@ const NK_PROPS = [
 const NK_LEN = NK_PROPS.length;
 
 export function renderScenery(ctx, stage, position, W, H) {
+  drawHorizon(ctx, stage, position, W, H);   // tropical sun + distant mountain ranges
   const kind = stage.scenery || 'pole';
   if (kind === 'fern') {
     // Dense gorge: two offset row grids — a deep back layer + the main bank
@@ -127,6 +129,58 @@ export function renderScenery(ctx, stage, position, W, H) {
     drawRoadside(ctx, kind, -EDGE, camZ, position, W, H, rowIdx, limit);
     drawRoadside(ctx, kind, EDGE, camZ, position, W, H, rowIdx + FAR_PHASE, limit);
   }
+}
+
+// ─── Sun + distant mountain ranges ────────────────────────────────────────────
+// Jamaica is a mountainous island — the Blue Mountains (named for their haze) tower over
+// Kingston, steep green ridges hem the Fern Gully gorge. Every stage gets a layered, blue-
+// hazed range on the horizon plus one consistent tropical sun (see LIGHT), so the world
+// reads as Jamaica and the lighting comes from a single source.
+const MOUNT = {
+  fern:   { back: 'rgba(96,124,116,0.85)',  front: '#2c4636' },  // hazy green gorge ridges
+  bamboo: { back: 'rgba(122,138,116,0.82)', front: '#566636' },  // green lowland hills
+  palm:   { back: 'rgba(176,158,156,0.70)', front: '#9a7a5c' },  // dusty coastal bluffs
+  zinc:   { back: 'rgba(104,118,150,0.85)', front: '#3a4860' },  // Blue Mountains behind Kingston
+};
+
+// Build (but don't fill) a jagged ridgeline path from the left edge across the peaks to the
+// right, closed down to the horizon. `parallax` drifts it slowly with the run for depth.
+function ridgePath(ctx, baseY, amp, position, parallax, phase, W) {
+  const drift = position * parallax;
+  ctx.beginPath();
+  ctx.moveTo(0, baseY);
+  const steps = 16;
+  for (let i = 0; i <= steps; i++) {
+    const x = (i / steps) * W;
+    const t = i * 0.9 + phase + drift;
+    const h = Math.sin(t * 0.7) * 0.5 + Math.sin(t * 1.7 + 1.3) * 0.3 + Math.sin(t * 3.3 + 2.1) * 0.2; // -1..1
+    const y = baseY - amp * (0.45 + 0.55 * (h * 0.5 + 0.5));
+    ctx.lineTo(x, y);
+  }
+  ctx.lineTo(W, baseY); ctx.closePath();
+}
+
+function drawHorizon(ctx, stage, position, W, H) {
+  const horizon = H * 0.5;
+  const m = MOUNT[stage.scenery] || MOUNT.fern;
+  // tropical sun — soft warm glow + bright core (drawn first so the mountains occlude it)
+  const sx = W * LIGHT.sunXf, sy = H * LIGHT.sunYf;
+  for (let i = 4; i >= 1; i--) {
+    ctx.fillStyle = `rgba(255,240,200,${(0.06 * i).toFixed(3)})`;
+    ctx.beginPath(); ctx.arc(sx, sy, H * 0.02 * (i + 1.5), 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.fillStyle = '#fff4d2'; ctx.beginPath(); ctx.arc(sx, sy, H * 0.032, 0, Math.PI * 2); ctx.fill();
+  // far range (hazy, taller, slow parallax) then near range (darker, a touch more parallax)
+  ridgePath(ctx, horizon, H * 0.17, position, 0.0008, 0.0, W); ctx.fillStyle = m.back;  ctx.fill();
+  ridgePath(ctx, horizon, H * 0.11, position, 0.0016, 5.3, W); ctx.fillStyle = m.front; ctx.fill();
+  // directional light from the one sun: warm wash on the sun-facing slopes, cool shade on
+  // the far side — clipped to the mountains so the lighting reads from a single source.
+  ctx.save();
+  ridgePath(ctx, horizon, H * 0.17, position, 0.0008, 0.0, W); ctx.clip();
+  const lit = LIGHT.sunXf > 0.5;   // sun on the right → light the right slopes
+  ctx.fillStyle = 'rgba(255,236,188,0.16)'; ctx.fillRect(lit ? W * 0.45 : 0, horizon - H * 0.2, W * 0.55, H * 0.2);
+  ctx.fillStyle = 'rgba(30,40,70,0.18)';    ctx.fillRect(lit ? 0 : W * 0.55, horizon - H * 0.2, W * 0.45, H * 0.2);
+  ctx.restore();
 }
 
 // ─── New Kingston distant skyline ─────────────────────────────────────────────

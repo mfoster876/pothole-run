@@ -18,9 +18,22 @@ export function makeRoad() {
   return { segLen: SEG, total: 1e9, length: 1e9 * SEG };
 }
 
-// Smooth, varied per-segment turn rate → winding road.
+// Per-stage windiness multiplier on the road's turn rate. Fern Gully — a real, steep,
+// hair-pinned gorge on the A3 — cranks this up to be the twistiest, hardest drive; the
+// Holland Bamboo avenue (famously dead straight) sets it low. Set by game.js at run start.
+let curveScale = 1;
+export function setCurveScale(m) { curveScale = (m && m > 0) ? m : 1; }
+
+// Smooth, varied per-segment turn rate → winding road (scaled by the current stage).
 function curveAt(i) {
-  return Math.sin(i * 0.013) * 0.7 + Math.sin(i * 0.0047 + 1.7) * 0.5 + Math.sin(i * 0.027 + 4) * 0.25;
+  return (Math.sin(i * 0.013) * 0.7 + Math.sin(i * 0.0047 + 1.7) * 0.5 + Math.sin(i * 0.027 + 4) * 0.25) * curveScale;
+}
+
+// The road's local turn rate at the camera's current position — how hard it's bending
+// right HERE. game.js uses this to shove the cart toward the outside of the corner
+// (winding-road difficulty that scales with speed). Sign = bend direction.
+export function curvatureAt(position) {
+  return curveAt(Math.floor(position / SEG));
 }
 
 // Accumulated horizontal screen offset (px) of the road centreline at distance

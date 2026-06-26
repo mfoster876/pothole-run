@@ -1,5 +1,5 @@
 import { conditionTier } from './wreck.js';
-import { HOP } from './constants.js';
+import { HOP, LIGHT } from './constants.js';
 
 // Draw the player's ride, rear-view, centred at (cx, cy) with body scale s.
 // Dispatches on cart.vehicle.sprite; the handcart is the signature default.
@@ -15,10 +15,12 @@ export function drawCart(ctx, cart, cx, cy, s) {
   const p    = Math.min(1, Math.max(0, (cart.jumpT || 0) / air)); // 1→0 as timer decays
   const lift = peak * 4 * p * (1 - p); // parabola: 0 at takeoff/landing, peak at mid-hop
 
-  // ground shadow — shrinks and fades as the cart climbs
+  // ground shadow — shrinks and fades as the cart climbs, and is cast in the sun's
+  // direction (toward the lower-left, away from the upper-right sun — see LIGHT).
   const shadowScale = 1 - lift / (peak * 1.6);
+  const shX = cx + s * LIGHT.shadowDX * 0.45, shY = cy + s * 0.5 + s * LIGHT.shadowDY * 0.18;
   ctx.fillStyle = `rgba(0,0,0,${(0.28 * shadowScale).toFixed(3)})`;
-  ctx.beginPath(); ctx.ellipse(cx, cy + s * 0.5, s * 1.05 * shadowScale, s * 0.22 * shadowScale, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(shX, shY, s * 1.05 * shadowScale, s * 0.22 * shadowScale, 0, 0, Math.PI * 2); ctx.fill();
 
   // ---- soft-shoulder TOPPLE death: tip the whole ride onto its side and fling
   // the driver free. toppleT runs 0 (upright) → 1 (fully over, driver sprawled).

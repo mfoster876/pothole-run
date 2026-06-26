@@ -1,9 +1,9 @@
-import { VIRTUAL, SHOULDER, SUPERCHARGE, IMPAIR, SPAWN_TUNE, POLICE, POLITICIAN, RACE, TOPPLE, LANES, UPKEEP, FRUIT, MAX_DPR } from './constants.js';
+import { VIRTUAL, SHOULDER, SUPERCHARGE, IMPAIR, SPAWN_TUNE, POLICE, POLITICIAN, RACE, TOPPLE, LANES, UPKEEP, FRUIT, MAX_DPR, CART, CURVE } from './constants.js';
 import { setLetterboxColors, setDprCap } from './main.js';
 import { drinkWeightsFor } from './drinks.js';
 import { itemWeightsFor } from './charitems.js';
 import { negativesFor } from './negatives.js';
-import { makeRoad, renderRoad, projectEntity, curveOffsetAt, CART_Z } from './road.js';
+import { makeRoad, renderRoad, projectEntity, curveOffsetAt, curvatureAt, setCurveScale, CART_Z } from './road.js';
 import { createCart, steer, updateCart, onShoulder, tipShoulder } from './cart.js';
 import { createField, spawn, advance, activeEntities } from './entities.js';
 import { spawnInterval, pickHazard, laneFor } from './spawner.js';
@@ -116,6 +116,10 @@ export function createGame(audio) {
   function startRun(characterId, stageId) {
     road = makeRoad();
     stage = getStage(stageId);
+    // Wind the road to this stage's character — Fern Gully twists hardest, Holland Bamboo
+    // runs straight (see stages.js curveMult). Drives both the visible bends and the
+    // corner-pull that fights the cart.
+    setCurveScale(stage.curveMult || 1);
     // Match the letterbox bars to this stage so wide phones read full, not black-barred.
     setLetterboxColors(stage.palette.sky, stage.palette.ground);
     cart = createCart(getCharacter(characterId), getVehicle(save.vehicle), stabilityBonus(ownedUpgrades(save, save.vehicle), save.vehicle), save.condition, handlingBonus(ownedUpgrades(save, save.vehicle), save.vehicle));
@@ -283,6 +287,11 @@ export function createGame(audio) {
     // Alcohol (cart.tipsy) adds to that wander — booze makes the steering error-prone.
     const looseness = Math.max(0, 1.15 - (cart.stability || 1)) + (cart.tipsy ? cart.tipsy * IMPAIR.wander : 0);
     cart.drift = (cart.drift || 0) * Math.exp(-1.6 * dt) + (Math.random() - 0.5) * looseness * 6 * dt;
+    // Winding-road pull: a bend throws the cart toward its OUTSIDE (−curve), harder the
+    // faster you go — so Fern Gully's hair-pins genuinely fight you and speed makes every
+    // corner worse. Bounded by the drift clamp below, so it's felt but always survivable.
+    const speedFrac = Math.min(1.4, (cart.speed || 0) / CART.maxSpeed);
+    cart.drift += -curvatureAt(camZ) * speedFrac * CURVE.pull * dt;
     cart.drift = Math.max(-0.15, Math.min(0.15, cart.drift));
 
     // Tick power-up effects

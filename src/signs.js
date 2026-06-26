@@ -31,6 +31,19 @@ export function roadsideFeature(rowIdx, limit) {
   return null;
 }
 
+// Set ctx.font to the largest bold size (≤ startPx) at which `text` fits within maxW, so
+// a billboard line never overruns its panel at any draw distance. Falls back gracefully
+// where measureText is unavailable (returns startPx).
+function fitFont(ctx, text, maxW, startPx) {
+  let size = startPx;
+  for (; size > 5; size -= 1) {
+    ctx.font = '700 ' + Math.round(size) + 'px "Arial", "Helvetica", sans-serif';
+    const m = ctx.measureText ? ctx.measureText(text) : null;
+    if (!m || !(m.width > maxW)) break;
+  }
+  return size;
+}
+
 // A standard speed-limit sign: a white roundel with a red ring and a black number on a
 // grey post. `limit` is the posted km/h (matches the HUD speedometer's km/h reading).
 export function drawSpeedLimit(ctx, x, y, s, limit) {
@@ -68,15 +81,16 @@ export function drawSafetyBillboard(ctx, x, y, s, idx) {
   ctx.strokeStyle = '#2a2620'; ctx.lineWidth = Math.max(1.5, s * 0.05); ctx.strokeRect(lx, panelTop, w, h);
   // accent header strip
   ctx.fillStyle = m.accent; ctx.fillRect(lx, panelTop, w, h * 0.30);
-  if (s >= 12) {
+  if (s >= 16) {
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    // header line (on the accent strip, in white)
+    const maxTextW = w * 0.9;
+    // header line (on the accent strip, in white) — fitted so it never overruns the panel
     ctx.fillStyle = '#fbf7ee';
-    ctx.font = '700 ' + Math.round(h * 0.20) + 'px "Arial", "Helvetica", sans-serif';
+    fitFont(ctx, m.head, maxTextW, h * 0.20);
     ctx.fillText(m.head, x, panelTop + h * 0.16);
-    // sub line (on the pale field, in ink)
+    // sub line (on the pale field, in ink) — also width-fitted
     ctx.fillStyle = '#1c1a16';
-    ctx.font = '700 ' + Math.round(h * 0.30) + 'px "Arial", "Helvetica", sans-serif';
+    fitFont(ctx, m.sub, maxTextW, h * 0.30);
     ctx.fillText(m.sub, x, panelTop + h * 0.64);
   } else {
     // too small to read — keep just the coloured header so it still reads as a sign

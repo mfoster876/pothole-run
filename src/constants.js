@@ -113,6 +113,19 @@ export const WEAR = { minHandling: 0.55, minSpeed: 0.85 };
 export const MAX_DPR = 2;
 export const VIRTUAL = { width: 960, height: 540 };
 
+// Sunlight direction — one consistent tropical sun for the whole game (Jamaica sits at
+// ~18°N, so the sun rides high and hard). `sunXf/sunYf` place the sun disc in the sky as
+// a fraction of the stage W/H (upper-right); `shadowDX/DY` is the screen direction shadows
+// and shaded slopes fall (down toward the lower-left, away from the sun). Used by the sky/
+// mountains and the cart's ground shadow so the lighting reads from one source.
+export const LIGHT = { sunXf: 0.72, sunYf: 0.17, shadowDX: -0.5, shadowDY: 0.34 };
+
+// Winding-road physics: a bend throws the cart toward its OUTSIDE, harder the faster you
+// go and the tighter the curve — so a twisty stage (Fern Gully) genuinely fights you, and
+// speed makes every corner worse. `pull` biases the cart's settle-point per unit curvature
+// × speed fraction (bounded by the existing drift clamp), so it's felt but always survivable.
+export const CURVE = { pull: 0.10 };
+
 // Passing traffic buffets the cart: when a fast vehicle in a neighbouring lane
 // blows past, its wake shoves the cart sideways (away from the vehicle).
 export const GUST = { range: 0.95, push: 1.6, fromTaxi: 1.0, fromBus: 1.3, fromCoaster: 1.0 };

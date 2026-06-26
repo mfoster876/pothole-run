@@ -3,6 +3,9 @@ export const STAGES = [
     id: 'fern-gully', name: 'Fern Gully', locked: false, musicId: 'fern', scenery: 'fern',
     // a shaded, damp gorge — muted misty light, deep fern greens (not bright tropics)
     palette: { sky: '#a7bcae', hill: '#123417', ground: '#27592c', road: '#474b50', rumble: '#3f5836' },
+    // The real Fern Gully is a steep, hair-pinned former-riverbed gorge — the twistiest,
+    // hardest drive here. The winding road throws the cart toward the outside of each bend.
+    curveMult: 1.8,
     hazardWeights: [
       { type: 'pothole', weight: 5 }, { type: 'coin', weight: 4 },
       { type: 'slick', weight: 2 }, { type: 'stall', weight: 2 }, { type: 'manhole', weight: 1 },
@@ -15,6 +18,8 @@ export const STAGES = [
   {
     id: 'holland-bamboo', name: 'Holland Bamboo', locked: true, musicId: 'bamboo', scenery: 'bamboo',
     palette: { sky: '#e7f3c8', hill: '#6b7a1e', ground: '#7c8a2a', road: '#5a5044', rumble: '#7a6a44' },
+    // The real Holland Bamboo is a ~2.5-mile DEAD-STRAIGHT bamboo-arched avenue — gentlest bends.
+    curveMult: 0.55,
     // livestock (goat/cattle) is rural-only — kept out of new-kingston/negril
     hazardWeights: [
       { type: 'pothole', weight: 4 }, { type: 'coin', weight: 4 },
@@ -28,6 +33,8 @@ export const STAGES = [
   {
     id: 'negril', name: 'Negril 7-Mile', locked: true, musicId: 'negril', scenery: 'palm',
     palette: { sky: '#ffd9a0', hill: '#caa45a', ground: '#e8c98a', road: '#6b6b72', rumble: '#b9a06a' },
+    // The flat 7-mile coastal strip — mostly gentle, open road.
+    curveMult: 0.8,
     hazardWeights: [
       { type: 'pothole', weight: 4 }, { type: 'coin', weight: 4 },
       { type: 'taxi', weight: 4 }, { type: 'hustler', weight: 2 }, { type: 'manhole', weight: 1 },
@@ -41,6 +48,8 @@ export const STAGES = [
     // Kingston — the only place the big yellow JUTC buses run.
     id: 'new-kingston', name: 'New Kingston', locked: true, musicId: 'kingston', scenery: 'zinc',
     palette: { sky: '#b7c2cc', hill: '#4a5560', ground: '#6a6f74', road: '#4c4f56', rumble: '#5a5048' },
+    // Urban grid at the foot of the Blue Mountains — moderate bends.
+    curveMult: 1.0,
     hazardWeights: [
       { type: 'pothole', weight: 4 }, { type: 'coin', weight: 4 },
       { type: 'bus', weight: 4 }, { type: 'taxi', weight: 4 }, { type: 'coaster', weight: 2 },
