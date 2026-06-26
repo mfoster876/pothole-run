@@ -19,6 +19,23 @@ function hubRects(W, H) {
   };
 }
 
+// A drawn vector gear (emoji glyphs like ⚙ don't render in the canvas monospace font, so
+// the settings cog has to be drawn) — a toothed ring with a hollow centre.
+function drawGear(ctx, cx, cy, r, color, bg) {
+  const teeth = 8;
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  for (let i = 0; i < teeth * 2; i++) {
+    const ang = (i / (teeth * 2)) * Math.PI * 2;
+    const rad = (i % 2 === 0) ? r : r * 0.74;
+    const px = cx + Math.cos(ang) * rad, py = cy + Math.sin(ang) * rad;
+    i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+  }
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = bg;                                   // punch the centre hole
+  ctx.beginPath(); ctx.arc(cx, cy, r * 0.36, 0, Math.PI * 2); ctx.fill();
+}
+
 function btn(ctx, r, label, opts = {}) {
   ctx.fillStyle = opts.fill || 'rgba(244,241,230,0.10)';
   ctx.fillRect(r.x, r.y, r.w, r.h);
@@ -57,7 +74,13 @@ export function render(ctx, { save, W, H }) {
   btn(ctx, R.cardealer,   'CAR DEALER',   { stroke: '#cbe7cf' });
   btn(ctx, R.aspirations, 'ASPIRATIONS',  { stroke: '#9fb8a3', text: '#9fb8a3' });
   btn(ctx, R.help, '?', { stroke: '#f0c020', text: '#f0c020', font: '700 28px "Courier New", monospace' });
-  btn(ctx, R.prefs, '⚙', { stroke: '#9fb8a3', text: '#9fb8a3', font: '700 26px "Courier New", monospace' });
+  // Settings cog (top-left): drawn gear in its button frame, with a SETTINGS label beneath.
+  ctx.fillStyle = 'rgba(244,241,230,0.10)'; ctx.fillRect(R.prefs.x, R.prefs.y, R.prefs.w, R.prefs.h);
+  ctx.strokeStyle = '#9fb8a3'; ctx.lineWidth = 2; ctx.strokeRect(R.prefs.x, R.prefs.y, R.prefs.w, R.prefs.h);
+  drawGear(ctx, R.prefs.x + R.prefs.w / 2, R.prefs.y + R.prefs.h / 2, 13, '#cbe7cf', '#0e1a12');
+  ctx.fillStyle = '#9fb8a3'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.font = '700 11px "Courier New", monospace';
+  ctx.fillText('SETTINGS', R.prefs.x + R.prefs.w / 2, R.prefs.y + R.prefs.h + 10);
 
   // Repair reminder — every ride needs upkeep between plays; nudge it for best driving.
   if ((save.condition || 0) < 100) {
@@ -70,7 +93,7 @@ export function render(ctx, { save, W, H }) {
 
   ctx.fillStyle = '#9fb8a3'; ctx.font = '500 13px "Courier New", monospace';
   ctx.textAlign = 'center';
-  ctx.fillText('♪ press M to mute   ·   ? = how to play', W / 2, H * 0.96);
+  ctx.fillText('⚙ settings (top-left)   ·   ? = how to play   ·   M = mute', W / 2, H * 0.96);
 }
 
 function inRect(r, x, y) { return x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h; }

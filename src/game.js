@@ -64,7 +64,7 @@ function inRect(r, x, y) { return x >= r.x && x <= r.x + r.w && y >= r.y && y <=
 // (top-left, clear of the steering zones); the rest are the paused-screen controls so you
 // can change the riddim / station and mute without leaving the run.
 const PAUSE = {
-  btn:        { x: 8, y: 8, w: 44, h: 40 },
+  btn:        { x: 8, y: 8, w: 122, h: 40 },
   resume:     { x: W * 0.5 - 140, y: H * 0.30, w: 280, h: 60 },
   genrePrev:  { x: W * 0.17 - 24, y: H * 0.55 - 24, w: 48, h: 48 },
   genreNext:  { x: W * 0.83 - 24, y: H * 0.55 - 24, w: 48, h: 48 },
@@ -95,6 +95,7 @@ export function createGame(audio) {
   let road, stage, cart, field, run, camZ, spawnZ, steerLock = 0, activeWeights = [];
   let squeakAccum = 0, hitShake = 0;
   let throttleInput = 0;             // -1 brake … 0 coast … +1 accelerate (set by main.js from input)
+  let pauseHintT = 0;                // seconds remaining to show the "tap to pause" start hint
   let tapcodeState = tapcodeEmpty(); // secret tap-code progress
   // Power-up effects + car dealer display index
   let effects = createEffects();
@@ -159,6 +160,7 @@ export function createGame(audio) {
     save.prayedSinceRun = false;
     save.readBibleSinceRun = false;
     camZ = 0; spawnZ = 600; steerLock = 10; squeakAccum = 0; hitShake = 0;
+    pauseHintT = 4;   // show the "tap to pause" hint for the first few seconds of the run
     state.mode = 'play';
     audio && audio.unlock();
     playRunMusic();
@@ -270,6 +272,7 @@ export function createGame(audio) {
     }
     if (state.mode !== 'play') return;
     if (steerLock > 0) steerLock--;
+    if (pauseHintT > 0) pauseHintT -= dt;
     // Loose-rig wander: a slow, mean-reverting drift that pulls the cart off its line.
     // Alcohol (cart.tipsy) adds to that wander — booze makes the steering error-prone.
     const looseness = Math.max(0, 1.15 - (cart.stability || 1)) + (cart.tipsy ? cart.tipsy * IMPAIR.wander : 0);
@@ -425,24 +428,37 @@ export function createGame(audio) {
     const jitX = jr * (Math.random() - 0.5) * cp.size * 0.0225 * sway + rockX;
     drawCart(ctx, cart, cp.x + cartCurve + jitX, cp.y + 6 + bobPx, cp.size * 0.9);
     renderTouchZones(ctx, W, H);
-    renderHud(ctx, { stageName: stage.name, coins: run.coins, distance: run.distance, condition: cart.condition, effects, lite }, W, H);
+    renderHud(ctx, { stageName: stage.name, coins: run.coins, distance: run.distance, condition: cart.condition, effects, lite, speed: cart.speed, throttle: throttleInput }, W, H);
     renderPickupToast(ctx, pickupToast, W, H);
     if (race) renderRaceHud(ctx);
     if (state.mode === 'play') renderPauseButton(ctx);
     if (state.mode === 'paused') renderPauseOverlay(ctx);
   }
 
-  // The little ❚❚ button shown top-left while driving (clear of the steering zones).
+  // The labeled "❚❚ PAUSE" button shown top-left while driving (clear of the steering zones).
   function renderPauseButton(ctx) {
     const r = PAUSE.btn;
     ctx.save();
-    ctx.fillStyle = 'rgba(14,26,18,0.55)'; ctx.fillRect(r.x, r.y, r.w, r.h);
-    ctx.strokeStyle = 'rgba(203,231,207,0.7)'; ctx.lineWidth = 2; ctx.strokeRect(r.x, r.y, r.w, r.h);
-    ctx.fillStyle = '#f4f1e6';
-    const bw = 6, gap = 5, cx = r.x + r.w / 2, cy = r.y + r.h / 2;
-    ctx.fillRect(cx - gap - bw, cy - 11, bw, 22);
-    ctx.fillRect(cx + gap, cy - 11, bw, 22);
+    ctx.fillStyle = 'rgba(14,26,18,0.62)'; ctx.fillRect(r.x, r.y, r.w, r.h);
+    ctx.strokeStyle = '#f0c020'; ctx.lineWidth = 2; ctx.strokeRect(r.x, r.y, r.w, r.h);
+    // two pause bars (drawn — not an emoji) + the word PAUSE so it's unmistakable
+    ctx.fillStyle = '#f0c020';
+    const bw = 5, gap = 4, bx = r.x + 14, cy = r.y + r.h / 2;
+    ctx.fillRect(bx, cy - 10, bw, 20);
+    ctx.fillRect(bx + bw + gap, cy - 10, bw, 20);
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    ctx.font = '700 18px "Courier New", monospace';
+    ctx.fillText('PAUSE', bx + 2 * bw + gap + 10, cy + 1);
     ctx.restore();
+    // A fading, centred hint at the very start of a run so the control can't be missed.
+    if (pauseHintT > 0) {
+      ctx.save();
+      ctx.globalAlpha = Math.min(1, pauseHintT / 1.2);
+      ctx.fillStyle = '#f0c020'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = '700 16px "Courier New", monospace';
+      ctx.fillText('PAUSE — tap top-left  or press P', W / 2, H * 0.17);
+      ctx.restore();
+    }
   }
 
   // Paused overlay: the frozen road behind a dim scrim, with RESUME, a LIVE riddim/station
@@ -475,11 +491,11 @@ export function createGame(audio) {
       ctx.fillText(GENRE_LABEL[g] || 'Reggae', W / 2, H * 0.55);
     }
 
-    button(ctx, PAUSE.mute, save.settings.muted ? '🔇 SOUND: OFF' : '🔊 SOUND: ON',
+    button(ctx, PAUSE.mute, save.settings.muted ? 'SOUND: OFF' : 'SOUND: ON',
       { font: '700 20px "Courier New", monospace', stroke: '#9fb8a3', text: '#f4f1e6' });
 
     ctx.fillStyle = '#9fb8a3'; ctx.font = '500 14px "Courier New", monospace';
-    ctx.fillText('tap ❚❚ or press P / Esc to pause · resume any time', W / 2, H * 0.86);
+    ctx.fillText('tap the PAUSE button or press P / Esc · resume any time', W / 2, H * 0.86);
     ctx.restore();
   }
 
@@ -944,7 +960,7 @@ export function createGame(audio) {
     button(ctx, BTN.start, 'START');
     ctx.fillStyle = '#9fb8a3'; ctx.font = '500 15px "Courier New", monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('wallet: ' + formatMoney(save.wallet) + '   ·   ↑/↓ throttle  ·  ❚❚/P pause  ·  M mute', W / 2, H * 0.97);
+    ctx.fillText('wallet: ' + formatMoney(save.wallet) + '   ·   ↑/↓ throttle  ·  P pause  ·  M mute', W / 2, H * 0.97);
 
     if (state.popup) renderPopup(ctx, state.popup);
   }

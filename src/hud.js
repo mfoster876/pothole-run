@@ -1,8 +1,8 @@
 import { conditionTier } from './wreck.js';
 import { formatMoney } from './money.js';
-import { SUPERCHARGE } from './constants.js';
+import { SUPERCHARGE, CART } from './constants.js';
 
-export function renderHud(ctx, { stageName, coins, distance, condition, effects = {}, lite = false }, W, H = 540) {
+export function renderHud(ctx, { stageName, coins, distance, condition, effects = {}, lite = false, speed = 0, throttle = 0 }, W, H = 540) {
   ctx.font = '700 26px "Courier New", monospace';
   ctx.textBaseline = 'middle';
 
@@ -10,8 +10,8 @@ export function renderHud(ctx, { stageName, coins, distance, condition, effects 
   ctx.fillRect(0, 0, W, 56);
   ctx.fillStyle = '#f4f1e6';
   ctx.textAlign = 'left';
-  // Start past the top-left ❚❚ pause button (drawn by game.js) so they never overlap.
-  ctx.fillText(stageName.toUpperCase(), 62, 28);
+  // Start past the top-left ❚❚ PAUSE button (drawn by game.js) so they never overlap.
+  ctx.fillText(stageName.toUpperCase(), 140, 28);
   ctx.textAlign = 'center';
   ctx.fillStyle = '#f0c020';
   ctx.fillText(formatMoney(coins), W / 2, 28);
@@ -30,6 +30,25 @@ export function renderHud(ctx, { stageName, coins, distance, condition, effects 
   ctx.textAlign = 'right';
   ctx.font = '500 14px "Courier New", monospace';
   ctx.fillText('CART', mx - 8, my + 8);
+
+  // Speed gauge (top-left): fills with current speed, turns GREEN while accelerating (↑)
+  // and AMBER while braking (↓), with a direction arrow — so the throttle visibly responds.
+  const sw = 150, sx = 58, sy = 64;
+  const spdFrac = Math.max(0, Math.min(1, speed / (CART.maxSpeed * 1.3)));
+  const accel = throttle > 0, brake = throttle < 0;
+  ctx.fillStyle = '#cbe7cf'; ctx.textAlign = 'left'; ctx.font = '500 14px "Courier New", monospace';
+  ctx.fillText('SPD', 24, sy + 8);
+  ctx.fillStyle = '#1c1c1c'; ctx.fillRect(sx, sy, sw, 16);
+  ctx.fillStyle = accel ? '#3fae54' : brake ? '#e0a52a' : '#8fb8d0';
+  ctx.fillRect(sx + 2, sy + 2, (sw - 4) * spdFrac, 12);
+  if (accel || brake) {
+    const ax = sx + sw + 12, ay = sy + 8;
+    ctx.fillStyle = accel ? '#3fae54' : '#e0a52a';
+    ctx.beginPath();
+    if (accel) { ctx.moveTo(ax, ay - 6); ctx.lineTo(ax - 6, ay + 5); ctx.lineTo(ax + 6, ay + 5); }
+    else       { ctx.moveTo(ax, ay + 6); ctx.lineTo(ax - 6, ay - 5); ctx.lineTo(ax + 6, ay - 5); }
+    ctx.closePath(); ctx.fill();
+  }
 
   // Supercharge (water / boozy drink boost): glowing frame + countdown so the
   // player can see they're invincible and exactly how long it lasts.

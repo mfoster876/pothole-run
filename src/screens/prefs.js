@@ -43,7 +43,7 @@ export function render(ctx, { save, W, H }) {
   ctx.textAlign = 'center'; ctx.fillStyle = '#9fb8a3'; ctx.font = '500 14px "Courier New", monospace';
   ctx.fillText('steer ← →  ·  throttle ↑ accelerate / ↓ brake (or W / S)', W / 2, H * 0.70);
   ctx.fillStyle = '#7a8a7e'; ctx.font = '500 12px "Courier New", monospace';
-  ctx.fillText('pause ❚❚ or P · the cart never fully stops', W / 2, H * 0.745);
+  ctx.fillText('PAUSE button (top-left) or P · the cart never fully stops', W / 2, H * 0.745);
 
   // Back button
   ctx.fillStyle = 'rgba(244,241,230,0.10)'; ctx.fillRect(R.back.x, R.back.y, R.back.w, R.back.h);

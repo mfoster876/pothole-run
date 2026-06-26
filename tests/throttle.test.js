@@ -37,8 +37,13 @@ test('the run speeds up the deeper you get (pace climbs with distance)', () => {
   assert.ok(deep > shallow * 1.2, `deep ${deep} clearly faster than shallow ${shallow}`);
 });
 
-test('the throttle constants are sane (brake floor below cruise below full)', () => {
-  assert.ok(THROTTLE.brakeFloor < THROTTLE.cruise && THROTTLE.cruise <= 1);
+test('the throttle constants are sane (brake floor < cruise < sprint)', () => {
+  assert.ok(THROTTLE.brakeFloor < THROTTLE.cruise && THROTTLE.cruise < THROTTLE.sprint);
+});
+
+test('a full sprint (Up) clearly outruns the hands-off coast', () => {
+  const sprint = settle(1), coast = settle(0);
+  assert.ok(sprint > coast * 1.25, `sprint ${sprint} is a clear jump over coast ${coast}`);
 });
 
 test('a supercharge override surges speed toward its cap, beating any throttle', () => {
@@ -47,4 +52,22 @@ test('a supercharge override surges speed toward its cap, beating any throttle',
   for (let i = 0; i < 60 * 2; i++) updateCart(cart, 1 / 60, 0, SUPERCHARGE.maxSpeed);
   assert.ok(cart.speed > settle(0), 'water overrides throttle and surges past coast');
   assert.ok(cart.speed > SUPERCHARGE.maxSpeed * 0.9, 'climbs toward the supercharge cap');
+});
+
+test('a power-up NEVER throttles a faster cart — it only ever speeds you up', () => {
+  // build a deep-run sprint well ABOVE the supercharge cap
+  const cart = createCart(getCharacter('yute'));
+  cart.throttle = 1;
+  for (let i = 0; i < 60 * 3; i++) updateCart(cart, 1 / 60, 9000);
+  const sprintSpeed = cart.speed;
+  assert.ok(sprintSpeed > SUPERCHARGE.maxSpeed, 'a deep sprint exceeds the supercharge cap');
+  // grabbing water here must NOT slow the cart down
+  for (let i = 0; i < 60; i++) updateCart(cart, 1 / 60, 9000, SUPERCHARGE.maxSpeed);
+  assert.ok(cart.speed >= sprintSpeed * 0.99, `power-up must not brake you: ${cart.speed} vs ${sprintSpeed}`);
+});
+
+test('the run starts at a MODERATE pace, then builds with distance', () => {
+  assert.ok(PACE.start < 0.8, 'opening pace is held back');
+  const early = settle(0, 0), deep = settle(0, 4000);
+  assert.ok(deep > early * 1.3, `deep ${deep} clearly outpaces the moderate start ${early}`);
 });

@@ -127,18 +127,17 @@ export function updateCart(cart, dt, distance = 0, overrideTarget = null) {
   // (water supercharge) can hand in an `overrideTarget` to surge the cart toward a higher cap
   // regardless of throttle. speedScale lets street races run MUCH faster (default 1).
   const scale = cart.speedScale || 1;
-  let target;
-  if (overrideTarget != null) {
-    target = overrideTarget * scale;                            // e.g. the supercharge cap
-  } else {
-    const capability = CART.maxSpeed * effSpeed(cart) * scale;  // top capability of the ride
-    const pace = paceFor(distance);                             // deeper run → faster game
-    const th = Math.max(-1, Math.min(1, cart.throttle || 0));
-    // throttle maps coast(cruise) → full(1.0) accelerating, coast → brakeFloor braking.
-    const frac = th >= 0
-      ? THROTTLE.cruise + (1 - THROTTLE.cruise) * th
-      : THROTTLE.cruise - (THROTTLE.cruise - THROTTLE.brakeFloor) * (-th);
-    target = capability * pace * Math.max(THROTTLE.brakeFloor, Math.min(1, frac));
-  }
+  const capability = CART.maxSpeed * effSpeed(cart) * scale;  // top capability of the ride
+  const pace = paceFor(distance);                             // deeper run → faster game
+  const th = Math.max(-1, Math.min(1, cart.throttle || 0));
+  // throttle maps coast(cruise) → SPRINT accelerating, coast → brakeFloor braking.
+  const frac = th >= 0
+    ? THROTTLE.cruise + (THROTTLE.sprint - THROTTLE.cruise) * th
+    : THROTTLE.cruise - (THROTTLE.cruise - THROTTLE.brakeFloor) * (-th);
+  let target = capability * pace * Math.max(THROTTLE.brakeFloor, Math.min(THROTTLE.sprint, frac));
+  // A speed power-up (water / boozy drink / fruit) can surge the cart toward a higher cap —
+  // but it must ONLY ever speed you up, never throttle you DOWN below your current pace
+  // (grabbing water mid-sprint should never feel like a brake).
+  if (overrideTarget != null) target = Math.max(target, overrideTarget * scale);
   cart.speed += (target - cart.speed) * (1 - Math.exp(-THROTTLE.respond * dt));
 }
