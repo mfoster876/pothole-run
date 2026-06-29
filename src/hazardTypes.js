@@ -19,6 +19,8 @@ export const HAZARD_TYPES = {
   beggar:    { damage: DAMAGE.animal,  collectible: false, depth: 3, color: '#6a6356', label: 'wheelchair beggar', category: 'pedestrian', walk: true },
   vendor:    { damage: DAMAGE.animal,  collectible: false, depth: 3, color: '#c0392b', label: 'flower & fruit vendor', category: 'pedestrian', walk: true },
   peanutcart:{ damage: DAMAGE.traffic, collectible: false, depth: 4, color: '#b5651d', label: 'peanut cart', category: 'pedestrian', walk: true },
+  // Roadside broom-selling rasta — walks across the road like the other street vendors.
+  broomman:  { damage: DAMAGE.animal,  collectible: false, depth: 3, color: '#3a6a3a', label: 'broom seller', category: 'pedestrian', walk: true },
   stall:    { damage: DAMAGE.traffic, collectible: false, depth: 4, color: '#7a4a22', label: 'vendor stall' },
   slick:    { damage: DAMAGE.bump,    collectible: false, depth: 3, color: '#3a4a6a', label: 'wet slick' },
   bump:     { damage: DAMAGE.bump,    collectible: false, depth: 2, color: '#8a8a8a', label: 'sleeping policeman' },
@@ -26,6 +28,9 @@ export const HAZARD_TYPES = {
   dog:      { damage: DAMAGE.animal,  collectible: false, depth: 3, color: '#9a7a4a', label: 'street dog', vz: 120, category: 'animal' },
   cat:      { damage: DAMAGE.animal,  collectible: false, depth: 2, color: '#5a5a5a', label: 'cat', vz: 160, category: 'animal' },
   cattle:   { damage: DAMAGE.traffic, collectible: false, depth: 5, color: '#5a4636', label: 'stray cattle', category: 'animal' },
+  // Donkey coconut cart — a slow rural road-occupant (scrolls like a static obstacle, no vz).
+  // Traffic-tier hit; rare and rural-only (only listed in the two country stages).
+  coconutcart:{ damage: DAMAGE.traffic, collectible: false, depth: 5, color: '#9a6a34', label: 'coconut cart', category: 'traffic' },
   // soapy-can windscreen youth — only spawns when you're driving a car. Minor
   // scrape damage, but costs you coins (`coinLoss` handled in run.js).
   wiper:    { damage: DAMAGE.wiper,   collectible: false, depth: 3, color: '#5aa0c0', label: 'windscreen youth', coinLoss: true, category: 'pedestrian' },

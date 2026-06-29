@@ -12,6 +12,8 @@ export const STAGES = [
       { type: 'taxi', weight: 3 }, { type: 'dog', weight: 2 },
       { type: 'jaywalker', weight: 2 }, { type: 'goat', weight: 2 },
       { type: 'police', weight: 1 },                            // rural — police only now and then
+      // rural roadside life: the broom-seller walks, the donkey coconut cart is a rare sight
+      { type: 'broomman', weight: 1.5 }, { type: 'coconutcart', weight: 0.5 },
       { type: 'tools', weight: 3 }, { type: 'water', weight: 1 }
     ]
   },
@@ -27,6 +29,8 @@ export const STAGES = [
       { type: 'taxi', weight: 3 }, { type: 'coaster', weight: 2 }, { type: 'dog', weight: 2 },
       { type: 'cat', weight: 1 }, { type: 'jaywalker', weight: 2 },
       { type: 'police', weight: 1 },                            // rural — police only now and then
+      // rural roadside life: the broom-seller walks, the donkey coconut cart is a rare sight
+      { type: 'broomman', weight: 1.5 }, { type: 'coconutcart', weight: 0.5 },
       { type: 'tools', weight: 3 }, { type: 'water', weight: 1 }
     ]
   },
@@ -41,6 +45,7 @@ export const STAGES = [
       { type: 'coaster', weight: 3 }, { type: 'jaywalker', weight: 2 },
       { type: 'dog', weight: 2 }, { type: 'cat', weight: 1 },
       { type: 'police', weight: 2 },                            // tourist strip — a fair police presence
+      { type: 'broomman', weight: 1 },                          // broom-seller works the strip too (no donkey cart here)
       { type: 'tools', weight: 3 }, { type: 'water', weight: 1 }
     ]
   },
@@ -58,6 +63,7 @@ export const STAGES = [
       { type: 'police', weight: 3 },                            // urban — police out in force
       // New Kingston street life (all walk across the road)
       { type: 'beggar', weight: 1 }, { type: 'vendor', weight: 2 }, { type: 'peanutcart', weight: 1 },
+      { type: 'broomman', weight: 1 },                          // broom-seller among the street vendors (no donkey cart in the city)
       { type: 'tools', weight: 3 }, { type: 'water', weight: 1 }
     ]
   }

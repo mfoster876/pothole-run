@@ -22,6 +22,8 @@ export function drawEntity(ctx, type, sx, sy, size, seed = 0.137, value = 1) {
     case 'beggar': drawBeggar(ctx, sx, sy, s); break;
     case 'vendor': drawVendor(ctx, sx, sy, s); break;
     case 'peanutcart': drawPeanutCart(ctx, sx, sy, s); break;
+    case 'broomman': drawBroomMan(ctx, sx, sy, s); break;
+    case 'coconutcart': drawCoconutCart(ctx, sx, sy, s); break;
     case 'sunlight': drawSunlight(ctx, sx, sy, s, seed); break;
     case 'police': drawPolice(ctx, sx, sy, s); break;
     case 'wiper': wiperYouth(ctx, sx, sy, s, seed); break;
@@ -46,11 +48,11 @@ export function drawEntity(ctx, type, sx, sy, size, seed = 0.137, value = 1) {
     case 'cakesoap':    cakeSoap(ctx, sx, sy, s); break;
     case 'currypowder': curryPowderBag(ctx, sx, sy, s); break;
     case 'toothpaste':  toothpasteTube(ctx, sx, sy, s); break;
-    // School Yute wholesome items
-    case 'books':      drinkBottle(ctx, sx, sy, s, '#c0451f', '#7a2810', 'BK'); break;
-    case 'stationery': drinkCan(ctx, sx, sy, s, '#1f9ad9', '#0f5e8a', 'ST'); break;
-    case 'bagjuice':   drinkCan(ctx, sx, sy, s, '#e23f7a', '#9a1f4a', 'BJ'); break;
-    case 'lasco':      drinkBottle(ctx, sx, sy, s, '#f0d8a0', '#bca060', 'LA'); break;
+    // School Yute wholesome items — dedicated icons of the real things
+    case 'books':      drawBookStack(ctx, sx, sy, s); break;
+    case 'stationery': drawStationery(ctx, sx, sy, s); break;
+    case 'bagjuice':   drawBagJuice(ctx, sx, sy, s); break;
+    case 'lasco':      drawLasco(ctx, sx, sy, s); break;
     // School Yute "negative temptation" pickups (avoid)
     case 'bleaching':  bleachingCream(ctx, sx, sy, s); break;
     case 'tightpants': tightPants(ctx, sx, sy, s); break;
@@ -972,6 +974,269 @@ function drawFruit(ctx, x, y, s) {
   ctx.beginPath(); ctx.moveTo(x + s * 0.06, y - s * 0.5); ctx.lineTo(x + s * 0.12, y - s * 0.62); ctx.stroke();
   ctx.fillStyle = '#4a9a34';
   ctx.beginPath(); ctx.ellipse(x + s * 0.2, y - s * 0.64, s * 0.12, s * 0.06, 0.5, 0, Math.PI * 2); ctx.fill();
+}
+
+// ============================================================================
+// School-Yute wholesome pickups — dedicated icons of the actual items
+// ============================================================================
+
+// ---- bag juice: a heat-sealed clear-plastic sachet of bright juice (a Jamaican
+// "suck-suck" / Bigga bag juice) — crimped seals top & bottom, coloured liquid,
+// a sheen on the plastic and a drip at the bitten corner.
+function drawBagJuice(ctx, x, y, s) {
+  const w = s * 0.62, h = s * 0.94, bx = x - w * 0.5, by = y - h;
+  const juice = '#e23f7a', juiceDk = '#9a1f4a';
+  // ground shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.20)'; ellipsePath(ctx, x + s * 0.04, y + s * 0.05, w * 0.5, s * 0.08); ctx.fill();
+  // clear plastic envelope
+  rrectSprite(ctx, bx, by, w, h, w * 0.16);
+  ctx.fillStyle = 'rgba(226,236,240,0.55)'; ctx.fill();
+  ctx.strokeStyle = 'rgba(120,140,150,0.85)'; ctx.lineWidth = Math.max(1, s * 0.04); ctx.stroke();
+  // juice fill (most of the bag) with a darker settled layer at the bottom
+  rrectSprite(ctx, bx + w * 0.10, by + h * 0.16, w * 0.80, h * 0.74, w * 0.12);
+  ctx.fillStyle = juice; ctx.fill();
+  rrectSprite(ctx, bx + w * 0.10, by + h * 0.58, w * 0.80, h * 0.32, w * 0.12);
+  ctx.fillStyle = juiceDk; ctx.fill();
+  // crimped heat-seal bands (ribbed) top & bottom
+  ctx.fillStyle = '#dfe7ea';
+  ctx.fillRect(bx, by + h * 0.02, w, h * 0.12);
+  ctx.fillRect(bx, by + h * 0.88, w, h * 0.10);
+  ctx.strokeStyle = 'rgba(150,165,170,0.9)'; ctx.lineWidth = 1;
+  for (let i = 1; i < 6; i++) {
+    const lx = bx + (w / 6) * i;
+    ctx.beginPath(); ctx.moveTo(lx, by + h * 0.03); ctx.lineTo(lx, by + h * 0.13); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(lx, by + h * 0.89); ctx.lineTo(lx, by + h * 0.97); ctx.stroke();
+  }
+  // sheen down one side of the plastic
+  ctx.fillStyle = 'rgba(255,255,255,0.45)';
+  ctx.fillRect(bx + w * 0.18, by + h * 0.20, w * 0.10, h * 0.58);
+  // a drip at the bitten top-right corner (it's been opened)
+  ctx.fillStyle = juice;
+  ctx.beginPath(); ctx.arc(bx + w * 0.84, by + h * 0.20, s * 0.045, 0, Math.PI * 2); ctx.fill();
+}
+
+// ---- book stack: three school books stacked, coloured covers, cream page-edges,
+// spines on the left — clearly books, not a bottle.
+function drawBookStack(ctx, x, y, s) {
+  ctx.fillStyle = 'rgba(0,0,0,0.22)'; ellipsePath(ctx, x + s * 0.04, y + s * 0.05, s * 0.64, s * 0.1); ctx.fill();
+  const layers = [
+    { w: 1.24, h: 0.30, c: '#2f6f3a', d: '#1c4a25', dx: 0.00 },  // green (bottom)
+    { w: 1.06, h: 0.28, c: '#c0451f', d: '#7a2810', dx: 0.12 },  // red
+    { w: 0.90, h: 0.26, c: '#1f5f9a', d: '#123f68', dx: -0.05 }, // blue (top)
+  ];
+  let baseY = y;
+  for (const L of layers) {
+    const w = s * L.w, h = s * L.h, bx = x - w * 0.5 + s * L.dx, top = baseY - h;
+    // cover
+    rrectSprite(ctx, bx, top, w, h, h * 0.18); ctx.fillStyle = L.c; ctx.fill();
+    ctx.strokeStyle = L.d; ctx.lineWidth = Math.max(1, s * 0.03); ctx.stroke();
+    // cream page block along the bottom front
+    ctx.fillStyle = '#efe6cf'; ctx.fillRect(bx + w * 0.06, top + h * 0.60, w * 0.88, h * 0.28);
+    ctx.strokeStyle = 'rgba(170,155,120,0.8)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(bx + w * 0.06, top + h * 0.73); ctx.lineTo(bx + w * 0.94, top + h * 0.73); ctx.stroke();
+    // spine band on the left
+    ctx.fillStyle = L.d; ctx.fillRect(bx, top, w * 0.12, h);
+    // title slip on the cover
+    ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.fillRect(bx + w * 0.30, top + h * 0.12, w * 0.5, h * 0.16);
+    baseY = top + h * 0.10;  // next book sits on top with a slight overlap
+  }
+}
+
+// ---- stationery: a spiral notebook with a yellow pencil lying across it ----
+function drawStationery(ctx, x, y, s) {
+  ctx.fillStyle = 'rgba(0,0,0,0.20)'; ellipsePath(ctx, x + s * 0.04, y + s * 0.05, s * 0.6, s * 0.09); ctx.fill();
+  const w = s * 1.02, h = s * 1.18, nx = x - w * 0.5, ny = y - h;
+  // notebook cover
+  rrectSprite(ctx, nx, ny, w, h, s * 0.06); ctx.fillStyle = '#1f9ad9'; ctx.fill();
+  ctx.strokeStyle = '#0f5e8a'; ctx.lineWidth = Math.max(1, s * 0.04); ctx.stroke();
+  // ruled white label area
+  ctx.fillStyle = '#f4f7fb'; rrectSprite(ctx, nx + w * 0.18, ny + h * 0.14, w * 0.68, h * 0.7, s * 0.03); ctx.fill();
+  ctx.strokeStyle = 'rgba(120,150,170,0.7)'; ctx.lineWidth = 1;
+  for (let i = 1; i <= 4; i++) {
+    const ly = ny + h * 0.14 + (h * 0.7) * (i / 5);
+    ctx.beginPath(); ctx.moveTo(nx + w * 0.22, ly); ctx.lineTo(nx + w * 0.8, ly); ctx.stroke();
+  }
+  // spiral binding down the left
+  ctx.strokeStyle = '#9aa3ab'; ctx.lineWidth = Math.max(1.5, s * 0.05);
+  for (let i = 0; i < 7; i++) {
+    const sy = ny + h * 0.08 + (h * 0.84) * (i / 6);
+    ctx.beginPath(); ctx.arc(nx + w * 0.07, sy, s * 0.05, Math.PI * 0.5, Math.PI * 1.5); ctx.stroke();
+  }
+  // a yellow pencil lying diagonally across the cover
+  ctx.save(); ctx.translate(x + s * 0.05, y - h * 0.5); ctx.rotate(-0.6);
+  const pl = s * 1.04, pw = s * 0.14;
+  ctx.fillStyle = '#f0c020'; ctx.fillRect(-pl * 0.5, -pw * 0.5, pl * 0.80, pw);          // body
+  ctx.fillStyle = '#d8a800'; ctx.fillRect(-pl * 0.5, 0, pl * 0.80, pw * 0.5);            // underside shade
+  // sharpened wood tip + graphite
+  ctx.fillStyle = '#d8b070'; ctx.beginPath(); ctx.moveTo(pl * 0.30, -pw * 0.5); ctx.lineTo(pl * 0.46, 0); ctx.lineTo(pl * 0.30, pw * 0.5); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#2a2a2a'; ctx.beginPath(); ctx.moveTo(pl * 0.41, -pw * 0.16); ctx.lineTo(pl * 0.46, 0); ctx.lineTo(pl * 0.41, pw * 0.16); ctx.closePath(); ctx.fill();
+  // ferrule + pink eraser
+  ctx.fillStyle = '#c0c4c8'; ctx.fillRect(-pl * 0.5, -pw * 0.5, pl * 0.06, pw);
+  ctx.fillStyle = '#e88aa0'; ctx.fillRect(-pl * 0.5 - s * 0.06, -pw * 0.5, s * 0.06, pw);
+  ctx.restore();
+}
+
+// ---- Lasco: a foil food-drink sachet (the powdered shake) — red/white packet ----
+function drawLasco(ctx, x, y, s) {
+  ctx.fillStyle = 'rgba(0,0,0,0.20)'; ellipsePath(ctx, x + s * 0.04, y + s * 0.05, s * 0.5, s * 0.08); ctx.fill();
+  const w = s * 0.74, h = s * 1.12, bx = x - w * 0.5, by = y - h;
+  // crimped top seal (ribbed)
+  ctx.fillStyle = '#d8d8d8'; ctx.fillRect(bx - s * 0.02, by, w + s * 0.04, h * 0.12);
+  ctx.strokeStyle = 'rgba(150,150,150,0.9)'; ctx.lineWidth = 1;
+  for (let i = 1; i < 7; i++) { const lx = bx + (w / 7) * i; ctx.beginPath(); ctx.moveTo(lx, by); ctx.lineTo(lx, by + h * 0.12); ctx.stroke(); }
+  // red packet body
+  rrectSprite(ctx, bx, by + h * 0.10, w, h * 0.86, s * 0.04); ctx.fillStyle = '#cf2030'; ctx.fill();
+  ctx.strokeStyle = '#8a121c'; ctx.lineWidth = Math.max(1, s * 0.04); ctx.stroke();
+  // white label band with brand text
+  ctx.fillStyle = '#f4f4f4'; ctx.fillRect(bx, by + h * 0.40, w, h * 0.26);
+  if (s >= 14) {
+    ctx.fillStyle = '#cf2030'; ctx.font = '700 ' + Math.round(s * 0.18) + 'px "Arial", "Helvetica", sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('LASCO', x, by + h * 0.53);
+  }
+  // a little glass-of-shake icon below the band
+  ctx.fillStyle = '#f0d8a0'; rrectSprite(ctx, x - w * 0.14, by + h * 0.70, w * 0.28, h * 0.16, s * 0.02); ctx.fill();
+  // foil sheen
+  ctx.fillStyle = 'rgba(255,255,255,0.30)'; ctx.fillRect(bx + w * 0.14, by + h * 0.14, w * 0.1, h * 0.7);
+}
+
+// ============================================================================
+// Roadside characters — broom-selling rasta + the donkey coconut cart
+// ============================================================================
+
+// ---- broom man: a rasta walking the road selling brooms — a knitted red/gold/green
+// tam with locks, and a bundle of light-brown wooden broom handles slung over the
+// shoulder with their dried-brown-leaf heads splayed up.
+function drawBroomMan(ctx, x, y, s) {
+  // the man, in an earth-tone shirt
+  person(ctx, x, y, s, '#3a6a3a');
+
+  // ---- bundle of brooms slung over the (viewer-left) shoulder, angled up-right ----
+  const sxk = x - s * 0.18, syk = y - s * 0.82;     // shoulder anchor
+  const handle = '#c8a86a', handleDk = '#a07c40', leaf = '#8a6a38', leafDk = '#5f481f';
+  for (let i = 0; i < 4; i++) {
+    const sp = (i - 1.5) * 0.07, ang = -0.7 + sp;
+    const ex = sxk + Math.cos(ang) * s * 1.5, ey = syk + Math.sin(ang) * s * 1.5;
+    ctx.strokeStyle = i % 2 ? handle : handleDk; ctx.lineWidth = Math.max(1.5, s * 0.06); ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(sxk, syk); ctx.lineTo(ex, ey); ctx.stroke();
+    // dried-leaf broom head splayed at the top end
+    ctx.strokeStyle = i % 2 ? leaf : leafDk; ctx.lineWidth = Math.max(1, s * 0.03);
+    for (let j = 0; j < 5; j++) {
+      const fa = ang + (j - 2) * 0.16;
+      ctx.beginPath(); ctx.moveTo(ex, ey); ctx.lineTo(ex + Math.cos(fa) * s * 0.42, ey + Math.sin(fa) * s * 0.42); ctx.stroke();
+    }
+  }
+  ctx.lineCap = 'butt';
+  // a tie binding the handles just past the shoulder
+  ctx.strokeStyle = '#5a3a18'; ctx.lineWidth = Math.max(1.5, s * 0.05);
+  ctx.beginPath(); ctx.arc(sxk + s * 0.34, syk - s * 0.34, s * 0.11, 0, Math.PI * 2); ctx.stroke();
+
+  // ---- knitted RASTA TAM over the crown, with a couple of locks ----
+  ctx.fillStyle = '#1f7a34';
+  ctx.beginPath(); ctx.arc(x, y - s * 1.10, s * 0.27, Math.PI * 1.02, Math.PI * 1.98); ctx.fill();
+  ctx.fillStyle = '#f0c020'; ctx.fillRect(x - s * 0.27, y - s * 1.15, s * 0.54, s * 0.045);
+  ctx.fillStyle = '#c0241c'; ctx.fillRect(x - s * 0.27, y - s * 1.10, s * 0.54, s * 0.045);
+  ctx.fillStyle = '#15110a'; ctx.fillRect(x - s * 0.24, y - s * 1.04, s * 0.48, s * 0.04); // headband
+  ctx.strokeStyle = '#1a120a'; ctx.lineWidth = Math.max(1.5, s * 0.05); ctx.lineCap = 'round';
+  for (const lx of [-0.2, 0.2]) {
+    ctx.beginPath(); ctx.moveTo(x + s * lx, y - s * 1.02);
+    ctx.quadraticCurveTo(x + s * lx * 1.25, y - s * 0.9, x + s * lx, y - s * 0.76); ctx.stroke();
+  }
+  ctx.lineCap = 'butt';
+}
+
+// ---- coconut cart: a tired old donkey hauling a wooden cart piled with coconuts,
+// a straw-hatted higgler driving it and bawling "Coconut!". A rare rural sight.
+function drawCoconutCart(ctx, x, y, s) {
+  const donkey = '#9a9286', donkeyDk = '#6f685d';
+  const wood = '#9a6a34', woodDk = '#6a4820';
+  // long ground shadow under donkey + cart
+  ctx.fillStyle = 'rgba(0,0,0,0.22)'; ellipsePath(ctx, x, y + s * 0.05, s * 1.5, s * 0.13); ctx.fill();
+
+  // ===== DONKEY (left) — head drooping low, old & tired =====
+  const dx = x - s * 1.05, by = y - s * 0.5;
+  ctx.strokeStyle = donkeyDk; ctx.lineWidth = Math.max(1.5, s * 0.1); ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(dx - s * 0.2, by); ctx.lineTo(dx - s * 0.22, y);
+  ctx.moveTo(dx + s * 0.02, by); ctx.lineTo(dx + s * 0.0, y);
+  ctx.moveTo(dx + s * 0.18, by); ctx.lineTo(dx + s * 0.2, y);
+  ctx.moveTo(dx + s * 0.34, by); ctx.lineTo(dx + s * 0.36, y);
+  ctx.stroke();
+  // sway-backed body
+  ctx.beginPath(); ctx.ellipse(dx + s * 0.08, by - s * 0.05, s * 0.42, s * 0.24, 0.06, 0, Math.PI * 2);
+  ctx.fillStyle = donkey; ctx.fill();
+  ctx.beginPath(); ctx.ellipse(dx + s * 0.08, by + s * 0.06, s * 0.36, s * 0.12, 0, 0, Math.PI * 2);
+  ctx.fillStyle = donkeyDk; ctx.fill();   // belly shadow
+  // rib hints
+  ctx.strokeStyle = 'rgba(80,72,60,0.5)'; ctx.lineWidth = Math.max(1, s * 0.02);
+  for (const rx of [-0.06, 0.04, 0.14]) { ctx.beginPath(); ctx.moveTo(dx + s * rx, by - s * 0.14); ctx.lineTo(dx + s * rx, by + s * 0.04); ctx.stroke(); }
+  // drooping neck + low head
+  ctx.strokeStyle = donkey; ctx.lineWidth = Math.max(2, s * 0.2); ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(dx - s * 0.28, by - s * 0.12);
+  ctx.quadraticCurveTo(dx - s * 0.5, by - s * 0.02, dx - s * 0.56, by + s * 0.18); ctx.stroke();
+  ctx.fillStyle = donkey; ctx.beginPath(); ctx.ellipse(dx - s * 0.6, by + s * 0.24, s * 0.16, s * 0.1, 0.5, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = donkeyDk; ctx.beginPath(); ctx.ellipse(dx - s * 0.66, by + s * 0.3, s * 0.07, s * 0.06, 0.5, 0, Math.PI * 2); ctx.fill();
+  // long ears flopped down (tired)
+  ctx.strokeStyle = donkey; ctx.lineWidth = Math.max(1.5, s * 0.07);
+  ctx.beginPath(); ctx.moveTo(dx - s * 0.54, by + s * 0.12); ctx.lineTo(dx - s * 0.62, by + s * 0.3); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(dx - s * 0.5, by + s * 0.12); ctx.lineTo(dx - s * 0.5, by + s * 0.32); ctx.stroke();
+  // sad half-closed eye
+  ctx.fillStyle = '#1a1208'; ctx.beginPath(); ctx.arc(dx - s * 0.58, by + s * 0.2, Math.max(1, s * 0.03), 0, Math.PI * 2); ctx.fill();
+  // tail
+  ctx.strokeStyle = donkeyDk; ctx.lineWidth = Math.max(1, s * 0.04);
+  ctx.beginPath(); ctx.moveTo(dx + s * 0.48, by - s * 0.16); ctx.lineTo(dx + s * 0.56, by + s * 0.06); ctx.stroke();
+  ctx.lineCap = 'butt';
+
+  // ===== shaft from donkey back to the cart =====
+  ctx.strokeStyle = woodDk; ctx.lineWidth = Math.max(1.5, s * 0.05);
+  ctx.beginPath(); ctx.moveTo(dx + s * 0.4, by + s * 0.05); ctx.lineTo(x + s * 0.05, y - s * 0.42); ctx.stroke();
+
+  // ===== CART (right) =====
+  const cw = s * 1.0, ch = s * 0.5, cbx = x + s * 0.05, cby = y - s * 0.86;
+  rrectSprite(ctx, cbx, cby, cw, ch, s * 0.04); ctx.fillStyle = wood; ctx.fill();
+  ctx.strokeStyle = woodDk; ctx.lineWidth = Math.max(1, s * 0.04); ctx.stroke();
+  ctx.strokeStyle = 'rgba(60,40,16,0.5)'; ctx.lineWidth = 1;
+  for (let i = 1; i < 4; i++) { ctx.beginPath(); ctx.moveTo(cbx, cby + ch * (i / 4)); ctx.lineTo(cbx + cw, cby + ch * (i / 4)); ctx.stroke(); }
+  // big spoked wheel (near side)
+  const wx = cbx + cw * 0.5, wy = y - s * 0.04, wr = s * 0.3;
+  ctx.fillStyle = '#2a1c0e'; ctx.beginPath(); ctx.arc(wx, wy, wr, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = wood; ctx.beginPath(); ctx.arc(wx, wy, wr * 0.82, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = woodDk; ctx.lineWidth = Math.max(1.5, s * 0.05);
+  for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2; ctx.beginPath(); ctx.moveTo(wx, wy); ctx.lineTo(wx + Math.cos(a) * wr * 0.78, wy + Math.sin(a) * wr * 0.78); ctx.stroke(); }
+  ctx.fillStyle = '#3a2810'; ctx.beginPath(); ctx.arc(wx, wy, wr * 0.16, 0, Math.PI * 2); ctx.fill();
+  // ===== heap of COCONUTS piled in the bed =====
+  const heap = [
+    [-0.3, -0.08, '#3f7a2a'], [-0.1, -0.16, '#6a4a24'], [0.1, -0.1, '#3f7a2a'],
+    [0.3, -0.14, '#7a5a2a'], [0.0, -0.28, '#4f8a30'], [0.2, -0.3, '#6a4a24'], [-0.18, -0.32, '#3f7a2a'],
+  ];
+  for (const [ox, oy, c] of heap) {
+    const ccx = cbx + cw * 0.5 + cw * ox, ccy = cby + ch * 0.2 + s * oy;
+    ctx.fillStyle = c; ctx.beginPath(); ctx.ellipse(ccx, ccy, s * 0.16, s * 0.18, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.18)'; ctx.beginPath(); ctx.arc(ccx - s * 0.05, ccy - s * 0.06, s * 0.04, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.25)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.ellipse(ccx, ccy, s * 0.16, s * 0.18, 0, 0, Math.PI * 2); ctx.stroke();
+  }
+  // ===== DRIVER perched at the back of the cart =====
+  const mx = cbx + cw * 0.92, mtop = y - s * 0.5;
+  ctx.fillStyle = '#b06a2a'; rrectSprite(ctx, mx - s * 0.12, mtop - s * 0.3, s * 0.24, s * 0.4, s * 0.05); ctx.fill();
+  ctx.fillStyle = '#7a5030'; ctx.beginPath(); ctx.arc(mx, mtop - s * 0.42, s * 0.13, 0, Math.PI * 2); ctx.fill();
+  // straw hat
+  ctx.fillStyle = '#d8b56a'; ctx.beginPath(); ctx.ellipse(mx, mtop - s * 0.5, s * 0.22, s * 0.06, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(mx, mtop - s * 0.52, s * 0.11, Math.PI, 0); ctx.fill();
+  // arm with a switch toward the donkey
+  ctx.strokeStyle = '#7a5030'; ctx.lineWidth = Math.max(1.5, s * 0.06); ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(mx - s * 0.08, mtop - s * 0.2); ctx.lineTo(mx - s * 0.3, mtop - s * 0.34); ctx.stroke();
+  ctx.lineCap = 'butt';
+
+  // ===== "Coconut!" shout-bubble (only when big enough to read) =====
+  if (s >= 16) {
+    const bw = s * 1.0, bh = s * 0.42, bx2 = mx - bw * 0.2, btop = mtop - s * 1.12;
+    ctx.fillStyle = '#ffffff'; rrectSprite(ctx, bx2, btop, bw, bh, s * 0.1); ctx.fill();
+    ctx.strokeStyle = '#1a1a1a'; ctx.lineWidth = Math.max(1, s * 0.03); ctx.stroke();
+    // tail pointing down to the driver
+    ctx.fillStyle = '#ffffff'; ctx.beginPath();
+    ctx.moveTo(bx2 + bw * 0.18, btop + bh); ctx.lineTo(bx2 + bw * 0.08, btop + bh + s * 0.16); ctx.lineTo(bx2 + bw * 0.32, btop + bh); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#1a6a2a'; ctx.font = '700 ' + Math.round(s * 0.24) + 'px "Arial", "Helvetica", sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('Coconut!', bx2 + bw * 0.5, btop + bh * 0.5);
+  }
 }
 
 // ============================================================================
