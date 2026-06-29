@@ -13,17 +13,31 @@ function limitForStage(stage) {
 // mirror each other — different props, and signs/billboards land at different points.
 const FAR_PHASE = 7;
 
+// Roadside signs read best as STABLE, distant billboards. Up close the projection blows a
+// flat panel up to thousands of px and (on bends) the curve-offset swings it across the
+// view — which looked like the billboard "glitching". So we fade signs out before that
+// close pass and cull it entirely, leaving a clean far-to-mid billboard.
+export const SIGN_NEAR = 520, SIGN_FADE = 920;   // camZ: 0 alpha below NEAR → full at FADE
+export function signFade(camZ) {
+  if (camZ < SIGN_NEAR) return 0;
+  return Math.min(1, (camZ - SIGN_NEAR) / (SIGN_FADE - SIGN_NEAR));
+}
+
 // Draw one roadside slot: either a road-safety sign (speed roundel / billboard) when the
-// cadence calls for one at this row, or the stage's own prop. Returns true if a sign was
-// drawn (so the caller can skip the prop). `limit` is the posted km/h for speed signs.
+// cadence calls for one at this row, or the stage's own prop. `limit` is the posted km/h.
 function drawRoadside(ctx, kind, normX, camZ, position, W, H, rowIdx, limit) {
   const feat = roadsideFeature(rowIdx, limit);
   if (!feat) { drawProp(ctx, kind, normX, camZ, position, W, H, rowIdx); return; }
+  const fade = signFade(camZ);
+  if (fade <= 0) return;                       // skip the glitchy close-up balloon/swing
   const p = projectEntity(normX, camZ, W, H);
   if (!p.visible || p.y < H * 0.5 || p.size < 2) return;
   p.x += curveOffsetAt(position, camZ);
+  ctx.save();
+  ctx.globalAlpha *= fade;                     // smooth fade-out as it nears
   if (feat.kind === 'speed') drawSpeedLimit(ctx, p.x, p.y, p.size, feat.limit);
   else drawSafetyBillboard(ctx, p.x, p.y, p.size, feat.idx);
+  ctx.restore();
 }
 
 // Roadside props that scroll with the road to give depth, speed and a sense of

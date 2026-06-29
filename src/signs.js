@@ -40,16 +40,14 @@ export function roadsideFeature(rowIdx, limit) {
   return null;
 }
 
-// Set ctx.font to the largest bold size (≤ startPx) at which `text` fits within maxW, so
-// a billboard line never overruns its panel at any draw distance. Falls back gracefully
-// where measureText is unavailable (returns startPx).
+// Set ctx.font to a bold size (≤ startPx) at which `text` fits within maxW. Sized
+// DETERMINISTICALLY from the text length and panel width — no per-frame measureText loop
+// (which was costly across many billboards and made the type jitter as the sign scaled).
+// ~0.62em average advance for the bold sans is a safe estimate for these short caps lines.
 function fitFont(ctx, text, maxW, startPx) {
-  let size = startPx;
-  for (; size > 5; size -= 1) {
-    ctx.font = '700 ' + Math.round(size) + 'px "Arial", "Helvetica", sans-serif';
-    const m = ctx.measureText ? ctx.measureText(text) : null;
-    if (!m || !(m.width > maxW)) break;
-  }
+  const byWidth = maxW / Math.max(1, text.length * 0.62);
+  const size = Math.max(5, Math.min(startPx, byWidth));
+  ctx.font = '700 ' + Math.round(size) + 'px "Arial", "Helvetica", sans-serif';
   return size;
 }
 
