@@ -13,13 +13,15 @@ function limitForStage(stage) {
 // mirror each other — different props, and signs/billboards land at different points.
 const FAR_PHASE = 7;
 
-// This is a road-SAFETY sim, so the billboards must stay readable through their best,
-// biggest size — they carry the whole message. We keep them at full opacity all the way in
-// and only fade at the GENUINE extreme close-pass (camZ < ~360), where the projection blows a
-// flat panel past the screen and an off-road sign at normX ~2 has already slid off the edge
-// anyway. (The earlier text "jumping" was a separate bug — per-frame measureText font-fitting,
-// now fixed deterministically in signs.js — not the close-pass, so we no longer cull early.)
-export const SIGN_NEAR = 180, SIGN_FADE = 360;   // camZ: 0 alpha below NEAR → full at FADE
+// This is a road-SAFETY sim, so the billboards must stay readable through their best, biggest
+// size — they carry the whole message. Full opacity holds in to camZ 560 (~392px tall, a big
+// readable sign at ~0.7× the screen), then fades as the panel grows toward screen-filling, and
+// culls below camZ 300 (~730px), the genuine close-pass balloon where an off-road sign at
+// normX ~2 has slid off the edge anyway. This keeps the message on screen LONGER and LARGER
+// than a far-only cull would, without letting a green wall loom across the view.
+// (The earlier text "jumping" was a SEPARATE bug — per-frame measureText font-fitting, now
+// fixed deterministically in signs.js — not the close-pass, so we don't over-cull to mask it.)
+export const SIGN_NEAR = 300, SIGN_FADE = 560;   // camZ: 0 alpha below NEAR → full at FADE
 export function signFade(camZ) {
   if (camZ < SIGN_NEAR) return 0;
   return Math.min(1, (camZ - SIGN_NEAR) / (SIGN_FADE - SIGN_NEAR));

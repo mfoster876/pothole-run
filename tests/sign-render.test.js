@@ -21,12 +21,15 @@ test('signs fade in smoothly and reach full alpha at distance', () => {
 });
 
 test('safety billboards stay FULLY readable through their best size (no early fade-out)', () => {
-  // The sim's whole point is the message — billboards must be solid at the distance they
-  // read biggest, not faded. A readable mid/near approach (camZ 800, ~270px tall) must be
-  // full alpha; only the genuine extreme close-pass (well below SIGN_NEAR) may be culled.
-  assert.equal(signFade(800), 1, 'still solid where the message reads best');
+  // The sim's whole point is the message — billboards must be solid at the distances they read
+  // best (camZ 640–800 ≈ 270–340px tall), and only fade as they grow into a screen-filling wall
+  // on the final approach. Guard both ends: solid through the near approach, but NOT held solid
+  // so close that a >screen-height panel renders at full opacity (the old "balloon" artifact).
+  assert.equal(signFade(800), 1, 'solid where the message reads best');
+  assert.equal(signFade(640), 1, 'still solid through the near approach');
   assert.equal(signFade(SIGN_FADE + 1), 1, 'solid the instant it clears the fade band');
-  assert.ok(SIGN_FADE <= 400, 'fade band confined to the extreme close-pass, not mid-distance');
+  assert.ok(SIGN_FADE >= 400 && SIGN_FADE <= 700,
+    'fade confined to the large/near pass — not mid-distance, not so close it goes full-wall');
 });
 
 test('fade is monotonic — no flicker between adjacent camZ steps', () => {
