@@ -43,11 +43,13 @@ export function roadsideFeature(rowIdx, limit) {
 // Set ctx.font to a bold size (≤ startPx) at which `text` fits within maxW. Sized
 // DETERMINISTICALLY from the text length and panel width — no per-frame measureText loop
 // (which was costly across many billboards and made the type jitter as the sign scaled).
+// The size is kept FRACTIONAL (no rounding): as the billboard scales toward the camera the
+// type grows perfectly smoothly, instead of snapping between integer px and visibly "jumping".
 // ~0.62em average advance for the bold sans is a safe estimate for these short caps lines.
 function fitFont(ctx, text, maxW, startPx) {
   const byWidth = maxW / Math.max(1, text.length * 0.62);
   const size = Math.max(5, Math.min(startPx, byWidth));
-  ctx.font = '700 ' + Math.round(size) + 'px "Arial", "Helvetica", sans-serif';
+  ctx.font = '700 ' + size.toFixed(2) + 'px "Arial", "Helvetica", sans-serif';
   return size;
 }
 
