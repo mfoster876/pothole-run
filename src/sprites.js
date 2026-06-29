@@ -27,7 +27,7 @@ export function drawEntity(ctx, type, sx, sy, size, seed = 0.137, value = 1) {
     case 'sunlight': drawSunlight(ctx, sx, sy, s, seed); break;
     case 'police': drawPolice(ctx, sx, sy, s); break;
     case 'wiper': wiperYouth(ctx, sx, sy, s, seed); break;
-    case 'stall': roundedBar(ctx, sx, sy, s * 1.2, s * 0.8, '#7a4a22'); break;
+    case 'stall': drawStall(ctx, sx, sy, s); break;
     case 'water':  waterBottle(ctx, sx, sy, s); break;
     case 'tools':  hardwareTools(ctx, sx, sy, s, seed); break;
     case 'coffee': coffeeBag(ctx, sx, sy, s); break;
@@ -229,6 +229,57 @@ function money(ctx, x, y, s, value) {
 }
 function roundedBar(ctx, x, y, w, h, fill) {
   ctx.fillStyle = fill; ctx.fillRect(x - w / 2, y - h, w, h);
+}
+
+// ---- vendor stall: a Jamaican roadside higgler's market stall — a wooden table of
+// produce under a blue tarp awning. Replaces the old flat brown block (which read as an
+// unfinished placeholder). `y` is the ground line; the stall is built upward from there.
+function drawStall(ctx, x, y, s) {
+  const w = s * 1.3;                 // table width
+  const legH = s * 0.5;              // table/leg height
+  const topY = y - legH;            // tabletop line
+  const lx = x - w / 2, rx = x + w / 2;
+
+  // soft ground shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.22)';
+  ellipsePath(ctx, x, y + s * 0.05, w * 0.6, s * 0.13); ctx.fill();
+
+  // wooden legs
+  const legW = Math.max(2, s * 0.11);
+  ctx.fillStyle = '#5e3f22';
+  ctx.fillRect(lx + legW * 0.4, topY, legW, legH);
+  ctx.fillRect(rx - legW * 1.4, topY, legW, legH);
+
+  // tabletop plank with a darker front edge
+  ctx.fillStyle = '#8a5a2c'; ctx.fillRect(lx, topY - s * 0.14, w, s * 0.14);
+  ctx.fillStyle = '#6e4421'; ctx.fillRect(lx, topY - s * 0.02, w, s * 0.05);
+
+  // produce laid out on the table — oranges, ackee-red, callaloo-green, yellow yam
+  const goods = ['#e08a2a', '#cf3a2a', '#3f8a3a', '#e0b020'];
+  for (let i = 0; i < 4; i++) {
+    ctx.fillStyle = goods[i];
+    ellipsePath(ctx, lx + w * (0.2 + i * 0.2), topY - s * 0.2, s * 0.13, s * 0.1); ctx.fill();
+  }
+
+  // two canopy poles rising from the back corners
+  const canY = topY - s * 0.8;
+  ctx.strokeStyle = '#5a3e22'; ctx.lineWidth = Math.max(1.5, s * 0.07); ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(lx + s * 0.12, topY - s * 0.14); ctx.lineTo(lx + s * 0.12, canY);
+  ctx.moveTo(rx - s * 0.12, topY - s * 0.14); ctx.lineTo(rx - s * 0.12, canY);
+  ctx.stroke();
+
+  // blue market-tarp awning: a slab with a sagging front valance
+  const cw = w * 1.16;
+  ctx.fillStyle = '#2f6fb0';
+  ctx.beginPath();
+  ctx.moveTo(x - cw / 2, canY);
+  ctx.lineTo(x + cw / 2, canY);
+  ctx.lineTo(x + cw / 2, canY + s * 0.13);
+  ctx.quadraticCurveTo(x, canY + s * 0.28, x - cw / 2, canY + s * 0.13);
+  ctx.closePath(); ctx.fill();
+  // sunlit top edge of the tarp
+  ctx.fillStyle = '#3f86cc'; ctx.fillRect(x - cw / 2, canY, cw, Math.max(1.5, s * 0.05));
 }
 // ---- animal figures — 12-bit lift ----
 

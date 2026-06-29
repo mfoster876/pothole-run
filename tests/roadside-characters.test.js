@@ -47,7 +47,8 @@ test('the coconut cart is rarer than the broom seller where they share a stage',
 test('redesigned pickups + the new figures all render without throwing', () => {
   // recursive stub canvas context — any property is itself, any call returns itself
   const ctx = new Proxy(function () {}, { get: () => ctx, apply: () => ctx });
-  const types = ['bagjuice', 'books', 'stationery', 'lasco', 'broomman', 'coconutcart'];
+  // 'stall' included: it must render as the higgler-stall sprite, not the old flat brown block
+  const types = ['bagjuice', 'books', 'stationery', 'lasco', 'broomman', 'coconutcart', 'stall'];
   for (const t of types) {
     for (const size of [10, 28, 64]) {   // tiny (culled detail) → large (text + bubble)
       assert.doesNotThrow(() => drawEntity(ctx, t, 480, 300, size, 0.42, 1), `${t} @ ${size}px`);
