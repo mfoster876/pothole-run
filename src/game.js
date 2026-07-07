@@ -191,7 +191,7 @@ export function createGame(audio) {
       : stage.hazardWeights.slice()
     ).concat(drinkWeightsFor(ch))
       .concat(itemWeightsFor(ch))      // character-specific bleach / wholesome items
-      .concat(negativesFor(ch))        // character-gated temptations / responsibilities
+      .concat(negativesFor(ch, stage)) // character-gated temptations / responsibilities (stage-aware)
       .concat(universalNegatives())    // unripe-ackee poison trap — bites every driver
       // Street vendors and hot street food don't trade mid-river — no fruit stands or
       // roast breadfruit floating down the Rio Cobre. (Drinks/negatives stay: bottles
