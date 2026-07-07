@@ -10,11 +10,15 @@ Date: 2026-07-07 19:55
 ## Earlier same day (see 2026-07-07-gorge-overhaul-sideswipe-tracker.md)
 Gorge overhaul, side-swipe traffic, high scores, contextual game-over titles, bleach merge, tyre-swing divers, rockfall, Holland Bamboo poles removed, unripe ackee red closed pod, full glitch sweep (clean).
 
-## Open items (Batch B — queued next, Milton's improved prompt)
-1. **Politician river injustices**: on river stages the `lightpole` negative must NOT spawn; add contextual cash-burn negatives instead — construction waste-water dumping + beach-access-rights protest (sprites, legend, ELIGIBLE gating by stage, tests).
-2. **Dog → Jamaican mongrel** redesign (research references online first).
-3. **Power-up glow**: pulsing halo around cart/driver while shield (`fx.steady`?) / invincibility (`fx.super`) is active — check which effects count as "shield".
-4. Deploy after Batch B: bump sw CACHE to v48, `npx wrangler pages deploy .` (Milton).
+## Done (Batch B)
+- **Politician river injustices**: `lightpole` AND `roadfix` are now `roadOnly` — never on the river; new riverOnly cash-burn negatives `wastewater` "Waste-Water Dump" (350k — drum-float + corrugated pipe gushing a murky plume) and `protest` "Beach Rights Protest" (200k — three placard-raising protesters in the shallows). `negativesFor(character, stage)` is stage-aware; game.js passes the stage. Sprites gallery-verified; negatives tests respec'd + new stage-aware test.
+- **Dog = Jamaican mongrel (pothound)**: lean high-carried body, rib shading, long legs/muzzle, cocked ears (one tip-kinked), white chest bib, thin curled-up tail; roadkill palette synced. Referenced the Caribbean potcake type (smooth coat, cocked ears, long face).
+- **Supercharge glow**: pulsing golden halo + rim ring wraps driver + ride while `super` (water/fruit invincibility) is active; blinks fast in the last 1.2 s as a drop warning. (`game.js` beside drawCart. Only `super` grants invincibility in resolveHits — `steady` is steering, not a shield.)
+- Suite **384/384**; headless 10-min/stage sim re-run clean; sw.js → **v48**.
+
+## Open items
+1. Deploy: `npx wrangler pages deploy .` (Milton) — sw v48 hard-swaps phones.
+2. Eye-tests (Milton): the glow in motion (grab a water bottle), first river run as the Politician (wastewater/protest spawns), mongrel + new sprites at road scale.
 
 ## Context for next session
 Repo `/Users/miltonfoster/Documents/Claude/Projects/pothole-run`, `node --test` = 383 green, preview on port 8125 (tap twice after reload; tab-background rAF freeze quirk). Negatives spawn via `negativesFor(ch)` in game.js activeWeights — that's where river gating for lightpole goes.

@@ -28,17 +28,34 @@ test('eligibility is gated to the right driver', () => {
     ['bleaching', 'tightpants', 'weed', 'molly', 'teensex']);
   assert.deepEqual(negativesFor(getCharacter('rasta')).map(n => n.type),
     ['obeah', 'pork', 'jw']);
+  // road stages: road responsibilities only — the river injustices stay off the tarmac
   assert.deepEqual(negativesFor(getCharacter('politician')).map(n => n.type),
     ['roadfix', 'constituent', 'lightpole', 'hustlerlunch', 'voter', 'contractor']);
   assert.deepEqual(negativesFor(getCharacter('conductor')).map(n => n.type),
     ['cakesoap', 'blchmix', 'blchtub', 'sunlight']);
 });
 
+test('politician responsibilities are stage-aware: river swaps road works for injustices', () => {
+  const pol = getCharacter('politician');
+  const river = negativesFor(pol, { river: true }).map(n => n.type);
+  // no fallen poles or asphalt patches floating the Rio Cobre…
+  assert.ok(!river.includes('lightpole'), 'no fallen pole on the river');
+  assert.ok(!river.includes('roadfix'), 'no asphalt patch on the river');
+  // …the river serves its own injustices instead
+  assert.ok(river.includes('wastewater'), 'construction waste-water dumping');
+  assert.ok(river.includes('protest'), 'beach access rights protest');
+  // and those injustices never litter a road run
+  const road = negativesFor(pol).map(n => n.type);
+  assert.ok(!road.includes('wastewater') && !road.includes('protest'));
+});
+
 test('every character-gated negative belongs to exactly one eligible driver', () => {
   const drivers = ['yute', 'rasta', 'politician', 'conductor', 'principal'];
   for (const id of Object.keys(NEGATIVES)) {
     if (NEGATIVES[id].universal) continue;   // universal negatives (unripe ackee) have no owner
-    const owners = drivers.filter(d => negativesFor(getCharacter(d)).some(n => n.type === id));
+    // riverOnly negatives only surface on a river stage — probe each in its habitat
+    const stage = NEGATIVES[id].riverOnly ? { river: true } : undefined;
+    const owners = drivers.filter(d => negativesFor(getCharacter(d), stage).some(n => n.type === id));
     assert.equal(owners.length, 1, `${id} owned by exactly one driver`);
   }
 });

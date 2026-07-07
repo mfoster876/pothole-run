@@ -50,10 +50,10 @@ export const NEGATIVES = {
 
   // ── Politician — "responsibilities" that cost RIDICULOUS fixed sums (he earns huge,
   //    so doing his job bleeds huge — these can plunge him into deep debt). ──
-  roadfix:      { id: 'roadfix',      label: 'Road Repairs',   char: 'politician', cashBurn: 500000, color: '#e8821e' },
+  roadfix:      { id: 'roadfix',      label: 'Road Repairs',   char: 'politician', cashBurn: 500000, color: '#e8821e', roadOnly: true },
   contractor:   { id: 'contractor',   label: 'Contractor',     char: 'politician', cashBurn: 750000, color: '#e8c84a' },
-  // roadOnly / riverOnly scope a responsibility to where it makes sense: poles fall on
-  // roads; the river serves its own injustices to fix (see negativesFor).
+  // roadOnly / riverOnly scope a responsibility to where it makes sense: poles fall and
+  // asphalt gets patched on ROADS; the river serves its own injustices (see negativesFor).
   lightpole:    { id: 'lightpole',    label: 'Fallen Pole',    char: 'politician', cashBurn: 400000, color: '#8a8f96', roadOnly: true },
   wastewater:   { id: 'wastewater',   label: 'Waste-Water Dump', char: 'politician', cashBurn: 350000, color: '#7a8578', riverOnly: true },
   protest:      { id: 'protest',      label: 'Beach Rights Protest', char: 'politician', cashBurn: 200000, color: '#c8b03a', riverOnly: true },
@@ -118,11 +118,13 @@ export function universalNegatives() {
   return UNIVERSAL.map(id => ({ type: id, weight: WEIGHTS[id] }));
 }
 
-/** { id, label } pairs of this driver's negatives — for the legend screen. */
+/** { id, label } pairs of this driver's negatives — for the legend screen.
+ *  River-scoped injustices are marked so the legend says where they lurk
+ *  (the in-run toast keeps the clean label). */
 export function eligibleNegatives(character) {
   if (!character) return [];
   const list = ELIGIBLE[character.id] || [];
-  return list.map(id => ({ id, label: NEGATIVES[id].label }));
+  return list.map(id => ({ id, label: NEGATIVES[id].label + (NEGATIVES[id].riverOnly ? ' (river)' : '') }));
 }
 
 /**

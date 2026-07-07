@@ -87,6 +87,8 @@ export function drawEntity(ctx, type, sx, sy, size, seed = 0.137, value = 1) {
     case 'roadfix':      roadworkSign(ctx, sx, sy, s); break;
     case 'constituent':  angryCitizen(ctx, sx, sy, s, seed); break;
     case 'lightpole':    fallenPole(ctx, sx, sy, s); break;
+    case 'wastewater':   wasteWaterDump(ctx, sx, sy, s); break;   // river injustice (politician)
+    case 'protest':      beachProtest(ctx, sx, sy, s); break;     // river injustice (politician)
     case 'hustlerlunch': boxLunchHustler(ctx, sx, sy, s); break;
     case 'voter':        ballotVoter(ctx, sx, sy, s); break;
     case 'contractor':   hardHatContractor(ctx, sx, sy, s); break;
@@ -2338,6 +2340,83 @@ function angryCitizen(ctx, x, y, s, seed) {
   // angry red scrawl on the sign
   ctx.strokeStyle = '#c0281e'; ctx.lineWidth = Math.max(1, s * 0.04);
   for (let i = 0; i < 2; i++) { ctx.beginPath(); ctx.moveTo(x + s * 0.14, y - s * (1.54 - i * 0.14)); ctx.lineTo(x + s * 0.58, y - s * (1.54 - i * 0.14)); ctx.stroke(); }
+}
+
+// ---- wastewater: a construction outfit's discharge pipe dumping murky waste water
+// straight into the river — corrugated pipe off an orange drum-float, grey-brown plume
+// spreading downstream. The Politician must stop and pay to shut it down. ----
+function wasteWaterDump(ctx, x, y, s) {
+  const cy = y - s * 0.30;
+  // the murky discharge plume spreading on the water (drawn first, under everything)
+  ctx.fillStyle = 'rgba(94,84,60,0.55)';
+  ellipsePath(ctx, x - s * 0.05, y + s * 0.02, s * 0.55, s * 0.14); ctx.fill();
+  ctx.fillStyle = 'rgba(120,108,78,0.45)';
+  ellipsePath(ctx, x - s * 0.28, y + s * 0.05, s * 0.26, s * 0.08); ctx.fill();
+  // dirty foam flecks riding the plume edge
+  ctx.fillStyle = 'rgba(214,206,180,0.7)';
+  for (const [dx, dy] of [[-0.42, 0.0], [-0.18, 0.08], [0.12, 0.1], [0.38, 0.04]]) {
+    ctx.beginPath(); ctx.arc(x + s * dx, y + s * dy, s * 0.035, 0, Math.PI * 2); ctx.fill();
+  }
+  // orange construction drum keeping the pipe afloat (hazard-striped)
+  ctx.fillStyle = '#d86a20';
+  rrectSprite(ctx, x + s * 0.16, cy - s * 0.12, s * 0.30, s * 0.42, s * 0.06); ctx.fill();
+  ctx.fillStyle = '#f0e8d8';
+  ctx.fillRect(x + s * 0.16, cy - s * 0.02, s * 0.30, s * 0.08);
+  ctx.strokeStyle = '#8a3c0e'; ctx.lineWidth = Math.max(1, s * 0.03);
+  rrectSprite(ctx, x + s * 0.16, cy - s * 0.12, s * 0.30, s * 0.42, s * 0.06); ctx.stroke();
+  // corrugated discharge pipe angling down into the water
+  ctx.strokeStyle = '#6a6f74'; ctx.lineWidth = Math.max(3, s * 0.16); ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(x + s * 0.30, cy - s * 0.08);
+  ctx.quadraticCurveTo(x + s * 0.02, cy - s * 0.02, x - s * 0.16, y - s * 0.06); ctx.stroke();
+  ctx.strokeStyle = '#4a4f54'; ctx.lineWidth = Math.max(1, s * 0.035);
+  for (const f of [0.25, 0.5, 0.75]) {
+    const px = x + s * 0.30 + (x - s * 0.16 - (x + s * 0.30)) * f;
+    const py = cy - s * 0.08 + (y - s * 0.06 - (cy - s * 0.08)) * f;
+    ctx.beginPath(); ctx.moveTo(px - s * 0.05, py - s * 0.07); ctx.lineTo(px + s * 0.05, py + s * 0.07); ctx.stroke();
+  }
+  // the gush hitting the river
+  ctx.strokeStyle = 'rgba(150,138,100,0.8)'; ctx.lineWidth = Math.max(2, s * 0.10);
+  ctx.beginPath(); ctx.moveTo(x - s * 0.16, y - s * 0.05);
+  ctx.quadraticCurveTo(x - s * 0.22, y - s * 0.01, x - s * 0.26, y + s * 0.03); ctx.stroke();
+  ctx.lineCap = 'butt';
+}
+
+// ---- protest: citizens standing knee-deep, placards up — beach access rights.
+// Not an enemy: an injustice the Politician must stop and answer (cash burn). ----
+function beachProtest(ctx, x, y, s) {
+  const skins = ['#7a4a28', '#5a3620', '#8a5c34'];
+  // ripples where the protesters stand in the shallows
+  ctx.strokeStyle = 'rgba(230,244,242,0.6)'; ctx.lineWidth = Math.max(1, s * 0.03);
+  for (const dx of [-0.3, 0.02, 0.32]) {
+    ctx.beginPath(); ctx.ellipse(x + s * dx, y + s * 0.02, s * 0.16, s * 0.05, 0, 0, Math.PI * 2); ctx.stroke();
+  }
+  // three protesters, middle one leading
+  for (const [i, [dx, hgt, shirt]] of [[-0.3, 0.52, '#c0382c'], [0.02, 0.62, '#f0c020'], [0.32, 0.5, '#1f7a34']].entries()) {
+    const px = x + s * dx, base = y + s * 0.02, top = base - s * hgt;
+    // torso rises out of the water (legs submerged)
+    ctx.fillStyle = shirt;
+    rrectSprite(ctx, px - s * 0.09, top + s * 0.14, s * 0.18, s * (hgt - 0.24), s * 0.04); ctx.fill();
+    // head
+    ctx.fillStyle = skins[i % 3];
+    ctx.beginPath(); ctx.arc(px, top + s * 0.07, s * 0.08, 0, Math.PI * 2); ctx.fill();
+    // raised arm gripping the placard stick
+    ctx.strokeStyle = skins[i % 3]; ctx.lineWidth = Math.max(1.5, s * 0.045); ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(px + s * 0.07, top + s * 0.20); ctx.lineTo(px + s * 0.13, top - s * 0.08); ctx.stroke();
+    // placard
+    ctx.strokeStyle = '#8a6a3a'; ctx.lineWidth = Math.max(1, s * 0.03);
+    ctx.beginPath(); ctx.moveTo(px + s * 0.13, top - s * 0.06); ctx.lineTo(px + s * 0.13, top - s * 0.24); ctx.stroke();
+    ctx.fillStyle = '#f0ead8';
+    rrectSprite(ctx, px - s * 0.02, top - s * 0.40, s * 0.30, s * 0.17, s * 0.02); ctx.fill();
+    ctx.strokeStyle = '#3a3a30'; ctx.lineWidth = Math.max(0.8, s * 0.02);
+    rrectSprite(ctx, px - s * 0.02, top - s * 0.40, s * 0.30, s * 0.17, s * 0.02); ctx.stroke();
+    // slogan scribble ("BEACH FI WI" reads as lines at road scale)
+    ctx.strokeStyle = '#c0382c'; ctx.lineWidth = Math.max(0.8, s * 0.025);
+    ctx.beginPath();
+    ctx.moveTo(px + s * 0.01, top - s * 0.34); ctx.lineTo(px + s * 0.25, top - s * 0.34);
+    ctx.moveTo(px + s * 0.01, top - s * 0.29); ctx.lineTo(px + s * 0.20, top - s * 0.29);
+    ctx.stroke();
+    ctx.lineCap = 'butt';
+  }
 }
 
 // ---- lightpole: a fallen utility pole lying across the road, lamp head ----
