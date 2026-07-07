@@ -31,6 +31,52 @@ export function drawRaft(ctx, cx, cy, s) {
   ctx.stroke();
 }
 
+// The raftsman standing on the bamboo deck (drawn in drawCart's local frame; the deck
+// itself is the drawRaft underlay whose top course sits at +0.30s). A long punting pole
+// in hand, and the little JAMAICAN FLAG flying off the side of the raft: gold diagonal
+// saltire, green top/bottom, black hoist/fly.
+function drawRaftsman(ctx, cart, s, bleach = 0) {
+  const ch = cart.character, id = ch && ch.id;
+  const skin = id === 'conductor' ? '#1c1208' : '#7a4a28';   // conductor's arms stay dark
+  const shirt = shirtColor(ch);
+  const deckY = s * 0.30;
+  // ── flag mast off the raft's right side ──
+  ctx.strokeStyle = '#8a7638'; ctx.lineWidth = Math.max(1.5, s * 0.045); ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(s * 0.74, deckY); ctx.lineTo(s * 0.86, -s * 0.58); ctx.stroke();
+  ctx.lineCap = 'butt';
+  const fx = s * 0.86, fy = -s * 0.58, fw = s * 0.40, fh = s * 0.26;   // flag top-left at mast tip
+  ctx.fillStyle = '#009b3a';                                            // green field (top/bottom)
+  ctx.fillRect(fx, fy, fw, fh);
+  ctx.fillStyle = '#000000';                                            // black hoist + fly triangles
+  ctx.beginPath(); ctx.moveTo(fx, fy); ctx.lineTo(fx + fw * 0.5, fy + fh * 0.5); ctx.lineTo(fx, fy + fh); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(fx + fw, fy); ctx.lineTo(fx + fw * 0.5, fy + fh * 0.5); ctx.lineTo(fx + fw, fy + fh); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = '#fed100'; ctx.lineWidth = Math.max(1.5, s * 0.045);  // gold saltire
+  ctx.beginPath();
+  ctx.moveTo(fx, fy); ctx.lineTo(fx + fw, fy + fh);
+  ctx.moveTo(fx + fw, fy); ctx.lineTo(fx, fy + fh);
+  ctx.stroke();
+  // ── punting pole, angled into the water on the left ──
+  ctx.strokeStyle = '#c9b26a'; ctx.lineWidth = Math.max(2, s * 0.05); ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(s * 0.16, -s * 0.72); ctx.lineTo(-s * 1.05, s * 0.52); ctx.stroke();
+  ctx.lineCap = 'butt';
+  // ── the standing raftsman ──
+  ctx.strokeStyle = '#26262c'; ctx.lineWidth = s * 0.13; ctx.lineCap = 'round';   // trouser legs
+  ctx.beginPath(); ctx.moveTo(-s * 0.10, -s * 0.16); ctx.lineTo(-s * 0.14, deckY);
+  ctx.moveTo(s * 0.10, -s * 0.16); ctx.lineTo(s * 0.14, deckY); ctx.stroke();
+  ctx.fillStyle = shirt;                                                 // torso
+  ctx.fillRect(-s * 0.22, -s * 0.78, s * 0.44, s * 0.64);
+  if (id === 'politician') {                                             // his split-colour suit
+    ctx.fillStyle = '#e8821e'; ctx.fillRect(-s * 0.22, -s * 0.78, s * 0.22, s * 0.64);
+    ctx.fillStyle = '#1f8a3c'; ctx.fillRect(0,          -s * 0.78, s * 0.22, s * 0.64);
+  }
+  ctx.strokeStyle = skin; ctx.lineWidth = s * 0.09; ctx.lineCap = 'round';  // arms to the pole
+  ctx.beginPath(); ctx.moveTo(-s * 0.16, -s * 0.62); ctx.lineTo(-s * 0.02, -s * 0.70);
+  ctx.moveTo(s * 0.16, -s * 0.60); ctx.lineTo(s * 0.14, -s * 0.72); ctx.stroke();
+  ctx.lineCap = 'butt';
+  ctx.fillStyle = skin; ctx.fillRect(-s * 0.05, -s * 0.86, s * 0.10, s * 0.10);  // neck
+  drawHead(ctx, ch, s, 0, -s * 0.98, bleach);
+}
+
 // Draw the player's ride, rear-view, centred at (cx, cy) with body scale s.
 // Dispatches on cart.vehicle.sprite; the handcart is the signature default.
 export function drawCart(ctx, cart, cx, cy, s) {
@@ -47,10 +93,13 @@ export function drawCart(ctx, cart, cx, cy, s) {
 
   // ground shadow — shrinks and fades as the cart climbs, and is cast in the sun's
   // direction (toward the lower-left, away from the upper-right sun — see LIGHT).
-  const shadowScale = 1 - lift / (peak * 1.6);
-  const shX = cx + s * LIGHT.shadowDX * 0.45, shY = cy + s * 0.5 + s * LIGHT.shadowDY * 0.18;
-  ctx.fillStyle = `rgba(0,0,0,${(0.28 * shadowScale).toFixed(3)})`;
-  ctx.beginPath(); ctx.ellipse(shX, shY, s * 1.05 * shadowScale, s * 0.22 * shadowScale, 0, 0, Math.PI * 2); ctx.fill();
+  // The raft skips it: it floats ON the water and drawRaft already draws its wake.
+  if (veh.sprite !== 'raft') {
+    const shadowScale = 1 - lift / (peak * 1.6);
+    const shX = cx + s * LIGHT.shadowDX * 0.45, shY = cy + s * 0.5 + s * LIGHT.shadowDY * 0.18;
+    ctx.fillStyle = `rgba(0,0,0,${(0.28 * shadowScale).toFixed(3)})`;
+    ctx.beginPath(); ctx.ellipse(shX, shY, s * 1.05 * shadowScale, s * 0.22 * shadowScale, 0, 0, Math.PI * 2); ctx.fill();
+  }
 
   // ---- soft-shoulder TOPPLE death: tip the whole ride onto its side and fling
   // the driver free. toppleT runs 0 (upright) → 1 (fully over, driver sprawled).
@@ -74,6 +123,7 @@ export function drawCart(ctx, cart, cx, cy, s) {
     case 'pickup':     drawCar(ctx, cart, s, { roof: 0.90, taper: 0.04, light: '#d23a2a', tray: true }, bleach); break;
     case 'jetour':     drawCar(ctx, cart, s, { roof: 1.10, taper: 0.05, light: '#37e0c8', suv: true, ev: true }, bleach); break;
     case 'cybertruck': drawCyber(ctx, cart, s, bleach); break;
+    case 'raft':       drawRaftsman(ctx, cart, s, bleach); break;   // deck = drawRaft underlay
     default:           drawHandcart(ctx, cart, s, tier, cart.goldHandcart, bleach); break;
   }
   // Coherent, escalating battle damage by tier — drawn in the same local frame as the
@@ -84,7 +134,9 @@ export function drawCart(ctx, cart, cx, cy, s) {
     : veh.sprite === 'cybertruck' ? 'cyber'
     : (veh.sprite === 'bicycle' || veh.sprite === 'yengyeng') ? 'bike'
     : 'car';
-  vehicleDamage(ctx, s, tier, fam);
+  // The raft skips the damage overlay: its "body" is the water-line deck underlay, so
+  // dent blotches would float over open water (they did — it read as a glitch).
+  if (veh.sprite !== 'raft') vehicleDamage(ctx, s, tier, fam);
   ctx.restore();
 }
 
@@ -120,6 +172,7 @@ function drawToppledCart(ctx, cart, cx, cy, s, t, tier, bleach) {
     case 'pickup':     drawCar(ctx, cart, s, { roof: 0.90, taper: 0.04, light: '#d23a2a', tray: true }, bleach); break;
     case 'jetour':     drawCar(ctx, cart, s, { roof: 1.10, taper: 0.05, light: '#37e0c8', suv: true, ev: true }, bleach); break;
     case 'cybertruck': drawCyber(ctx, cart, s, bleach); break;
+    case 'raft':       break;   // the deck underlay + the flung driver ARE the raft's wipeout
     default:           drawHandcartShell(ctx, cart, s, tier); break; // handcart sans driver
   }
   ctx.restore();

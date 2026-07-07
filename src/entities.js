@@ -26,9 +26,16 @@ export function spawn(field, type, laneIndex, z) {
   // Pedestrians actually WALK across the road — pick a direction to stroll.
   e.walk = !!info.walk;
   e.walkDir = e.walk ? (e.x >= 0 ? -1 : 1) : 0;   // head back toward centre first
+  // Predators HOME on the player: `home` is a lateral chase speed (units/s) — the
+  // Bog Walk crocodiles swim toward the raft's line as they close in.
+  e.home = info.home || 0;
+  // Long traffic: the body occupies [z, z+len] — the pass takes time, and steering
+  // into the flank mid-pass is a side-swipe (see resolveHits).
+  e.len = info.len || 0;
+  e.noseCrossed = false;
   return e;
 }
-export function advance(field, dz, dt = 0) {
+export function advance(field, dz, dt = 0, targetX = null) {
   for (const e of field.pool) {
     if (!e.active) continue;
     e.z -= dz + (e.vz || 0) * dt; // traffic closes faster than the world scrolls
@@ -40,10 +47,19 @@ export function advance(field, dz, dt = 0) {
       if (e.x > WALK.bound) { e.x = WALK.bound; e.walkDir = -1; }
       else if (e.x < -WALK.bound) { e.x = -WALK.bound; e.walkDir = 1; }
     }
+    // A homing predator closes laterally on the player's line while still ahead.
+    if (e.home && targetX != null && e.z > 0) {
+      const step = e.home * dt;
+      if (Math.abs(targetX - e.x) <= step) e.x = targetX;
+      else e.x += Math.sign(targetX - e.x) * step;
+      if (e.x > WALK.bound) e.x = WALK.bound;
+      else if (e.x < -WALK.bound) e.x = -WALK.bound;
+    }
     // Retire once well past the cart. The margin must exceed one frame's travel so
     // an entity is never retired in the same frame it crosses the cart plane (which
-    // would let it slip past resolveHits unseen).
-    if (e.z < -40) e.active = false;
+    // would let it slip past resolveHits unseen). A LONG vehicle stays live until its
+    // whole body ([z, z+len]) has cleared the cart — else a bus dies mid-pass.
+    if (e.z < -40 - (e.len || 0)) e.active = false;
   }
 }
 export function activeEntities(field) {

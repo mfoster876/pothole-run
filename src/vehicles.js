@@ -28,6 +28,11 @@ export const VEHICLES = [
   { id: 'cybertruck',name: 'Cybertruck',      price: 22000000,  speed: 1.94, handling: 0.84, toughness: 2.05, stability: 1.40, isCar: true,  sprite: 'cybertruck',body: '#9aa0a6' }
 ];
 
+// The Bog Walk bamboo raft — NOT on the dealer's ladder. River stages force this ride
+// (nobody drives a car down the Rio Cobre); it flies a little Jamaican flag off the side.
+// Modest handling (a pole, not a wheel), ordinary toughness, no windscreen (isCar false).
+export const RAFT = { id: 'raft', name: 'Bamboo Raft', price: 0, speed: 0.95, handling: 0.90, toughness: 1.0, stability: 0.95, isCar: false, sprite: 'raft', body: '#c9b26a' };
+
 export function getVehicle(id) {
   return VEHICLES.find(v => v.id === id) ?? VEHICLES[1]; // default: handcart
 }

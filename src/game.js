@@ -1,4 +1,5 @@
-import { VIRTUAL, SHOULDER, SUPERCHARGE, IMPAIR, SPAWN_TUNE, POLICE, POLITICIAN, RACE, TOPPLE, LANES, UPKEEP, FRUIT, MAX_DPR, CART, CURVE } from './constants.js';
+import { VIRTUAL, SHOULDER, SUPERCHARGE, IMPAIR, SPAWN_TUNE, POLICE, POLITICIAN, RACE, TOPPLE, LANES, UPKEEP, FRUIT, MAX_DPR, CART, CURVE, RIVER } from './constants.js';
+import { hazardInfo } from './hazardTypes.js';
 import { setLetterboxColors, setDprCap } from './main.js';
 import { drinkWeightsFor } from './drinks.js';
 import { itemWeightsFor } from './charitems.js';
@@ -16,7 +17,7 @@ import { drawCart, drawRaft } from './cartSprite.js';
 import { renderScenery } from './scenery.js';
 import { getCharacter } from './characters.js';
 import { getStage } from './stages.js';
-import { VEHICLES, getVehicle } from './vehicles.js';
+import { VEHICLES, getVehicle, RAFT } from './vehicles.js';
 import { upgradesForVehicle, stabilityBonus, handlingBonus } from './upgrades.js';
 import { pickMoney, pickPoliticianMoney, nextBill, biasBill, formatMoney } from './money.js';
 import { loadSave, writeSave, recordBest, recordBestTake, addCoins, buyVehicle, selectVehicle, buyUpgrade, ownedUpgrades, refitPart, maybeBustPart, GENRES } from './save.js';
@@ -114,6 +115,10 @@ export function createGame(audio) {
   const menuChoice = { character: 'yute', stage: 'fern-gully', vehicle: save.vehicle, genre: save.settings.genre };
   let road, stage, cart, field, run, camZ, spawnZ, steerLock = 0, activeWeights = [], raceWeights = [];
   let heatWeights = null, heatBuilt = 0;   // police-heat spawn pool, rebuilt when heat rises
+  let rapidsWeights = [];                  // river RAPIDS pool: pure obstacles, no power-ups
+  let rapidsVis = 0, wasRapids = false;    // smoothed whitewater intensity + entry-toast edge
+  // Whether this run-distance falls in a whitewater stretch (calm → rapids → calm …).
+  const inRapids = (d) => !!(stage && stage.river) && ((d % (RIVER.calmLen + RIVER.rapidLen)) >= RIVER.calmLen);
   const drawList = [];               // reusable z-sorted render list (no per-frame allocation)
   // Wall-clock timestamp until which the game-over card ignores input (no accidental
   // skip from a tap in flight at crash time). Wall-clock, NOT an update()-decremented
@@ -154,8 +159,13 @@ export function createGame(audio) {
     setCurveScale(stage.curveMult || 1);
     // Match the letterbox bars to this stage so wide phones read full, not black-barred.
     setLetterboxColors(stage.palette.sky, stage.palette.ground);
-    cart = createCart(getCharacter(characterId), getVehicle(save.vehicle), stabilityBonus(ownedUpgrades(save, save.vehicle), save.vehicle), save.condition, handlingBonus(ownedUpgrades(save, save.vehicle), save.vehicle));
-    cart.goldHandcart = !!(save.goldHandcart && save.vehicle === 'handcart');
+    // River stages FORCE the bamboo raft — nobody drives a car down the Rio Cobre. The
+    // save's selected vehicle is untouched (and rig upgrades don't bolt onto bamboo).
+    const rideVehicle = stage.river ? RAFT : getVehicle(save.vehicle);
+    cart = stage.river
+      ? createCart(getCharacter(characterId), RAFT, 0, save.condition, 0)
+      : createCart(getCharacter(characterId), rideVehicle, stabilityBonus(ownedUpgrades(save, save.vehicle), save.vehicle), save.condition, handlingBonus(ownedUpgrades(save, save.vehicle), save.vehicle));
+    cart.goldHandcart = !!(save.goldHandcart && save.vehicle === 'handcart' && !stage.river);
     field = createField();
     run = createRun();
     effects = createEffects();
@@ -198,6 +208,13 @@ export function createGame(audio) {
       });
     // Precomputed once per run — races strip road money from the spawn pool every time.
     raceWeights = activeWeights.filter(w => w.type !== 'coin');
+    // RAPIDS pool (river only): pure obstacles — no money, no power-ups, no negatives —
+    // just the gauntlet, and thicker (see RIVER.density at the spawn site).
+    rapidsWeights = activeWeights.filter(w => {
+      const i = hazardInfo(w.type);
+      return !i.collectible && !i.negative && w.type !== 'coin';
+    });
+    rapidsVis = 0; wasRapids = false;
     heatWeights = null; heatBuilt = 0;   // fresh run, no police heat yet
     // Faith upkeep resets each run — pray/read-bible become available again.
     save.prayedSinceRun = false;
@@ -306,7 +323,9 @@ export function createGame(audio) {
     newBestTake = recordBestTake(save, stage.id, Math.round(run.coins));
     // The crash may BUST a fitted tune-up — the mech shop's recurring shakedown. The
     // rougher the run ended, the likelier a part shook loose; you pay to re-fit it.
-    const bustedId = maybeBustPart(save, save.vehicle, isWrecked(cart.condition), cart.condition.value, rng);
+    // (River runs are on the FORCED raft — a raft crash can't shake a tune-up off the
+    // garaged vehicle the player never drove.)
+    const bustedId = stage.river ? null : maybeBustPart(save, save.vehicle, isWrecked(cart.condition), cart.condition.value, rng);
     lastBust = bustedId ? (upgradesForVehicle(save.vehicle).find(u => u.id === bustedId) || {}).name || null : null;
     maybeUnlock();
     writeSave(save);
@@ -365,8 +384,13 @@ export function createGame(audio) {
     cart.throttle = throttleInput;   // player accelerate/brake (keyboard ↑/↓ or W/S)
     // During a supercharge, water surges the cart toward its high cap — handed to updateCart
     // as an override target so it eases UP regardless of throttle (a real, felt speed burst).
+    // In river RAPIDS the current does the same: the water carries the raft, throttle or not.
     const supercharged = effectActive(effects, 'super');
-    updateCart(cart, dt, run.distance, supercharged ? SUPERCHARGE.maxSpeed : null);
+    const rapids = inRapids(run.distance);
+    if (rapids && !wasRapids) pickupToast = { label: 'RAPIDS — hold on!', good: false, t: 2.0 };
+    wasRapids = rapids;
+    rapidsVis += ((rapids ? 1 : 0) - rapidsVis) * Math.min(1, dt * 2.5);   // whitewater eases in/out
+    updateCart(cart, dt, run.distance, supercharged ? SUPERCHARGE.maxSpeed : (rapids ? RIVER.rapidSpeed : null));
     const dz = cart.speed * dt * 4;
     camZ += dz;
     const dDist = cart.speed * dt * 0.1 * cart.character.scoreMult;
@@ -376,7 +400,7 @@ export function createGame(audio) {
       for (const rv of race.rivals) tickRival(rv, dt, cart.speed * 0.1 * cart.character.scoreMult, rng, run.distance);
       if (run.distance >= race.finish) { finishRace(placement(run.distance, race.rivals)); return; }
     }
-    advance(field, dz, dt);
+    advance(field, dz, dt, cart.x);   // homing predators (gorge crocs) chase the player's line
     spawnZ -= dz;
     if (spawnZ <= 0) {
       // Coffee power-up: suppress hazard spawns during the smooth window
@@ -386,7 +410,8 @@ export function createGame(audio) {
       // No money on the road during a street race (the purse is the prize). Otherwise a
       // supercharge floods extra coins.
       let spawnWeights = activeWeights;
-      if (race) spawnWeights = raceWeights;
+      if (rapids) spawnWeights = rapidsWeights;          // whitewater: obstacles only, no power-ups
+      else if (race) spawnWeights = raceWeights;
       else if (supercharged) spawnWeights = activeWeights.concat([{ type: 'coin', weight: SUPERCHARGE.coinWeightBonus }]);
       else if (run.heat > 0) {
         // Run-over heat: cops spawn more often while Babylon a watch yuh. The boosted
@@ -401,7 +426,8 @@ export function createGame(audio) {
       // A bribed cop CLEARS the politician's road of traffic/obstacles for a while —
       // like coffee's smooth window, only safe coins spawn (never during a race).
       const roadsClear = effectActive(effects, 'clearRoads');
-      const safeWindow = (inCoffeeWindow || roadsClear) && !race;
+      // Rapids override every safety net — the whitewater doesn't care about your coffee.
+      const safeWindow = (inCoffeeWindow || roadsClear) && !race && !rapids;
       let type = safeWindow ? 'coin' : pickHazard(spawnWeights, rng);
       // Ultra-rare Blue Mountain coffee bag — not before 600m, ~1-in-500 spawn chance
       if (!safeWindow && run.distance >= 600 && rng() < 0.002) type = 'coffee';
@@ -419,12 +445,13 @@ export function createGame(audio) {
           e.value = biasBill(v, cart.character.billBias);  // reckless drivers see fatter notes
         }
       }
-      spawnZ = spawnInterval(run.distance, undefined, undefined, cart.speed) * 8;
+      // Whitewater spawns come RIVER.density× thicker — the hard-to-dodge stretch.
+      spawnZ = spawnInterval(run.distance, undefined, undefined, cart.speed) * 8 / (rapids ? RIVER.density : 1);
     }
     const coinsBefore = run.coins, condBefore = cart.condition.value;
     cart.gusted = false; cart.washed = false; cart.pickupValue = 0; cart.nearMiss = false;
     cart.pickupLabel = null; cart.hitNegative = null; cart.fined = false; cart.fineAmount = 0; cart.washCharge = 0; cart.bribed = false;
-    cart.roadkill = null; cart.jolted = 0; cart.splashed = 0;
+    cart.roadkill = null; cart.jolted = 0; cart.splashed = 0; cart.sideswiped = false;
     resolveHits(run, cart, field, effects, save);
     // Graphic run-over: a fresh impact spawns the injury reaction at the cart plane and a
     // heavy thud — the consequence of plowing through, even when the driver shrugs it off.
@@ -454,6 +481,7 @@ export function createGame(audio) {
     else if (cart.roadkill) pickupToast = { label: run.heat > 1 ? 'Yuh lick down smaddy — police a watch yuh!' : 'Yuh lick down smaddy!', good: false, t: 1.8 };
     else if (cart.bribed) pickupToast = { label: 'Bribe di Police −' + formatMoney(POLITICIAN.bribe) + ' · roads clear!', good: false, t: 1.8 };
     else if (cart.washed) pickupToast = { label: 'Windscreen Wash −' + formatMoney(cart.washCharge || 0), good: false, t: 1.4 };
+    else if (cart.sideswiped) pickupToast = { label: 'SIDE SWIPE — mind di flank!', good: false, t: 1.5 };
     squeakAccum += dz;
     const shoulder = onShoulder(cart);
     // The ride's running voice tracks its condition: a mint ride just squeaks; a battered
@@ -513,7 +541,7 @@ export function createGame(audio) {
     syncViewport();
     if (state.mode === 'menu') return renderMenu(ctx);
     if (state.mode === 'gameover') return renderGameOver(ctx);
-    renderRoad(ctx, road, stage.palette, camZ, W, H, !!stage.river);
+    renderRoad(ctx, road, stage.palette, camZ, W, H, !!stage.river, rapidsVis);
     renderScenery(ctx, stage, camZ, W, H);
     drawList.length = 0;
     for (const e of field.pool) if (e.active) drawList.push(e);
@@ -1111,10 +1139,12 @@ export function createGame(audio) {
     ctx.fillStyle = '#f4f1e6'; ctx.font = '700 26px "Courier New", monospace';
     ctx.fillText(driver.name, W / 2, my(0.225), W * 0.56);
 
-    // Show current vehicle (read-only — change it in Car Dealer)
-    const veh = getVehicle(save.vehicle);
+    // Show current vehicle (read-only — change it in Car Dealer). River stages FORCE
+    // the bamboo raft, so say so up front rather than surprising the player mid-launch.
+    const veh = stg.river ? RAFT : getVehicle(save.vehicle);
     ctx.fillStyle = '#9fb8a3'; ctx.font = '500 14px "Courier New", monospace';
-    ctx.fillText('ride: ' + veh.name + '  (change in Car Dealer)', W / 2, my(0.345), W * 0.9);
+    ctx.fillText('ride: ' + veh.name + (stg.river ? '  (river rules — cars stay home)' : '  (change in Car Dealer)'),
+      W / 2, my(0.345), W * 0.9);
 
     // Front-facing portrait of the selected driver (faces are never seen rear-view in play)
     renderPortrait(ctx, menuChoice.character, W / 2, my(0.475), 120);
@@ -1224,5 +1254,6 @@ export function createGame(audio) {
     ctx.restore();
   }
 
-  return { state, update, render, onSteer, setThrottle, menuPoint, menuKey, toggleMute, menuChoice, refreshMusicCount };
+  // `cart` getter: read-only view of the live run's cart (headless tests + debugging).
+  return { state, update, render, onSteer, setThrottle, menuPoint, menuKey, toggleMute, menuChoice, refreshMusicCount, get cart() { return cart; } };
 }

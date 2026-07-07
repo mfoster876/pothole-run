@@ -88,6 +88,7 @@ export const STAGES = [
       { type: 'floatbottle', weight: 4 }, { type: 'plasticbag', weight: 3 },
       { type: 'croc', weight: 2 }, { type: 'limerock', weight: 2 },
       { type: 'burntcar', weight: 1.5 }, { type: 'floatcar', weight: 1.5 },
+      { type: 'swimmer', weight: 2.5 },                           // people swimming the river — DON'T run them down
       { type: 'rivermumma', weight: 0.5 },                        // rare, dangerous folklore siren
       { type: 'tools', weight: 3 }, { type: 'water', weight: 1 }
     ]

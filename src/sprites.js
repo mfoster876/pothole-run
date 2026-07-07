@@ -40,13 +40,14 @@ export function drawEntity(ctx, type, sx, sy, size, seed = 0.137, value = 1) {
     case 'patty':       drawPatty(ctx, sx, sy, s, false); break;
     case 'veggiepatty': drawPatty(ctx, sx, sy, s, true); break;
     // Bog Walk river-mode obstacles
+    case 'swimmer':     drawSwimmer(ctx, sx, sy, s, seed); break;
     case 'floatbottle': floatBottle(ctx, sx, sy, s); break;
     case 'plasticbag':  plasticBag(ctx, sx, sy, s); break;
     case 'croc':        crocodile(ctx, sx, sy, s, seed); break;
     case 'burntcar':    riverCar(ctx, sx, sy, s, true); break;
     case 'floatcar':    riverCar(ctx, sx, sy, s, false); break;
     case 'limerock':    limestoneRock(ctx, sx, sy, s, seed); break;
-    case 'rivermumma':  riverMumma(ctx, sx, sy, s); break;
+    case 'rivermumma':  riverMumma(ctx, sx, sy, s, seed); break;
     // Drink pickups — soda cans vs spirit bottles by alcohol content
     case 'ting':       drinkCan(ctx, sx, sy, s, '#7ec850', '#5a9e30', 'T'); break;
     case 'boom':       drinkCan(ctx, sx, sy, s, '#161616', '#000000', 'B'); break;
@@ -645,10 +646,31 @@ function vehicle(ctx, x, y, s, color) {
   ctx.fillStyle = '#bfe0ff'; ctx.fillRect(x - s * 0.4, y - s * 0.8, s * 0.8, s * 0.3);
 }
 
+// A foreshortened body extension so traffic reads LONG, not a flat cardboard face:
+// the roof recedes toward the horizon from the rear roofline, narrowing as it goes,
+// with edge seams selling the perspective. Matches the gameplay `len` on the hazard —
+// what you see stretching up the road is the flank you can now side-swipe.
+function vehicleBodyExtension(ctx, x, roofY, halfW, ext, roofColor, seamColor) {
+  ctx.fillStyle = roofColor;
+  ctx.beginPath();
+  ctx.moveTo(x - halfW, roofY);
+  ctx.lineTo(x + halfW, roofY);
+  ctx.lineTo(x + halfW * 0.78, roofY - ext);
+  ctx.lineTo(x - halfW * 0.78, roofY - ext);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = seamColor; ctx.lineWidth = Math.max(1, halfW * 0.05);
+  ctx.beginPath();
+  ctx.moveTo(x - halfW, roofY); ctx.lineTo(x - halfW * 0.78, roofY - ext);
+  ctx.moveTo(x + halfW, roofY); ctx.lineTo(x + halfW * 0.78, roofY - ext);
+  ctx.stroke();
+}
+
 // ---- JUTC bus: the big yellow vehicle() body, plus a Jamaican flag decal on the
 // rear panel. The flag = gold saltire (X) splitting the field into four triangles:
 // TOP & BOTTOM green, LEFT & RIGHT black, gold bands riding the diagonals.
 function drawBus(ctx, x, y, s) {
+  // the LONG roof receding up the road — a JUTC bus is a wall, not a square
+  vehicleBodyExtension(ctx, x, y - s * 0.9, s * 0.55, s * 0.9, '#c9a832', '#8a6f18');
   vehicle(ctx, x, y, s, '#e7c84a');
   // rear panel sits between the blue window (ends ~y-0.5s) and the dark bumper
   // (starts y-0.2s). Centre the flag on that band, on the lower-left of the panel.
@@ -703,6 +725,9 @@ function drawCoaster(ctx, x, y, s) {
   // ground shadow (under the leaned body)
   ctx.fillStyle = 'rgba(0,0,0,0.22)';
   ctx.beginPath(); ctx.ellipse(0, s * 0.06, bw * 0.5, s * 0.12, 0, 0, Math.PI * 2); ctx.fill();
+
+  // the minibus body stretching up the road — long enough to side-swipe
+  vehicleBodyExtension(ctx, 0, by + s * 0.05, bw * 0.46, s * 0.6, '#d9dde0', '#aab0b5');
 
   // ---- main white body ----
   rrectSprite(ctx, bx, by, bw, bh, s * 0.1); ctx.fillStyle = body; ctx.fill();
@@ -815,6 +840,8 @@ function drawConductorInDoor(ctx, cxk, cyk, s) {
 // red marks a route taxi (PP plate). Drawn driving away from the player.
 function carRear(ctx, x, y, s, body, plate) {
   const w = s * 0.62, top = y - s * 1.02, h = s * 1.0;
+  // route taxis run LONG — the roof recedes up the road ahead of the rear face
+  vehicleBodyExtension(ctx, x, top + s * 0.06, w * 0.9, s * 0.55, '#c9ccd0', '#8a8f93');
   ctx.fillStyle = '#141414';
   ctx.fillRect(x - w, y - s * 0.14, w * 0.32, s * 0.2);
   ctx.fillRect(x + w * 0.68, y - s * 0.14, w * 0.32, s * 0.2);
@@ -2961,30 +2988,124 @@ function limestoneRock(ctx, x, y, s, seed) {
   ctx.strokeStyle = 'rgba(90,74,44,0.6)'; ctx.lineWidth = Math.max(1, s * 0.03);
   ctx.beginPath(); ctx.moveTo(x - s * 0.1, y - s * 0.55); ctx.lineTo(x - s * 0.02, y - s * 0.1); ctx.stroke();
 }
-// River Mumma — the folklore siren on a rock: long dark hair, ethereal teal glow, a fish
-// tail. Tasteful silhouette (no explicit detail); her danger reads as an eerie shimmer.
-function riverMumma(ctx, x, y, s) {
+// A person SWIMMING the Rio Cobre — kids and adults crossing the channel. Seed picks the
+// build (kid vs adult) and the top: a mesh shirt in rasta colours, or a plain white merino.
+// Low in the water: head + stroking arm + shirted back above a ripple ring, kick splash behind.
+function drawSwimmer(ctx, x, y, s, seed) {
+  const r = mulberry32(Math.floor((seed || 0.42) * 2147483647) ^ 0x51ca);
+  const kid = r() < 0.35, k = kid ? 0.72 : 1;         // pickney swim likkle
+  const mesh = r() < 0.6;                              // mesh rasta top vs white merino
+  const stroke = r() * Math.PI * 2;                    // where in the stroke the arm is
+  ripple(ctx, x, y, s * k);
+  // kick splash behind the feet
+  ctx.fillStyle = 'rgba(240,250,250,0.7)';
+  for (let i = 0; i < 3; i++) {
+    ctx.beginPath(); ctx.arc(x - s * k * (0.55 + i * 0.13), y - s * k * (0.02 + (i % 2) * 0.06), s * k * 0.05, 0, Math.PI * 2); ctx.fill();
+  }
+  const skin = '#6b432a';
+  // shirted back arching above the water
+  ctx.fillStyle = mesh ? '#1c3a24' : '#eef0ea';        // mesh base is dark under the bands
+  ctx.beginPath(); ctx.ellipse(x - s * k * 0.14, y - s * k * 0.14, s * k * 0.34, s * k * 0.15, -0.15, 0, Math.PI * 2); ctx.fill();
+  if (mesh) {
+    // rasta bands across the mesh, broken by little holes (drawn as gaps in alpha)
+    const bands = ['#2a8a3a', '#e0b020', '#c0392b'];
+    for (let b = 0; b < 3; b++) {
+      ctx.fillStyle = bands[b];
+      ctx.beginPath(); ctx.ellipse(x - s * k * 0.14, y - s * k * (0.20 - b * 0.06), s * k * (0.32 - b * 0.02), s * k * 0.035, -0.15, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.fillStyle = 'rgba(20,30,22,0.35)';             // the mesh weave reads as dark stipple
+    for (let i = 0; i < 6; i++) { ctx.beginPath(); ctx.arc(x - s * k * (0.02 + (i % 3) * 0.12), y - s * k * (0.12 + Math.floor(i / 3) * 0.08), s * k * 0.016, 0, Math.PI * 2); ctx.fill(); }
+  } else {
+    ctx.strokeStyle = '#c9ccc2'; ctx.lineWidth = Math.max(1, s * k * 0.02);   // merino seams
+    ctx.beginPath(); ctx.ellipse(x - s * k * 0.14, y - s * k * 0.14, s * k * 0.34, s * k * 0.15, -0.15, 0, Math.PI * 2); ctx.stroke();
+  }
+  // head up for a breath
+  ctx.fillStyle = skin;
+  ctx.beginPath(); ctx.arc(x + s * k * 0.26, y - s * k * 0.24, s * k * 0.13, 0, Math.PI * 2); ctx.fill();
+  // the reaching stroke arm — arcs out of the water ahead
+  const lift = 0.5 + 0.5 * Math.sin(stroke);           // frozen mid-stroke per spawn
+  ctx.strokeStyle = skin; ctx.lineWidth = Math.max(2, s * k * 0.07); ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(x + s * k * 0.12, y - s * k * 0.14);
+  ctx.quadraticCurveTo(x + s * k * 0.38, y - s * k * (0.3 + 0.28 * lift), x + s * k * (0.52 + 0.1 * lift), y - s * k * (0.1 + 0.1 * lift));
+  ctx.stroke(); ctx.lineCap = 'butt';
+}
+
+// River Mumma — the folklore siren on her rock, now a WHOLE FAMILY of sirens: seed picks
+// her skin tone, her build (some are busty — she lures, that's the folklore), her tail
+// colour, and her hair. Some wear flowing locks; some wear DREADLOCKS that read as
+// appealing thick locks from a distance — but up close (large s = the raft is passing)
+// the dreads are SNAKES, heads out and striking after the rider. Tasteful, no explicit
+// detail; the danger reads as an eerie shimmer that turns predatory as you close.
+function riverMumma(ctx, x, y, s, seed) {
+  const r = mulberry32(Math.floor((seed || 0.7) * 2147483647) ^ 0x3fb2);
+  const SKINS = ['#6b4a34', '#8a5c3a', '#4a2f1e', '#a06a42'];   // the sirens come in every shade
+  const skin = SKINS[Math.floor(r() * SKINS.length)];
+  const busty = r() < 0.5;
+  const dreads = r() < 0.5;
+  const tail = ['#2f8f86', '#3a7fa0', '#3f9a5f'][Math.floor(r() * 3)];
+  const close = s >= 30;                                        // the pass-by: snakes come out
   ripple(ctx, x, y, s);
   ctx.save();
   ctx.fillStyle = 'rgba(70,200,190,0.18)'; ellipsePath(ctx, x, y - s * 0.5, s * 0.9, s * 0.9); ctx.fill(); // aura
   // rock she sits on
   ctx.fillStyle = '#9a8a66'; ctx.beginPath(); ctx.ellipse(x, y, s * 0.5, s * 0.18, 0, 0, Math.PI * 2); ctx.fill();
-  // tail curving into the water
-  ctx.fillStyle = '#2f8f86';
+  // tail curving into the water (+ a flick of fin)
+  ctx.fillStyle = tail;
   ctx.beginPath(); ctx.moveTo(x + s * 0.1, y - s * 0.2); ctx.quadraticCurveTo(x + s * 0.7, y - s * 0.1, x + s * 0.6, y + s * 0.25);
   ctx.quadraticCurveTo(x + s * 0.4, y + s * 0.1, x + s * 0.1, y - s * 0.05); ctx.closePath(); ctx.fill();
-  // torso silhouette
-  ctx.fillStyle = '#4a6b62';
+  ctx.beginPath(); ctx.moveTo(x + s * 0.6, y + s * 0.22); ctx.lineTo(x + s * 0.78, y + s * 0.1); ctx.lineTo(x + s * 0.74, y + s * 0.3); ctx.closePath(); ctx.fill();
+  // torso in HER skin tone
+  ctx.fillStyle = skin;
   ctx.beginPath(); ctx.ellipse(x - s * 0.05, y - s * 0.5, s * 0.2, s * 0.34, 0, 0, Math.PI * 2); ctx.fill();
-  // head
-  ctx.fillStyle = '#6b4a34'; ellipsePath(ctx, x - s * 0.05, y - s * 0.86, s * 0.15, s * 0.16); ctx.fill();
-  // long flowing dark hair (the detail the folklore emphasises — she combs it on the rocks)
-  ctx.strokeStyle = '#15100a'; ctx.lineWidth = Math.max(1, s * 0.06); ctx.lineCap = 'round';
-  for (let i = -2; i <= 2; i++) {
-    ctx.beginPath(); ctx.moveTo(x - s * 0.05 + i * s * 0.06, y - s * 0.92);
-    ctx.quadraticCurveTo(x - s * 0.35 + i * s * 0.05, y - s * 0.5, x - s * 0.28 + i * s * 0.05, y - s * 0.1);
-    ctx.stroke();
+  if (busty) {
+    // a fuller figure — two shaded curves across the chest (cartoon silhouette, nothing explicit)
+    ctx.fillStyle = 'rgba(0,0,0,0.18)';
+    ctx.beginPath(); ctx.arc(x - s * 0.12, y - s * 0.56, s * 0.085, 0.15, Math.PI - 0.6); ctx.fill();
+    ctx.beginPath(); ctx.arc(x + s * 0.03, y - s * 0.56, s * 0.085, 0.45, Math.PI - 0.3); ctx.fill();
   }
-  ctx.lineCap = 'butt';
+  // head in the same tone
+  ctx.fillStyle = skin; ellipsePath(ctx, x - s * 0.05, y - s * 0.86, s * 0.15, s * 0.16); ctx.fill();
+  if (!dreads) {
+    // long flowing dark hair (the folklore detail — she combs it on the rocks)
+    ctx.strokeStyle = '#15100a'; ctx.lineWidth = Math.max(1, s * 0.06); ctx.lineCap = 'round';
+    for (let i = -2; i <= 2; i++) {
+      ctx.beginPath(); ctx.moveTo(x - s * 0.05 + i * s * 0.06, y - s * 0.92);
+      ctx.quadraticCurveTo(x - s * 0.35 + i * s * 0.05, y - s * 0.5, x - s * 0.28 + i * s * 0.05, y - s * 0.1);
+      ctx.stroke();
+    }
+    ctx.lineCap = 'butt';
+  } else if (!close) {
+    // DISTANT dread siren: thick, appealing rope locks swept over the shoulder
+    ctx.strokeStyle = '#241a0e'; ctx.lineWidth = Math.max(1.5, s * 0.085); ctx.lineCap = 'round';
+    for (let i = -2; i <= 2; i++) {
+      ctx.beginPath(); ctx.moveTo(x - s * 0.05 + i * s * 0.055, y - s * 0.94);
+      ctx.quadraticCurveTo(x - s * 0.32 + i * s * 0.06, y - s * 0.55, x - s * 0.24 + i * s * 0.07, y - s * 0.12);
+      ctx.stroke();
+    }
+    ctx.lineCap = 'butt';
+  } else {
+    // CLOSE PASS: the locks ARE snakes — bodies writhing outward, heads striking back
+    // toward the passing rider with eyes and bared fangs.
+    for (let i = -2; i <= 2; i++) {
+      const sway = (i % 2 === 0 ? 1 : -1) * s * 0.12;
+      const bx = x - s * 0.05 + i * s * 0.055, by = y - s * 0.94;
+      const hx = x - s * (0.36 - Math.abs(i) * 0.04) + i * s * 0.1 + sway * 0.4;
+      const hy = y - s * (0.45 - i * 0.09);
+      ctx.strokeStyle = '#2c4a1e'; ctx.lineWidth = Math.max(1.5, s * 0.075); ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(bx, by);
+      ctx.quadraticCurveTo(bx - s * 0.2 + sway, by + s * 0.25, hx, hy);
+      ctx.stroke(); ctx.lineCap = 'butt';
+      // striking head — wedge jaw open toward the rider (screen-down / outward)
+      ctx.fillStyle = '#3a5f28';
+      ctx.beginPath(); ctx.moveTo(hx, hy);
+      ctx.lineTo(hx - s * 0.1, hy + s * 0.06); ctx.lineTo(hx - s * 0.02, hy + s * 0.11);
+      ctx.closePath(); ctx.fill();
+      // eye + fangs
+      ctx.fillStyle = '#e8d24a'; ctx.beginPath(); ctx.arc(hx - s * 0.03, hy + s * 0.03, s * 0.016, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#f4f1e6';
+      ctx.beginPath(); ctx.moveTo(hx - s * 0.085, hy + s * 0.065); ctx.lineTo(hx - s * 0.075, hy + s * 0.095); ctx.lineTo(hx - s * 0.062, hy + s * 0.068); ctx.closePath(); ctx.fill();
+    }
+  }
   ctx.restore();
 }

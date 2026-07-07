@@ -88,6 +88,18 @@ export const POWERUP = {
 // accel/maxSpeed: consumed by game.js to temporarily override CART values.
 // moneyMult/coinWeightBonus: consumed by game.js to flood coin value during the window.
 export const SUPERCHARGE = { dur: 6, accel: 14, maxSpeed: 260, moneyMult: 1.5, coinWeightBonus: 6 };
+
+// Side-swipe: steering into a long vehicle's FLANK mid-pass. Lighter than a head-on
+// (frac of the head-on damage) plus a hard shove back toward your own lane.
+export const SIDESWIPE = { frac: 0.45, push: 1.4 };
+
+// Bog Walk RAPIDS: the river alternates calm current with WHITEWATER stretches. In a
+// rapids stretch the current forces the pace (rapidSpeed overrides the throttle target),
+// hazards spawn `density`× thicker, and NO power-ups spawn — a pure obstacle gauntlet —
+// then the water settles back to the regular pace. Lengths are run-distance metres.
+// Lengths are run-distance METRES (the HUD counter, which ticks ~10× slower than world
+// units): calm 250 m then 140 m of whitewater keeps rapids inside a normal run's reach.
+export const RIVER = { calmLen: 250, rapidLen: 140, rapidSpeed: 250, density: 1.9 };
 export const DRINK = { baseDur: 5, tipsyExtra: 3 };
 export const IMPAIR = { handlingDrop: 0.55, wander: 0.9 };
 

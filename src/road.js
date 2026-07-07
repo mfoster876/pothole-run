@@ -67,9 +67,11 @@ function projY(camZ, W, H) {
 function projW(camZ, W, H) { return (CAM_DEPTH / camZ) * ROAD_W * (W / 2) * viewScaleFor(W, H); }
 
 // `river` (Bog Walk Gorge): the ribbon is the Rio Cobre, not asphalt — muddy banks
-// instead of marl shoulders, drifting water glints instead of a painted centre line,
-// and no asphalt patches. Same geometry, so every entity/raft projection still lands.
-export function renderRoad(ctx, road, palette, position, W, H, river = false) {
+// instead of marl shoulders, a watery depth gradient, bank-edge foam and drifting,
+// current-driven glints instead of a painted centre line. Same geometry, so every
+// entity/raft projection still lands. `rapids` (0..1) whips the surface into
+// WHITEWATER: dense angled chop, boiling foam, and a paler churned tone.
+export function renderRoad(ctx, road, palette, position, W, H, river = false, rapids = 0) {
   const hy = horizonYFor(W, H);
   ctx.fillStyle = palette.sky;
   ctx.fillRect(0, 0, W, hy);
@@ -115,15 +117,35 @@ export function renderRoad(ctx, road, palette, position, W, H, river = false) {
     band(ctx, cxN, wNear * ROAD_DRAW, yNear, cxF, wFar * ROAD_DRAW, yFar,
       light ? asph : shade(asph, -0.05));
     if (river) {
-      // drifting water glints — thin bright streaks that slide with the current
-      // (offset drifts with the segment index so they read as moving water, and
-      // they sit at varying lanes so the surface never looks like lane markings)
+      // Deep-channel tint down the middle — the water reads as WATER with depth, not tarmac.
+      band(ctx, cxN, wNear * ROAD_DRAW * 0.55, yNear, cxF, wFar * ROAD_DRAW * 0.55, yFar,
+        light ? 'rgba(20,60,70,0.30)' : 'rgba(20,60,70,0.36)');
+      // Foam seams where the current works the banks — the classic river-edge read.
+      for (const side of [-1, 1]) {
+        band(ctx, cxN + side * wNear * ROAD_DRAW * 0.96, wNear * 0.03, yNear,
+          cxF + side * wFar * ROAD_DRAW * 0.96, wFar * 0.03, yFar,
+          light ? 'rgba(235,248,248,0.5)' : 'rgba(235,248,248,0.38)');
+      }
+      // drifting water glints — thin bright streaks that slide with the current: the
+      // `position`-driven phase makes the surface shimmer downstream even at low speed.
       if (light) {
-        const g1 = Math.sin(idx * 0.9) * 0.42, g2 = Math.sin(idx * 1.7 + 2.2) * 0.5;
+        const drift = position * 0.012;
+        const g1 = Math.sin(idx * 0.9 + drift) * 0.42, g2 = Math.sin(idx * 1.7 + 2.2 - drift) * 0.5;
         band(ctx, cxN + g1 * wNear * ROAD_DRAW, wNear * 0.035, yNear,
           cxF + g1 * wFar * ROAD_DRAW, wFar * 0.035, yFar, 'rgba(214,240,240,0.30)');
         band(ctx, cxN + g2 * wNear * ROAD_DRAW, wNear * 0.02, yNear,
           cxF + g2 * wFar * ROAD_DRAW, wFar * 0.02, yFar, 'rgba(180,225,225,0.20)');
+      }
+      if (rapids > 0.02) {
+        // WHITEWATER: churned pale wash over the channel + dense angled chop crests.
+        band(ctx, cxN, wNear * ROAD_DRAW, yNear, cxF, wFar * ROAD_DRAW, yFar,
+          `rgba(225,242,244,${(0.12 * rapids).toFixed(3)})`);
+        for (let c = 0; c < 3; c++) {
+          const ph = Math.sin(idx * (1.3 + c * 0.7) + c * 2.1 + position * 0.02) * 0.75;
+          band(ctx, cxN + ph * wNear * ROAD_DRAW, wNear * (0.05 + c * 0.012), yNear,
+            cxF + ph * 0.8 * wFar * ROAD_DRAW, wFar * 0.03, yFar,
+            `rgba(240,250,250,${(0.38 * rapids).toFixed(3)})`);
+        }
       }
     } else {
       // half-done patch (deterministic, occasional, mismatched tone)

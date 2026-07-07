@@ -2,7 +2,7 @@ import { laneOverlap } from './collision.js';
 import { applyGust } from './cart.js';
 import { applyDamage, repair } from './wreck.js';
 import { hazardInfo } from './hazardTypes.js';
-import { DAMAGE, GUST, WIPER, HOP, COMBO, POLICE, POLITICIAN } from './constants.js';
+import { DAMAGE, GUST, WIPER, HOP, COMBO, POLICE, POLITICIAN, SIDESWIPE } from './constants.js';
 import { applyPowerup, effectActive } from './powerups.js';
 import { applyNegative } from './negatives.js';
 import { chargeRun } from './economy.js';
@@ -31,8 +31,31 @@ export function resolveHits(run, cart, field, effects = cart._effects || {}, sav
   for (const e of field.pool) {
     if (!e.active || e.collected) continue;
     if (e.z > 0) continue;                 // not yet at the cart plane
-    e.collected = true;                    // consume this entity's single chance
     const info = hazardInfo(e.type);
+    // ── LONG vehicles (buses/taxis/coasters): the body occupies [z, z+len], so the pass
+    // is a WINDOW, not an instant. The nose crossing gets the normal one-shot head-on
+    // check; while the flank is alongside, steering into it is a SIDE-SWIPE (lighter
+    // damage + a hard shove back); once the tail clears, the vehicle is spent. ──
+    if ((e.len || 0) > 0 && e.noseCrossed) {
+      if (e.z + e.len < 0) { e.collected = true; continue; }   // tail cleared — passed clean
+      if (laneOverlap(cart.x, cart.halfWidth, e.x, e.halfWidth)
+          && !((cart.jumpT || 0) > 0) && !effectActive(effects, 'super')) {
+        e.collected = true; e.active = false;                  // you drove into the flank
+        const ch = cart.character;
+        const tough = ch.toughness * (cart.vehicle ? cart.vehicle.toughness : 1);
+        const resist = (cart.blessing && cart.blessing.resist) || 0;
+        const dmg = (info.damage * SIDESWIPE.frac / tough) * (1 - Math.min(0.9, resist));
+        cart.condition = applyDamage(cart.condition, dmg);
+        run.combo = 0;
+        cart.sideswiped = true;
+        cart.jolted = Math.max(cart.jolted || 0, 0.7);
+        const dir = cart.x >= e.x ? 1 : -1;                    // shoved back off the flank
+        applyGust(cart, dir, GUST.push * SIDESWIPE.push);
+      }
+      continue;
+    }
+    e.collected = e.len ? false : true;    // short hazards: consume the single chance now
+    if (e.len) e.noseCrossed = true;       // long vehicles: nose one-shot, then the window
     const magnet = info.collectible ? cart.character.coinDraw : 1;
     if (!laneOverlap(cart.x, cart.halfWidth * magnet, e.x, e.halfWidth)) {
       if (!info.collectible) {

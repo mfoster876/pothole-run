@@ -12,9 +12,11 @@ export const HAZARD_TYPES = {
   manhole:  { damage: DAMAGE.manhole, collectible: false, depth: 3, color: '#000000', label: 'open manhole', category: 'road', jolt: 1.2 },
   coin:     { damage: 0,              collectible: true,  depth: 3, color: '#f0c020', label: 'coin' },
   goat:     { damage: DAMAGE.animal,  collectible: false, depth: 4, color: '#d8c7b0', label: 'goat', category: 'animal' },
-  taxi:     { damage: DAMAGE.traffic, collectible: false, depth: 5, color: '#c0382c', label: 'route taxi', vz: 420, gust: 'fromTaxi', category: 'traffic' },
-  bus:      { damage: DAMAGE.traffic, collectible: false, depth: 7, color: '#e7c84a', label: 'JUTC bus', vz: 260, gust: 'fromBus', category: 'traffic' },
-  coaster:  { damage: DAMAGE.traffic, collectible: false, depth: 6, color: '#eef0f2', label: 'coaster bus', vz: 320, gust: 'fromCoaster', category: 'traffic', swerve: true },
+  // Traffic has real LENGTH (world units): the body occupies [z, z+len], so dodging the
+  // nose is not enough — steering into the flank mid-pass is a SIDE-SWIPE (see run.js).
+  taxi:     { damage: DAMAGE.traffic, collectible: false, depth: 5, color: '#c0382c', label: 'route taxi', vz: 420, gust: 'fromTaxi', category: 'traffic', len: 150 },
+  bus:      { damage: DAMAGE.traffic, collectible: false, depth: 7, color: '#e7c84a', label: 'JUTC bus', vz: 260, gust: 'fromBus', category: 'traffic', len: 300 },
+  coaster:  { damage: DAMAGE.traffic, collectible: false, depth: 6, color: '#eef0f2', label: 'coaster bus', vz: 320, gust: 'fromCoaster', category: 'traffic', swerve: true, len: 220 },
   hustler:  { damage: DAMAGE.animal,  collectible: false, depth: 3, color: '#d06a30', label: 'hustler', category: 'pedestrian', walk: true },
   jaywalker:{ damage: DAMAGE.animal,  collectible: false, depth: 3, color: '#3a6ea5', label: 'jaywalker', category: 'pedestrian', walk: true },
   // New Kingston street life — all WALK across the road (harder to time than a static obstacle)
@@ -32,7 +34,7 @@ export const HAZARD_TYPES = {
   cattle:   { damage: DAMAGE.traffic, collectible: false, depth: 5, color: '#5a4636', label: 'stray cattle', category: 'animal' },
   // Donkey coconut cart — a slow rural road-occupant (scrolls like a static obstacle, no vz).
   // Traffic-tier hit; rare and rural-only (only listed in the two country stages).
-  coconutcart:{ damage: DAMAGE.traffic, collectible: false, depth: 5, color: '#9a6a34', label: 'coconut cart', category: 'traffic' },
+  coconutcart:{ damage: DAMAGE.traffic, collectible: false, depth: 5, color: '#9a6a34', label: 'coconut cart', category: 'traffic', len: 160 },
   // soapy-can windscreen youth — only spawns when you're driving a car. He isn't an
   // obstacle you mow down: contact means he WASHED the screen and you PAY (`coinLoss`
   // in run.js). No vehicle damage, and `noRunOver` keeps him off the roadkill ledger.
@@ -48,7 +50,12 @@ export const HAZARD_TYPES = {
   // noted so no driver is immune to them.
   floatbottle: { damage: DAMAGE.bump,    collectible: false, depth: 3, color: '#7aa0b0', label: 'floating bottle', category: 'river', jolt: 0.4, splash: true },
   plasticbag:  { damage: DAMAGE.bump,    collectible: false, depth: 2, color: '#cfe0e6', label: 'plastic bag', category: 'river', jolt: 0.3, splash: true },
-  croc:        { damage: DAMAGE.animal,  collectible: false, depth: 4, color: '#3a5a34', label: 'crocodile', category: 'animal', vz: 110, jolt: 0.6 },
+  // Crocs actively HUNT: they close in (vz) AND swim toward the raft's line (home).
+  croc:        { damage: DAMAGE.animal,  collectible: false, depth: 4, color: '#3a5a34', label: 'crocodile', category: 'animal', vz: 110, home: 0.55, jolt: 0.6 },
+  // People SWIMMING the Rio Cobre — kids and adults in mesh rasta-coloured tops and
+  // white merinos, crossing the channel like jaywalkers cross a road. Pedestrian
+  // category: running one down counts on the roadkill ledger and draws police heat.
+  swimmer:     { damage: DAMAGE.animal,  collectible: false, depth: 3, color: '#2f8a5a', label: 'swimmer', category: 'pedestrian', walk: true, splash: true, jolt: 0.4 },
   burntcar:    { damage: DAMAGE.traffic, collectible: false, depth: 5, color: '#2a2622', label: 'burnt-out car', category: 'river', jolt: 0.9, splash: true },
   floatcar:    { damage: DAMAGE.traffic, collectible: false, depth: 5, color: '#6a6f66', label: 'floating car', category: 'river', vz: 70, jolt: 0.8, splash: true },
   limerock:    { damage: DAMAGE.traffic, collectible: false, depth: 4, color: '#cbb98a', label: 'limestone rock', category: 'river', jolt: 1.0 },
