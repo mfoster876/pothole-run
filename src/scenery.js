@@ -12,6 +12,9 @@ function limitForStage(stage) {
 // The FAR verge is phase-shifted by this many rows so the two sides of the road never
 // mirror each other — different props, and signs/billboards land at different points.
 const FAR_PHASE = 7;
+// The far verge offsets its safety-billboard message by half the 6-entry SAFETY_MESSAGES
+// list, so the two sides never show the same headline at the same time (see roadsideFeature).
+const FAR_MSG_SHIFT = 3;
 
 // This is a road-SAFETY sim, so the billboards must stay readable through their best, biggest
 // size — they carry the whole message. Full opacity holds in to camZ 560 (~392px tall, a big
@@ -29,8 +32,8 @@ export function signFade(camZ) {
 
 // Draw one roadside slot: either a road-safety sign (speed roundel / billboard) when the
 // cadence calls for one at this row, or the stage's own prop. `limit` is the posted km/h.
-function drawRoadside(ctx, kind, normX, camZ, position, W, H, rowIdx, limit) {
-  const feat = roadsideFeature(rowIdx, limit);
+function drawRoadside(ctx, kind, normX, camZ, position, W, H, rowIdx, limit, msgShift = 0) {
+  const feat = roadsideFeature(rowIdx, limit, msgShift);
   if (!feat) { drawProp(ctx, kind, normX, camZ, position, W, H, rowIdx); return; }
   const fade = signFade(camZ);
   if (fade <= 0) return;                       // skip the glitchy close-up balloon/swing
@@ -102,9 +105,9 @@ export function renderScenery(ctx, stage, position, W, H) {
       drawFernBack(ctx, -FERN_BACK, camZ, position, W, H);
       drawFernBack(ctx, FERN_BACK,  camZ, position, W, H);
     }
-    // Main bank — the two sides run on phase-shifted rows so they never mirror, and the
-    // road-safety signs / fatality billboards punch in along the gorge.
-    const fLimit = limitForStage(stage);
+    // Main bank — the two sides run on phase-shifted rows so they never mirror. The gorge is
+    // a pure scenic nature drive: NO road-safety billboards, speed roundels or sign posts here
+    // (the fern walls press to the edge), only the fern banks and the odd craft vendor.
     for (let n = FERN_COUNT; n >= 1; n--) {
       const camZ = n * FERN_GAP - offMain;
       if (camZ <= 1) continue;
@@ -112,8 +115,8 @@ export function renderScenery(ctx, stage, position, W, H) {
       // Roadside craft vendor (wood carvings) tucked into the LEFT bank every so often —
       // the real Fern Gully's carvers (e.g. the famous "Ready Freddie" figure).
       if ((((rowIdx % 6) + 6) % 6) === 0) drawProp(ctx, 'craftvendor', -FERN_EDGE, camZ, position, W, H, rowIdx);
-      else drawRoadside(ctx, kind, -FERN_EDGE, camZ, position, W, H, rowIdx, fLimit);
-      drawRoadside(ctx, kind, FERN_EDGE,  camZ, position, W, H, rowIdx + FAR_PHASE, fLimit);
+      else drawProp(ctx, kind, -FERN_EDGE, camZ, position, W, H, rowIdx);
+      drawProp(ctx, kind, FERN_EDGE, camZ, position, W, H, rowIdx + FAR_PHASE);
     }
     // Dense forest canopy vaulting overhead with sunlight peeking through (no power lines here).
     drawFernCanopy(ctx, W, H, position);
@@ -140,7 +143,7 @@ export function renderScenery(ctx, stage, position, W, H) {
       const nearKind = NK_PROPS[((rowIdx % NK_LEN) + NK_LEN) % NK_LEN];
       const farKind  = NK_PROPS[((farIdx % NK_LEN) + NK_LEN) % NK_LEN];
       drawRoadside(ctx, nearKind, -EDGE, camZ, position, W, H, rowIdx, nkLimit);
-      drawRoadside(ctx, farKind,   EDGE, camZ, position, W, H, farIdx, nkLimit);
+      drawRoadside(ctx, farKind,   EDGE, camZ, position, W, H, farIdx, nkLimit, FAR_MSG_SHIFT);
     }
     drawPowerLines(ctx, position, W, H);   // overhead lines + wooden light posts (city)
     return;
@@ -154,7 +157,7 @@ export function renderScenery(ctx, stage, position, W, H) {
     // Phase-shifted sides so opposite verges vary, with speed signs / safety billboards.
     const rowIdx = Math.floor((position + n * GAP - off) / GAP);
     drawRoadside(ctx, kind, -EDGE, camZ, position, W, H, rowIdx, limit);
-    drawRoadside(ctx, kind, EDGE, camZ, position, W, H, rowIdx + FAR_PHASE, limit);
+    drawRoadside(ctx, kind, EDGE, camZ, position, W, H, rowIdx + FAR_PHASE, limit, FAR_MSG_SHIFT);
   }
   // Overhead power lines + wooden light posts follow every road EXCEPT the Fern Gully canopy.
   if (stage.poles !== false) drawPowerLines(ctx, position, W, H);
@@ -309,29 +312,46 @@ function drawProp(ctx, kind, normX, camZ, position, W, H, rowIdx = 0) {
 // up and arching over the road (set `lean`). Leaflet ticks give the pinnate look.
 // dark=true: uses a deeper, receding palette for the back layer.
 function fernTree(ctx, x, y, s, lean, dark = false) {
+  // A lush tree-fern: a damp base mound crowned by broad, arching feather-fronds. Each frond
+  // is a FILLED tapered blade (not a bare stroke), layered darkest-first for depth, with a
+  // pale midrib vein and pinnae combed along it — so the gorge reads as dense green, not spikes.
   const greens = dark
-    ? ['#0b2210', '#112e18', '#174020']   // darker depth tint for back layer
-    : ['#12381a', '#1c5226', '#277034'];
+    ? ['#0e2814', '#143620', '#1c4a28']   // darker depth tint for the receding back layer
+    : ['#16401e', '#1f5a2a', '#2c7a38'];
+  const rib = dark ? 'rgba(150,190,150,0.30)' : 'rgba(190,225,180,0.45)';
   // dark damp base mound
-  ctx.fillStyle = dark ? '#091a0e' : '#10311a';
+  ctx.fillStyle = dark ? '#0a1c10' : '#10311a';
   ctx.beginPath(); ctx.ellipse(x, y, s * 0.95, s * 0.34, 0, 0, Math.PI * 2); ctx.fill();
-  const n = 9;
-  for (let i = 0; i < n; i++) {
+  const n = 11;
+  // Draw the low, outer fronds first and the tall central ones last so the crown layers up.
+  const order = [0, 10, 1, 9, 2, 8, 3, 7, 4, 6, 5];
+  for (const i of order) {
     const f = i / (n - 1);                                    // 0..1 across the spray
+    const centrality = 1 - Math.abs(f - 0.5) * 2;             // 1 in the middle, 0 at the edges
     const ang = -Math.PI * 0.5 + (f - 0.5) * Math.PI * 1.05 + lean * 0.25; // fan up, arch roadward
-    const len = s * (1.0 + (1 - Math.abs(f - 0.5) * 2) * 0.65); // tallest in the middle (~s*1.65)
+    const len = s * (1.0 + centrality * 0.7);                 // tallest in the middle (~s*1.7)
     const tipx = x + Math.cos(ang) * len, tipy = y + Math.sin(ang) * len;
-    const midx = x + Math.cos(ang) * len * 0.5 + lean * s * 0.12, midy = y + Math.sin(ang) * len * 0.5;
-    ctx.strokeStyle = greens[i % 3]; ctx.lineWidth = Math.max(1.5, s * 0.085);
-    ctx.beginPath(); ctx.moveTo(x, y); ctx.quadraticCurveTo(midx, midy, tipx, tipy); ctx.stroke();
-    // leaflets along the frond
-    ctx.lineWidth = Math.max(1, s * 0.035);
+    const midx = x + Math.cos(ang) * len * 0.5 + lean * s * 0.14, midy = y + Math.sin(ang) * len * 0.5;
     const perp = ang + Math.PI / 2;
-    for (let t = 0.3; t < 0.98; t += 0.2) {
-      const px = x + (tipx - x) * t, py = y + (tipy - y) * t, ll = s * 0.11 * (1 - t * 0.5);
+    const hw = s * (0.22 + centrality * 0.06);                // blade half-width, fuller mid-crown
+    const px = Math.cos(perp), py = Math.sin(perp);
+    // filled feather blade: base → tip along one edge, back to base along the mirrored edge
+    ctx.fillStyle = greens[i % 3];
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.quadraticCurveTo(midx + px * hw, midy + py * hw, tipx, tipy);
+    ctx.quadraticCurveTo(midx - px * hw, midy - py * hw, x, y);
+    ctx.fill();
+    // pale central vein
+    ctx.strokeStyle = rib; ctx.lineWidth = Math.max(1, s * 0.03);
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.quadraticCurveTo(midx, midy, tipx, tipy); ctx.stroke();
+    // pinnae combed off the vein for a feathered edge
+    ctx.lineWidth = Math.max(1, s * 0.022);
+    for (let t = 0.35; t < 0.95; t += 0.16) {
+      const vx = x + (tipx - x) * t, vy = y + (tipy - y) * t, ll = hw * 0.7 * (1 - t * 0.55);
       ctx.beginPath();
-      ctx.moveTo(px - Math.cos(perp) * ll, py - Math.sin(perp) * ll);
-      ctx.lineTo(px + Math.cos(perp) * ll, py + Math.sin(perp) * ll);
+      ctx.moveTo(vx - px * ll, vy - py * ll);
+      ctx.lineTo(vx + px * ll, vy + py * ll);
       ctx.stroke();
     }
   }

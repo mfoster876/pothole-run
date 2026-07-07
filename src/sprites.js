@@ -216,10 +216,30 @@ function jaggedPath(ctx, x, y, rx, ry, pts, rnd, irr) {
   }
   ctx.closePath();
 }
-function disc(ctx, x, y, r, fill, stroke) {
-  ctx.beginPath(); ctx.arc(x, y - r, r, 0, Math.PI * 2);
-  ctx.fillStyle = fill; ctx.fill(); ctx.lineWidth = Math.max(2, r * 0.2);
-  ctx.strokeStyle = stroke; ctx.stroke();
+// A struck coin standing on the road: darker milled rim, a raised inner face, an embossed
+// ring and $ mark, a metallic sheen arc and a bright glint — reads as minted metal, not a
+// flat token. Centre sits at (x, y-r) so the coin rests its base on the ground line y.
+function drawCoin(ctx, x, y, r, fill, stroke) {
+  const cy = y - r;
+  // ground shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.22)'; ellipsePath(ctx, x, y, r * 0.9, r * 0.22); ctx.fill();
+  // milled outer rim (the darker metal)
+  ctx.beginPath(); ctx.arc(x, cy, r, 0, Math.PI * 2); ctx.fillStyle = stroke; ctx.fill();
+  // raised inner face
+  ctx.beginPath(); ctx.arc(x, cy, r * 0.82, 0, Math.PI * 2); ctx.fillStyle = fill; ctx.fill();
+  // embossed inner ring
+  ctx.strokeStyle = stroke; ctx.lineWidth = Math.max(1, r * 0.08);
+  ctx.beginPath(); ctx.arc(x, cy, r * 0.6, 0, Math.PI * 2); ctx.stroke();
+  // embossed $ mark in the rim metal
+  ctx.fillStyle = stroke;
+  ctx.font = '700 ' + Math.max(5, Math.round(r * 0.85)) + 'px "Courier New", monospace';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText('$', x, cy + r * 0.04);
+  // metallic sheen arc (upper-left) + a bright specular glint
+  ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.lineWidth = Math.max(1, r * 0.11);
+  ctx.beginPath(); ctx.arc(x, cy, r * 0.82, Math.PI * 0.92, Math.PI * 1.42); ctx.stroke();
+  ctx.fillStyle = 'rgba(255,255,255,0.7)';
+  ctx.beginPath(); ctx.arc(x - r * 0.34, cy - r * 0.34, r * 0.12, 0, Math.PI * 2); ctx.fill();
 }
 // Money pickup: a coin for loose change ($1–$20), a banknote for paper money,
 // with the rare $5000 note gilded to feel coveted.
@@ -239,7 +259,7 @@ const BILL_LABEL = {
 function money(ctx, x, y, s, value) {
   if (value <= 20) {
     const [fill, stroke] = COIN_COLOR[value] || COIN_COLOR[10];
-    disc(ctx, x, y, s * 0.5, fill, stroke);
+    drawCoin(ctx, x, y, s * 0.5, fill, stroke);
     return;
   }
   // banknote, lying on the road

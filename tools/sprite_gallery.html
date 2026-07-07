@@ -26,9 +26,33 @@
     grid.appendChild(div);
   }
 
-  // entities at a generous size (as if close to the cart)
-  for (const t of ['bump', 'ackee', 'unripeackee', 'plantain', 'breadfruit', 'broomman', 'schoolbell', 'extralessons', 'placementbribe', 'ptameeting', 'vendor', 'beggar', 'goat', 'cattle']) {
-    cell(t, 180, 180, (ctx) => drawEntity(ctx, t, 90, 140, 60, 0.4));
+  // entities at a generous size (as if close to the cart) — comprehensive pickup/hazard pass
+  const ALL = [
+    // road hazards
+    'pothole','manhole','slick','flood','bump','stall',
+    // pickups — utility + foods
+    'coin','water','tools','coffee','fruit',
+    'ackee','unripeackee','plantain','breadfruit','patty','veggiepatty',
+    // drinks
+    'ting','boom','redstripe','whiterum','spirulina','rootstonic','henny','rose','whitewine','champagne',
+    // character items
+    'books','stationery','bagjuice','lasco','privatebribe','ladynight','schoolbell','extralessons',
+    // negatives
+    'bleaching','tightpants','weed','molly','teensex','obeah','pork','jw',
+    'cakesoap','currypowder','toothpaste','sunlight',
+    'roadfix','constituent','lightpole','hustlerlunch','voter','contractor','placementbribe','ptameeting',
+    // river mode
+    'floatbottle','plasticbag','croc','burntcar','floatcar','limerock','rivermumma',
+    // animals / people / traffic
+    'goat','dog','cat','cattle','coconutcart','hustler','jaywalker','beggar','vendor','peanutcart','broomman',
+    'taxi','bus','coaster','police','wiper',
+  ];
+  for (const t of ALL) {
+    cell(t, 150, 150, (ctx) => drawEntity(ctx, t, 75, 120, 52, 0.4));
+  }
+  // coin denominations (value drives the metal colour)
+  for (const v of [1, 5, 10, 20]) {
+    cell('coin $' + v, 150, 150, (ctx) => drawEntity(ctx, 'coin', 75, 110, 60, 0.4, v));
   }
   // roadkill per victim type — the corpse must match who was hit
   for (const [type, cat] of [['broomman', 'pedestrian'], ['vendor', 'pedestrian'], ['beggar', 'pedestrian'], ['hustler', 'pedestrian'], ['goat', 'animal'], ['dog', 'animal'], ['cattle', 'animal']]) {

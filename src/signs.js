@@ -30,11 +30,15 @@ export const SAFETY_MESSAGES = [
 // The billboard message cycles by its ORDINAL (floor(rowIdx/18)), not rowIdx%len — with a
 // period that's a multiple of the message count, a residue-keyed index would freeze on one
 // message and the fatality figure would never show.
-export function roadsideFeature(rowIdx, limit) {
+// `msgShift` desyncs the two verges: the FAR side passes half the message count, so a near-
+// and a far-side billboard that fall in the window together (they can land ~7 rows apart and
+// resolve to the SAME row ordinal) never show the IDENTICAL headline — which read as a
+// duplicated-sign glitch. It only re-indexes the message; the cadence is unchanged.
+export function roadsideFeature(rowIdx, limit, msgShift = 0) {
   const m = ((rowIdx % 18) + 18) % 18;
   if (m === 5) return { kind: 'speed', limit };
   if (m === 13) {
-    const ord = Math.floor(rowIdx / 18);
+    const ord = Math.floor(rowIdx / 18) + msgShift;
     return { kind: 'billboard', idx: ((ord % SAFETY_MESSAGES.length) + SAFETY_MESSAGES.length) % SAFETY_MESSAGES.length };
   }
   return null;

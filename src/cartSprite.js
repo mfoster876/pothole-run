@@ -213,12 +213,38 @@ function drawHandcart(ctx, cart, s, tier, gold = false, bleach = 0) {
   ctx.strokeRect(-s * 0.95, -s * 0.2, s * 1.9, s * 0.42);
   for (let i = -2; i <= 2; i++) { ctx.beginPath(); ctx.moveTo(i * s * 0.38, -s * 0.2); ctx.lineTo(i * s * 0.38, s * 0.22); ctx.stroke(); }
   drawDriver(ctx, cart.character, s, bleach);
-  // sound-system box (always dark — it's electronics)
-  ctx.fillStyle = '#222226';
+  // sound-system speaker box — a real reggae rig: dark cabinet, recessed baffle, a green-
+  // gold-red accent stripe, a bolted woofer with a chrome surround + dust cap, a horn
+  // tweeter and a bass-reflex port. Kept on the left/centre so the steering rod (drawn next)
+  // reads as passing in front of it.
+  ctx.fillStyle = '#1e1e22';
   ctx.fillRect(-s * 0.5, -s * 0.85, s, s * 0.7);
-  ctx.strokeStyle = '#0e0e10'; ctx.strokeRect(-s * 0.5, -s * 0.85, s, s * 0.7);
-  ctx.beginPath(); ctx.arc(-s * 0.16, -s * 0.5, s * 0.2, 0, Math.PI * 2); ctx.fillStyle = '#3a3a40'; ctx.fill();
-  ctx.beginPath(); ctx.arc(-s * 0.16, -s * 0.5, s * 0.1, 0, Math.PI * 2); ctx.fillStyle = '#15151a'; ctx.fill();
+  ctx.strokeStyle = '#0e0e10'; ctx.lineWidth = 3; ctx.strokeRect(-s * 0.5, -s * 0.85, s, s * 0.7);
+  ctx.fillStyle = 'rgba(255,255,255,0.08)'; ctx.fillRect(-s * 0.5, -s * 0.85, s, s * 0.045); // lit top bevel
+  // recessed baffle face
+  ctx.fillStyle = '#2a2a31'; ctx.fillRect(-s * 0.46, -s * 0.80, s * 0.92, s * 0.60);
+  // Rasta accent stripe (green / gold / red) across the top of the baffle
+  const stW = s * 0.92 / 3, stY = -s * 0.80, stH = s * 0.05;
+  ctx.fillStyle = '#2a8a3a'; ctx.fillRect(-s * 0.46, stY, stW, stH);
+  ctx.fillStyle = '#e0b020'; ctx.fillRect(-s * 0.46 + stW, stY, stW, stH);
+  ctx.fillStyle = '#c0392b'; ctx.fillRect(-s * 0.46 + 2 * stW, stY, stW, stH);
+  // big woofer (left): chrome surround, black cone, grey dust cap, specular glint
+  const wx = -s * 0.2, wy = -s * 0.42, wr = s * 0.2;
+  ctx.beginPath(); ctx.arc(wx, wy, wr, 0, Math.PI * 2); ctx.fillStyle = '#45454d'; ctx.fill();
+  ctx.beginPath(); ctx.arc(wx, wy, wr * 0.82, 0, Math.PI * 2); ctx.fillStyle = '#141418'; ctx.fill();
+  ctx.beginPath(); ctx.arc(wx, wy, wr * 0.34, 0, Math.PI * 2); ctx.fillStyle = '#34343c'; ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  ctx.beginPath(); ctx.arc(wx - wr * 0.16, wy - wr * 0.18, wr * 0.09, 0, Math.PI * 2); ctx.fill();
+  // mounting bolts around the surround
+  ctx.fillStyle = '#6a6a72';
+  for (let k = 0; k < 6; k++) { const a = k / 6 * Math.PI * 2; ctx.beginPath(); ctx.arc(wx + Math.cos(a) * wr * 0.9, wy + Math.sin(a) * wr * 0.9, s * 0.015, 0, Math.PI * 2); ctx.fill(); }
+  // horn tweeter (upper right of baffle)
+  const tx = s * 0.26, ty = -s * 0.62, tr = s * 0.085;
+  ctx.beginPath(); ctx.arc(tx, ty, tr, 0, Math.PI * 2); ctx.fillStyle = '#3a3a42'; ctx.fill();
+  ctx.beginPath(); ctx.arc(tx, ty, tr * 0.5, 0, Math.PI * 2); ctx.fillStyle = '#e6dcbc'; ctx.fill();
+  // bass-reflex port (lower right)
+  ctx.beginPath(); ctx.arc(s * 0.28, -s * 0.30, s * 0.06, 0, Math.PI * 2); ctx.fillStyle = '#0a0a0c'; ctx.fill();
+  ctx.strokeStyle = '#3a3a42'; ctx.lineWidth = Math.max(1, s * 0.02); ctx.stroke();
   // mopstick-iron steering rod + car-rim wheel
   ctx.strokeStyle = strutColor; ctx.lineWidth = s * 0.08;
   ctx.beginPath(); ctx.moveTo(s * 0.1, -s * 0.2); ctx.lineTo(s * 0.2, -s * 0.95); ctx.stroke();

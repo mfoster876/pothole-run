@@ -28,3 +28,24 @@ test('both a speed sign and a billboard occur within a single cadence period', (
   for (let r = 0; r < 18; r++) { const f = roadsideFeature(r, 50); if (f) kinds.add(f.kind); }
   assert.ok(kinds.has('speed') && kinds.has('billboard'), 'both sign kinds appear');
 });
+
+test('the far verge desyncs its message so the two sides never show the same headline', () => {
+  // A near-side billboard (row A) and a far-side one drawn 7 rows earlier resolve to the
+  // SAME row ordinal — without the shift they showed the IDENTICAL sign (a duplicate glitch).
+  for (let r = 0; r < 4000; r++) {
+    const near = roadsideFeature(r, 50);              // near verge, no shift
+    if (!near || near.kind !== 'billboard') continue;
+    const far = roadsideFeature(r, 50, 3);            // far verge, half-list shift
+    assert.equal(far.kind, 'billboard', 'same row ordinal is a billboard on both verges');
+    assert.notEqual(near.idx, far.idx, 'near and far never carry the same message at once');
+  }
+});
+
+test('the far verge still cycles through every safety message (shift is a bijection)', () => {
+  const seen = new Set();
+  for (let r = 0; r < 4000; r++) {
+    const f = roadsideFeature(r, 50, 3);
+    if (f && f.kind === 'billboard') seen.add(f.idx);
+  }
+  assert.equal(seen.size, SAFETY_MESSAGES.length, 'the shifted far side shows all messages too');
+});

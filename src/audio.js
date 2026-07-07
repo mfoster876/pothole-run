@@ -73,31 +73,92 @@ export function createAudio() {
     g.connect(f); f.connect(master);
   }
   const bassNote = (fr, t, dur, gain) => tone([fr, fr * 0.5], t, dur, 'triangle', gain, 520); // warm, rounded dub bass
-  const organ = (root, t, dur, gain) => tone([root, root * 1.5, root * 2], t, dur, 'square', gain, 2000); // organ chord (root-fifth-octave)
-  const skank = (root, t, dur, gain) => tone([root * 2, root * 2.5, root * 3], t, dur, 'square', gain, 5000); // bright offbeat chop
+  // Chord voicings play the ACTUAL triad tones so harmony changes are audible: the organ
+  // "bubble" sits in a mid register, the skank chops the same chord an octave up and bright.
+  const organChord = (triad, t, dur, gain) => tone(triad, t, dur, 'square', gain, 2000);
+  const skankChord = (triad, t, dur, gain) => tone(triad.map(f => f * 2), t, dur, 'square', gain, 5000);
 
-  // --- one bar per genre. Returns the bar length in seconds. ---
-  function bar(t0, root, beat) {
+  // ── Harmony: equal-tempered chords over the stage root, and real Jamaican progressions ──
+  const SEMI = n => Math.pow(2, n / 12);
+  // Chord voicings as semitone intervals. `dom` adds the flat-7 for a real dominant-7 chord
+  // (the tension in the ska turnaround), so it doesn't just read as a plain major triad.
+  const TRIAD = { maj: [0, 4, 7], min: [0, 3, 7], dom: [0, 4, 7, 10] };
+  // A chord spec is { off: semitones above the tonic, q: quality }. makeChord voices it:
+  // `cr` = the chord root in the bass register, `triad` = the three chord tones for comping.
+  function makeChord(root, spec) {
+    const base = root * SEMI(spec.off);
+    const ivals = TRIAD[spec.q] || TRIAD.maj;
+    return { cr: base, triad: ivals.map(iv => base * SEMI(iv)), q: spec.q };
+  }
+  // Authentic per-genre progressions (Roman numerals in the stage key). Each section is one
+  // chord per bar. reggae = sunny I–IV–V one-drop; ska = jazzy 50s changes; dancehall = a
+  // minor i–VII vamp; hip-hop = a moody minor loop — each with a distinct chorus and BRIDGE.
+  const M = 'maj', m = 'min', d = 'dom';
+  const PROG = {
+    reggae: {
+      verse:  [{ off: 0, q: M }, { off: 5, q: M }, { off: 7, q: M }, { off: 5, q: M }],   // I  IV V  IV
+      chorus: [{ off: 0, q: M }, { off: 7, q: M }, { off: 9, q: m }, { off: 5, q: M }],   // I  V  vi IV
+      bridge: [{ off: 9, q: m }, { off: 5, q: M }, { off: 0, q: M }, { off: 7, q: M }],   // vi IV I  V
+    },
+    ska: {
+      verse:  [{ off: 0, q: M }, { off: 9, q: m }, { off: 5, q: M }, { off: 7, q: M }],   // I  vi IV V
+      chorus: [{ off: 0, q: M }, { off: 5, q: M }, { off: 0, q: M }, { off: 7, q: M }],   // I  IV I  V
+      bridge: [{ off: 2, q: m }, { off: 7, q: M }, { off: 0, q: M }, { off: 9, q: d }],   // ii V  I  VI7
+    },
+    dancehall: {
+      verse:  [{ off: 0, q: m }, { off: 10, q: M }, { off: 0, q: m }, { off: 10, q: M }], // i  VII (vamp)
+      chorus: [{ off: 0, q: m }, { off: 8, q: M }, { off: 10, q: M }, { off: 0, q: m }],  // i  VI VII i
+      bridge: [{ off: 5, q: m }, { off: 7, q: m }, { off: 0, q: m }, { off: 10, q: M }],  // iv v  i  VII
+    },
+    hiphop: {
+      verse:  [{ off: 0, q: m }, { off: 0, q: m }, { off: 5, q: m }, { off: 5, q: m }],   // i (2) iv (2)
+      chorus: [{ off: 0, q: m }, { off: 8, q: M }, { off: 10, q: M }, { off: 7, q: m }],  // i  VI VII v
+      bridge: [{ off: 3, q: M }, { off: 8, q: M }, { off: 5, q: m }, { off: 7, q: m }],   // III VI iv v
+    },
+  };
+  // Song FORM: the order of sections, so the tune has an arc and a bridge recurs throughout
+  // instead of vamping one chord forever. verse×2 → chorus → verse → BRIDGE → chorus, then loop.
+  const FORM = [
+    { sec: 'verse', reps: 2 }, { sec: 'chorus', reps: 1 },
+    { sec: 'verse', reps: 1 }, { sec: 'bridge', reps: 1 }, { sec: 'chorus', reps: 1 },
+  ];
+  let formGenre = null, formSeq = [];   // cached flattened chord-per-bar sequence for `genre`
+  function barChordSpec(idx) {
+    if (formGenre !== genre) {
+      const P = PROG[genre] || PROG.reggae;
+      formSeq = [];
+      for (const { sec, reps } of FORM) {
+        const prog = P[sec] || P.verse;
+        for (let r = 0; r < reps; r++) formSeq.push(...prog);
+      }
+      formGenre = genre;
+    }
+    return formSeq[((idx % formSeq.length) + formSeq.length) % formSeq.length];
+  }
+
+  // --- one bar per genre over a given CHORD. Returns the bar length in seconds. ---
+  function bar(t0, chord, beat) {
+    const cr = chord.cr, triad = chord.triad;
     if (genre === 'ska') {
       const sw = beat * 0.03;                            // light swing
       for (let b = 0; b < 4; b++) {
         const t = t0 + b * beat;
         if (b % 2 === 0) drum(t, false);                 // kick on 1 & 3
         else noiseHit(t, 0.13, 2200, 0.22);              // snare backbeat 2 & 4
-        skank(root, t + beat / 2 + sw, beat * 0.15, 0.1);     // bright upstroke chop on the &
-        noiseHit(t + beat / 2, 0.04, 6500, 0.05);             // light hat on the &
+        skankChord(triad, t + beat / 2 + sw, beat * 0.15, 0.1);  // bright upstroke chop on the &
+        noiseHit(t + beat / 2, 0.04, 6500, 0.05);                // light hat on the &
       }
-      const walk = [root, root * 1.25, root * 1.5, root * 1.68]; // walking bassline
+      const walk = [cr, cr * 1.25, cr * 1.5, cr * 1.68]; // walking bassline anchored on the chord
       for (let b = 0; b < 4; b++) bassNote(walk[b], t0 + b * beat, beat * 0.4, 0.24);
     } else if (genre === 'dancehall') {
       for (let b = 0; b < 4; b++) {
         const t = t0 + b * beat;
         drum(t, false);                                  // digital four-on-the-floor
         if (b % 2 === 1) noiseHit(t, 0.16, 1500, 0.22);  // clap on 2 & 4
-        organ(root * 2, t + beat / 2, beat * 0.16, 0.05); // synth stab on the &
+        organChord(triad.map(f => f * 2), t + beat / 2, beat * 0.16, 0.05); // synth stab on the &
       }
-      // syncopated digital bassline riff across the bar (eighths) — the bounce
-      const riff = [root, root, root * 1.5, root, root * 1.33, root, root * 1.5, root * 1.78];
+      // syncopated digital bassline riff across the bar (eighths) — the bounce, on the chord root
+      const riff = [cr, cr, cr * 1.5, cr, cr * 1.33, cr, cr * 1.5, cr * 1.78];
       for (let i = 0; i < 8; i++) bassNote(riff[i], t0 + i * (beat / 2), beat * 0.4, 0.26);
     } else if (genre === 'hiphop') {
       const sw = beat * 0.06;                            // swung hats
@@ -108,19 +169,20 @@ export function createAudio() {
         if (b % 2 === 1) noiseHit(t, 0.2, 1400, 0.26);   // fat snare on 2 & 4
       }
       for (let i = 0; i < 8; i++) noiseHit(t0 + i * (beat / 2) + (i % 2 ? sw : 0), 0.05, 6000, i % 2 ? 0.05 : 0.08);
-      bassNote(root, t0, beat * 1.8, 0.3);               // deep sub bass
-      bassNote(root * 0.75, t0 + beat * 2, beat * 1.8, 0.3);
+      organChord(triad, t0 + beat * 0.5, beat * 0.5, 0.035);   // a sparse chord pad under the loop
+      bassNote(cr, t0, beat * 1.8, 0.3);                 // deep sub bass on the chord root
+      bassNote(cr * 0.75, t0 + beat * 2, beat * 1.8, 0.3);
     } else {                                             // reggae one-drop (default)
       const sw = beat * 0.05;                            // laid-back swing on the offbeats
       for (let b = 0; b < 4; b++) {
         const t = t0 + b * beat;
         if (b === 2) { drum(t, false); noiseHit(t, 0.16, 1700, 0.2); }  // one-drop on 3
-        skank(root, t + beat / 2 + sw, beat * 0.2, 0.075);              // guitar skank on the &
+        skankChord(triad, t + beat / 2 + sw, beat * 0.2, 0.075);        // guitar skank on the &
         // organ "bubble": the syncopated shuffle that makes it read as reggae
-        organ(root, t + beat * 0.5 + sw, beat * 0.16, 0.05);
-        organ(root * 1.5, t + beat * 0.75 + sw, beat * 0.14, 0.042);
+        organChord(triad, t + beat * 0.5 + sw, beat * 0.16, 0.05);
+        organChord(triad.map(f => f * 2), t + beat * 0.75 + sw, beat * 0.14, 0.04);
       }
-      const bass = [root, 0, root * 1.33, root * 0.75];  // walking dub line; rests on beat 2 for space
+      const bass = [cr, 0, cr * 1.33, cr * 0.75];        // walking dub line; rests on beat 2 for space
       for (let b = 0; b < 4; b++) if (bass[b]) bassNote(bass[b], t0 + b * beat, beat * 0.6, 0.28);
     }
     return 4 * beat;
@@ -132,9 +194,13 @@ export function createAudio() {
     stageRoot = STAGE_ROOT[musicId] || STAGE_ROOT.fern;
     stop();
     let next = ctx.currentTime + 0.1;
+    let barIdx = 0;                        // walks the song FORM so chords + bridges progress
     const tick = () => {
       const beat = 60 / (GENRE_BPM[genre] || 140);
-      while (next < ctx.currentTime + 1.0) next += bar(next, stageRoot, beat);
+      while (next < ctx.currentTime + 1.0) {
+        const chord = makeChord(stageRoot, barChordSpec(barIdx++));
+        next += bar(next, chord, beat);
+      }
       loopTimer = setTimeout(tick, 250);
     };
     tick();
