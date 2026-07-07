@@ -2,8 +2,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  NEGATIVES, isNegative, negativesFor, eligibleNegatives, applyNegative,
+  NEGATIVES, isNegative, negativesFor, eligibleNegatives, applyNegative, universalNegatives,
 } from '../src/negatives.js';
+import { NEGATIVE } from '../src/constants.js';
 import { createCondition } from '../src/wreck.js';
 import { getCharacter } from '../src/characters.js';
 
@@ -33,12 +34,42 @@ test('eligibility is gated to the right driver', () => {
     ['cakesoap', 'currypowder', 'toothpaste', 'sunlight']);
 });
 
-test('every negative belongs to exactly one eligible driver', () => {
+test('every character-gated negative belongs to exactly one eligible driver', () => {
   const drivers = ['yute', 'rasta', 'politician', 'conductor', 'principal'];
   for (const id of Object.keys(NEGATIVES)) {
+    if (NEGATIVES[id].universal) continue;   // universal negatives (unripe ackee) have no owner
     const owners = drivers.filter(d => negativesFor(getCharacter(d)).some(n => n.type === id));
     assert.equal(owners.length, 1, `${id} owned by exactly one driver`);
   }
+});
+
+// ---- unripe ackee: the ONE detractor open to every driver ----
+
+test('unripe ackee is a universal negative — never in any single driver’s temptations', () => {
+  assert.ok(isNegative('unripeackee'));
+  assert.ok(NEGATIVES.unripeackee.universal, 'flagged universal');
+  const drivers = ['yute', 'rasta', 'politician', 'conductor', 'principal'];
+  for (const d of drivers) {
+    assert.ok(!negativesFor(getCharacter(d)).some(n => n.type === 'unripeackee'),
+      `unripe ackee is not ${d}'s own temptation`);
+  }
+});
+
+test('universalNegatives lists the unripe-ackee poison trap (spawns for all drivers)', () => {
+  const list = universalNegatives();
+  assert.ok(list.some(n => n.type === 'unripeackee'), 'unripe ackee is in the universal pool');
+  assert.ok(list.every(n => typeof n.weight === 'number' && n.weight > 0), 'each carries a spawn weight');
+});
+
+test('eating unripe ackee poisons: a heavy condition hit + a LONG dizzy steering haze', () => {
+  const { effects, cart, run } = fxCart(1000);
+  const label = applyNegative(effects, cart, run, 'unripeackee');
+  assert.equal(label, 'Unripe Ackee');
+  assert.ok(cart.condition.value < 90, 'the sickness weakens the ride (real condition damage)');
+  assert.ok(cart.tipsy > 0, 'dizzy, nauseous — the hands go sloppy');
+  // Ackee poisoning lingers far longer than an ordinary impairment (weed/molly).
+  assert.equal(effects.tipsy, NEGATIVE.poisonSecs, 'the haze runs for the longer poison timer');
+  assert.ok(NEGATIVE.poisonSecs > NEGATIVE.impairSecs, 'poison outlasts a normal impairment');
 });
 
 // ---- effects ----

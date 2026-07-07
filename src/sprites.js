@@ -34,6 +34,7 @@ export function drawEntity(ctx, type, sx, sy, size, seed = 0.137, value = 1) {
     case 'fruit':  drawFruit(ctx, sx, sy, s); break;
     // Jamaican street food — national ackee + the beef/veggie patty
     case 'ackee':       drawAckee(ctx, sx, sy, s); break;
+    case 'unripeackee': drawUnripeAckee(ctx, sx, sy, s); break;   // closed pod — POISON
     case 'plantain':    drawPlantain(ctx, sx, sy, s); break;
     case 'breadfruit':  drawBreadfruit(ctx, sx, sy, s); break;
     case 'patty':       drawPatty(ctx, sx, sy, s, false); break;
@@ -1159,6 +1160,45 @@ function drawAckee(ctx, x, y, s) {
     ctx.fillStyle = 'rgba(255,255,255,0.6)';
     ctx.beginPath(); ctx.arc(ax + s * 0.02, ay - s * 0.09, s * 0.017, 0, Math.PI * 2); ctx.fill();
   }
+}
+
+// ---- unripe ackee: the SAME fruit at its dangerous stage — a hard, still-CLOSED pod.
+// No split, no cream arils, no glossy black seeds (those only show once it ripens open and
+// safe). A hard unripe green flushing to a warning red, three lobes sealed by deep seams,
+// with a couple of dark blemishes — it reads as "ackee, but shut" so the player learns the
+// rule: if the pod no open, no eat it. ----
+function drawUnripeAckee(ctx, x, y, s) {
+  ctx.fillStyle = 'rgba(0,0,0,0.20)'; ellipsePath(ctx, x, y + s * 0.06, s * 0.44, s * 0.1); ctx.fill();
+  const cy = y - s * 0.24;                        // pod centre
+  // stem + leaf (same anatomy as the ripe ackee, so it reads as the same fruit)
+  ctx.strokeStyle = '#4a6a2a'; ctx.lineWidth = Math.max(1.5, s * 0.05); ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(x, cy - s * 0.34); ctx.quadraticCurveTo(x + s * 0.08, cy - s * 0.50, x + s * 0.16, cy - s * 0.58); ctx.stroke();
+  ctx.lineCap = 'butt';
+  ctx.fillStyle = '#3f7d3a';
+  ctx.beginPath(); ctx.ellipse(x + s * 0.30, cy - s * 0.58, s * 0.17, s * 0.07, -0.5, 0, Math.PI * 2); ctx.fill();
+  // the sealed pod body: a rounded three-lobe teardrop, unripe green
+  ctx.fillStyle = '#4e7b34';
+  ctx.beginPath(); ctx.ellipse(x, cy + s * 0.04, s * 0.34, s * 0.40, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = '#33531f'; ctx.lineWidth = Math.max(1, s * 0.03); ctx.stroke();
+  // a warning red blush ripening in from the top (unripe ackee reddens BEFORE it splits)
+  ctx.fillStyle = 'rgba(178,50,30,0.55)';
+  ctx.beginPath(); ctx.ellipse(x, cy - s * 0.14, s * 0.28, s * 0.20, 0, 0, Math.PI * 2); ctx.fill();
+  // deep seams marking the three lobes still fused shut (NO opening — that's the tell)
+  ctx.strokeStyle = '#2b471a'; ctx.lineWidth = Math.max(1.2, s * 0.035); ctx.lineCap = 'round';
+  for (const dx of [-0.15, 0.0, 0.15]) {
+    ctx.beginPath();
+    ctx.moveTo(x + s * dx * 0.4, cy - s * 0.30);
+    ctx.quadraticCurveTo(x + s * dx, cy + s * 0.02, x + s * dx * 0.9, cy + s * 0.40);
+    ctx.stroke();
+  }
+  ctx.lineCap = 'butt';
+  // matte sheen down one side (hard, not glossy like the ripe arils)
+  ctx.fillStyle = 'rgba(200,225,170,0.30)';
+  ctx.beginPath(); ctx.ellipse(x - s * 0.13, cy - s * 0.02, s * 0.07, s * 0.20, -0.15, 0, Math.PI * 2); ctx.fill();
+  // dark blemishes — the sickly cue that this one is not for eating
+  ctx.fillStyle = 'rgba(30,44,18,0.6)';
+  ctx.beginPath(); ctx.arc(x + s * 0.10, cy + s * 0.16, s * 0.045, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(x - s * 0.06, cy + s * 0.26, s * 0.03, 0, Math.PI * 2); ctx.fill();
 }
 
 // ---- patty: a golden, flaky, half-moon Jamaican patty with a crimped edge. The beef

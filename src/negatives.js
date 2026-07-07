@@ -53,6 +53,13 @@ export const NEGATIVES = {
   constituent:  { id: 'constituent',  label: 'Constituent',    char: 'politician', cashBurn: 250000, color: '#b04a3c' },
   voter:        { id: 'voter',        label: 'Bribe a Voter',  char: 'politician', cashBurn: 150000, color: '#2a7f7f' },
   hustlerlunch: { id: 'hustlerlunch', label: 'Buy a Lunch',    char: 'politician', cashBurn: 100000, color: '#d06a30' },
+
+  // ── Universal — the ONE detractor open to every driver ──
+  // Unripe, still-CLOSED ackee. Ripe open ackee is the national dish; the unopened pod
+  // carries hypoglycin A and brings on "Jamaican Vomiting Sickness" — violent nausea, a
+  // hypoglycaemic crash, dizziness. It looks like the good ackee, so you must read the pod:
+  // if it no open, no eat it. `poison` = a heavy condition hit + a long, dizzy steering haze.
+  unripeackee: { id: 'unripeackee', label: 'Unripe Ackee', universal: true, poison: true, damage: 20, impair: 0.9, color: '#4e7b34' },
 };
 
 // Which negatives spawn for which driver (in display/spawn order).
@@ -64,14 +71,20 @@ const ELIGIBLE = {
   principal:  ['placementbribe', 'ptameeting'],
 };
 
+// Universal negatives — road detractors that bite EVERY driver, regardless of who's at the
+// wheel (they aren't a character's own temptation). Unripe ackee poisons anyone who eats it.
+const UNIVERSAL = ['unripeackee'];
+
 // Spawn rarity weights. Yute/Rasta temptations stay an occasional risk; the
-// Politician's responsibilities come thick and fast — dodging them IS his game.
+// Politician's responsibilities come thick and fast — dodging them IS his game. Unripe
+// ackee is an occasional lookalike trap sitting amongst the good roadside food.
 const WEIGHTS = {
   bleaching: 0.5, tightpants: 0.4, weed: 0.5, molly: 0.35, teensex: 0.3,
   obeah: 0.4, pork: 0.5, jw: 0.4,
   cakesoap: 0.6, currypowder: 0.6, toothpaste: 0.6, sunlight: 0.8,
   roadfix: 1.2, constituent: 1.4, lightpole: 0.9, hustlerlunch: 1.0, voter: 1.2, contractor: 0.8,
   placementbribe: 0.5, ptameeting: 0.5,
+  unripeackee: 0.4,
 };
 
 /** True if `id` names a negative in this framework. */
@@ -85,6 +98,11 @@ export function negativesFor(character) {
   const list = ELIGIBLE[character.id];
   if (!list) return [];
   return list.map(id => ({ type: id, weight: WEIGHTS[id] }));
+}
+
+/** Weighted spawn list of the negatives that bite EVERY driver (e.g. unripe ackee). */
+export function universalNegatives() {
+  return UNIVERSAL.map(id => ({ type: id, weight: WEIGHTS[id] }));
 }
 
 /** { id, label } pairs of this driver's negatives — for the legend screen. */
@@ -121,7 +139,9 @@ export function applyNegative(effects, cart, run, id) {
   }
   if (typeof n.impair === 'number') {
     cart.tipsy   = Math.max(cart.tipsy || 0, n.impair);
-    effects.tipsy = Math.max(effects.tipsy || 0, NEGATIVE.impairSecs);
+    // Ackee poisoning's dizzy nausea lingers far longer than a normal impairment.
+    const secs = n.poison ? NEGATIVE.poisonSecs : NEGATIVE.impairSecs;
+    effects.tipsy = Math.max(effects.tipsy || 0, secs);
   }
   if (n.bleach) {
     // Bleaching products / sun disfigure the Conductor one stage worse.

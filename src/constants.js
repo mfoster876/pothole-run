@@ -150,8 +150,9 @@ export const SWERVE = { amp: 0.62, rate: 2.2 };
 
 // Negatives / detractors: a lifestyle temptation or a politician "responsibility" that
 // bites on contact. `impairSecs` = how long an impairing negative (weed, molly…) leaves
-// the steering sloppy (reuses the booze `tipsy` machinery).
-export const NEGATIVE = { impairSecs: 4 };
+// the steering sloppy (reuses the booze `tipsy` machinery). `poisonSecs` = the longer,
+// heavier haze of ackee poisoning (Jamaican Vomiting Sickness lingers — dizziness + nausea).
+export const NEGATIVE = { impairSecs: 4, poisonSecs: 7 };
 
 // Politician road tuning: his motorcade rolls on freshly-paved roads, so potholes and
 // manholes SPAWN far less (×potholeMult). They still hit at full damage when they do.

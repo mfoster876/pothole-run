@@ -14,6 +14,11 @@ const SHARED_GOOD = [
   { id: 'fruit',  label: 'Vendor Fruit — strength (costs a lil)' },
 ];
 
+// Detractors every driver must dodge (shared across the roster).
+const SHARED_BAD = [
+  { id: 'unripeackee', label: 'Unripe Ackee — CLOSED pod, poison!' },
+];
+
 // One-line flavour on how this driver earns (the risk/reward dial).
 const NOTE = {
   yute:       'Steady driver. Frequent small money, gentle road.',
@@ -87,7 +92,7 @@ export function legendFor(character) {
     .concat(eligibleFoods(character))     // Ackee + the driver's patty (ital veggie for Rasta)
     .concat(eligibleDrinks(character))
     .concat(eligibleItems(character));
-  const bad = eligibleNegatives(character);
+  const bad = eligibleNegatives(character).concat(SHARED_BAD);
   const id = character && character.id;
   const traits = (id && TRAITS[id]) || { perks: [], cons: [] };
   return {

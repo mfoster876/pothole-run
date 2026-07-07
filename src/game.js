@@ -3,7 +3,7 @@ import { setLetterboxColors, setDprCap } from './main.js';
 import { drinkWeightsFor } from './drinks.js';
 import { itemWeightsFor } from './charitems.js';
 import { foodWeightsFor } from './foods.js';
-import { negativesFor } from './negatives.js';
+import { negativesFor, universalNegatives } from './negatives.js';
 import { makeRoad, renderRoad, projectEntity, curveOffsetAt, curvatureAt, setCurveScale, CART_Z } from './road.js';
 import { createCart, steer, updateCart, onShoulder, tipShoulder } from './cart.js';
 import { createField, spawn, advance } from './entities.js';
@@ -180,6 +180,7 @@ export function createGame(audio) {
     ).concat(drinkWeightsFor(ch))
       .concat(itemWeightsFor(ch))      // character-specific bleach / wholesome items
       .concat(negativesFor(ch))        // character-gated temptations / responsibilities
+      .concat(universalNegatives())    // unripe-ackee poison trap — bites every driver
       .concat([{ type: 'fruit', weight: FRUIT.weight }])   // paid street fruit — open to all
       .concat(foodWeightsFor(ch, stage))  // Ackee/Patty/Plantain (+ rural roast breadfruit)
       .map(w => {
