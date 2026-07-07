@@ -34,7 +34,7 @@ export function render(ctx, { save, lastResult, W, H }) {
   ctx.fillStyle = '#9fb8a3'; ctx.font = '500 16px "Courier New", monospace';
   ctx.fillText('wallet: ' + formatMoney(save.wallet) + '   bank: ' + formatMoney(save.lifetimeEarned), W / 2, H * 0.18);
   ctx.fillStyle = '#5a7a5e'; ctx.font = '500 13px "Courier New", monospace';
-  ctx.fillText('pay di buy-in · race 3 rivals to di line · 1st wins di purse (2nd = money back)', W / 2, H * 0.235);
+  ctx.fillText('pay di buy-in · race 3 rivals to di line · 1st wins di purse (2nd = money back)', W / 2, H * 0.235, W * 0.94);
 
   const R = rects(W, H);
   const rowH = H * 0.17, top = H * 0.30;
@@ -42,17 +42,19 @@ export function render(ctx, { save, lastResult, W, H }) {
     const cy = top + i * rowH;
     const unlocked = (save.lifetimeEarned || 0) >= t.unlockBank;
     const enter = canEnter(save, t);
+    // Text stops short of the ENTER button so long tier names never run under it.
+    const textMax = W * 0.66 - W * 0.08 - 12;
     ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
     ctx.fillStyle = unlocked ? '#f4f1e6' : '#5a5a5a';
     ctx.font = '700 24px "Courier New", monospace';
-    ctx.fillText(t.name, W * 0.08, cy - 10);
+    ctx.fillText(t.name, W * 0.08, cy - 10, textMax);
     ctx.font = '500 14px "Courier New", monospace';
     if (unlocked) {
       ctx.fillStyle = '#9fb8a3';
-      ctx.fillText('buy-in ' + formatMoney(t.buyIn) + '   →   purse ' + formatMoney(t.purse), W * 0.08, cy + 16);
+      ctx.fillText('buy-in ' + formatMoney(t.buyIn) + '   →   purse ' + formatMoney(t.purse), W * 0.08, cy + 16, textMax);
     } else {
       ctx.fillStyle = '#7a5a2a';
-      ctx.fillText('locked — bank ' + formatMoney(t.unlockBank) + ' to open', W * 0.08, cy + 16);
+      ctx.fillText('locked — bank ' + formatMoney(t.unlockBank) + ' to open', W * 0.08, cy + 16, textMax);
     }
     btn(ctx, R['enter:' + t.id], unlocked ? 'ENTER' : 'LOCKED', {
       stroke: enter ? '#f0c020' : '#4a4a4a',

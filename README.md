@@ -16,6 +16,7 @@ bittersweet.
 
 - **Slide lanes:** hold / tap the **left or right** side of the screen, or **Arrow keys** (also `A` / `D`).
   You can ride onto the soft **shoulder** to dodge — hazard-free but bumpy, and it slowly drains the cart.
+- **Pause / quit:** the top-left ❚❚ button or `P`; from pause, **QUIT RUN** (or `Q`) ends the run properly — coins bank, best records — and returns home.
 - **Mute:** `M`
 - **How to play:** the **`?`** button on the hub opens a 4-page in-game help guide.
 - **Portrait phones:** the game plays full-bleed in portrait (a taller virtual stage) — no need to rotate; landscape keeps the classic 960×540 framing.
@@ -23,9 +24,11 @@ bittersweet.
 
 ## What's in the game
 
-**Drivers** — School Yute, Rasta Musician, and the reckless Bleachaz Conductor (each
-with a front-facing portrait on character-select and the game-over card; stats multiply
-with the vehicle).
+**Drivers** — School Yute, Rasta Musician, Uni Girl, and Di Principal from the start;
+the reckless Bleachaz Conductor, Di Higgler, Taxi Man, and Di Politician unlock with
+banked cash (each with a front-facing portrait on character-select and the game-over
+card; stats multiply with the vehicle). Di Principal rings her school bell to scatter
+di pickney, collects extra-lessons fees — and must dodge the placement-bribe envelope.
 
 **Stages** — Fern Gully (dense shaded gorge), Holland Bamboo, Negril 7-Mile, and New
 Kingston (with recognisable landmarks: the Emancipation Park *Redemption Song* statue,
@@ -48,6 +51,9 @@ it wears off if you neglect it.
   flood, shown by a glowing frame and a countdown timer.
 - **Hardware Tools:** repair the cart + brief steadiness (the main in-run heal).
 - **Blue Mountain Coffee:** ultra-rare jackpot — smooth road + a flood of $5,000 bills.
+- **Street food:** Ackee (heal + steady), Beef/Veggie Patty (dash + heal + change),
+  **Ripe Plantain** (quick energy island-wide), and **Roast Breadfruit** — the filling
+  country staple, found only on rural roads (Fern Gully, Holland Bamboo, Bog Walk).
 - **Drinks (per driver):** sodas (Ting/Boom) give a clean boost; the Conductor can drink
   Red Stripe & White Rum, the Rasta also Spirulina & Roots Tonic. Stronger alcohol gives
   a bigger boost **but then you steer sloppy** (a lingering "TIPSY" swerve).
@@ -100,8 +106,9 @@ docs/superpowers/  specs + implementation plans (full design history)
 ## Development
 
 ```bash
-# Run locally (no build needed)
-python3 -m http.server          # then open http://localhost:8000
+# Run locally (no build needed). Use the dev server — it disables HTTP caching, so
+# edits always show on reload (plain `python3 -m http.server` serves stale modules).
+python3 tools/dev_server.py     # then open http://localhost:8124
 
 # Run the test suite
 node --test

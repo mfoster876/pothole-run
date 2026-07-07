@@ -8,6 +8,7 @@ export const STAGES = [
     // the outside of each bend. Verified: heavy trucks are banned — it's a narrow, delicate
     // road, so the fern walls press right to the edge with virtually NO soft shoulder.
     curveMult: 2.2,
+    rural: true,        // country road — roast breadfruit joins the food pool
     noShoulder: true,   // walls at the road edge — riding the shoulder bleeds & tips FAST
     poles: false,       // no overhead power lines / light posts inside the gorge canopy
     hazardWeights: [
@@ -26,6 +27,7 @@ export const STAGES = [
     palette: { sky: '#e7f3c8', hill: '#6b7a1e', ground: '#7c8a2a', road: '#5a5044', rumble: '#7a6a44' },
     // The real Holland Bamboo is a ~2.5-mile DEAD-STRAIGHT bamboo-arched avenue — gentlest bends.
     curveMult: 0.55,
+    rural: true,        // country road — roast breadfruit joins the food pool
     // livestock (goat/cattle) is rural-only — kept out of new-kingston/negril
     hazardWeights: [
       { type: 'pothole', weight: 4 }, { type: 'coin', weight: 4 },
@@ -77,7 +79,7 @@ export const STAGES = [
     // wrecks and the folklore River Mumma. The road renderer doubles as the water channel;
     // the "shoulders" are the riverbanks (no real shoulder — walls press in). No power lines.
     id: 'bog-walk', name: 'Bog Walk Gorge', locked: true, musicId: 'fern', scenery: 'river',
-    river: true, noShoulder: true, poles: false,
+    river: true, rural: true, noShoulder: true, poles: false,
     palette: { sky: '#bcd0cf', hill: '#233f30', ground: '#356048', road: '#3f7f88', rumble: '#2c5a5f' },
     curveMult: 1.5,     // the Rio Cobre meanders — bendy, but the water carries you
     hazardWeights: [

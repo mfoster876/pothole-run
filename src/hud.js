@@ -35,8 +35,13 @@ export function renderHud(ctx, { stageName, coins, distance, condition, effects 
   ctx.fillText(Math.floor(distance) + ' m', W - 24, 28, W / 2 - moneyHalf - 36);
 
   // On the narrow portrait stage the CART bar drops to a second row (right-aligned)
-  // so it can't collide with the SPD gauge on the first row.
+  // so it can't collide with the SPD gauge on the first row. A soft backing strip
+  // keeps the pale gauge labels readable over bright skies (Negril's sand haze).
   const compact = W < 700;
+  if (compact) {
+    ctx.fillStyle = 'rgba(14,26,18,0.45)';
+    ctx.fillRect(0, 56, W, 78);
+  }
   const mw = compact ? 200 : 220, mx = W - mw - (compact ? 16 : 24), my = compact ? 90 : 64;
   ctx.fillStyle = '#1c1c1c';
   ctx.fillRect(mx, my, mw, 16);

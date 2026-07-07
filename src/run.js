@@ -8,7 +8,9 @@ import { applyNegative } from './negatives.js';
 import { chargeRun } from './economy.js';
 
 export function createRun() {
-  return { distance: 0, coins: 0, combo: 0 };
+  // runOvers/heat: the run-over ledger — how many people/animals this run plowed
+  // through, and the police attention it earned (see POLICE.heat* in constants.js).
+  return { distance: 0, coins: 0, combo: 0, runOvers: 0, heat: 0 };
 }
 
 // What a windscreen youth shakes you down for on contact. Starts at WIPER.baseCharge
@@ -56,6 +58,10 @@ export function resolveHits(run, cart, field, effects = cart._effects || {}, sav
       // Carry the victim's identity (type) so the reaction draws the SAME person/animal
       // that was hit — not a generic stand-in.
       cart.roadkill = { cat: info.category, type: e.type, variation: Math.floor((cart.x * 1000 + run.distance) % 4 + 4) % 4, x: e.x };
+      // The ledger: every run-over is counted, and police HEAT rises — cops spawn
+      // more often and fine harder for the rest of the run (Babylon a watch yuh).
+      run.runOvers = (run.runOvers || 0) + 1;
+      run.heat = Math.min(POLICE.heatMax, (run.heat || 0) + 1);
     }
     if (info.collectible) {
       const mult = 1 + run.combo * COMBO.bonusPer;
@@ -128,8 +134,13 @@ export function resolveHits(run, cart, field, effects = cart._effects || {}, sav
           chargeRun(run, cart, charge);
           cart.washed = true; cart.washCharge = charge;
         }
-        // police shakedown: a hefty fine on contact (debt-capable, save for the debt-proof)
-        if (info.fine) { chargeRun(run, cart, POLICE.fine); cart.fined = true; }
+        // police shakedown: a hefty fine on contact (debt-capable, save for the debt-proof).
+        // Run-over heat inflates it — a driver dem did a watch pays dearly.
+        if (info.fine) {
+          const fine = Math.round(POLICE.fine * (1 + POLICE.heatFinePer * (run.heat || 0)));
+          chargeRun(run, cart, fine);
+          cart.fined = true; cart.fineAmount = fine;
+        }
       }
     }
   }

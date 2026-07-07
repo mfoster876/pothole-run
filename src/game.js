@@ -12,7 +12,7 @@ import { createRun, resolveHits } from './run.js';
 import { isWrecked, applyDamage, conditionTier } from './wreck.js';
 import { renderHud, renderTouchZones, renderPickupToast } from './hud.js';
 import { drawEntity, drawRoadkill } from './sprites.js';
-import { drawCart } from './cartSprite.js';
+import { drawCart, drawRaft } from './cartSprite.js';
 import { renderScenery } from './scenery.js';
 import { getCharacter } from './characters.js';
 import { getStage } from './stages.js';
@@ -66,7 +66,10 @@ function syncViewport() {
   W = VIRTUAL.width; H = VIRTUAL.height;
   MH = Math.min(H, Math.round(W * 1.55));
   MY0 = Math.round((H - MH) / 2);
-  const arrow = (xf, yf) => ({ x: W * xf, y: my(yf) - 24, w: 48, h: 48 });
+  // Portrait thumbs get a bigger arrow target (56px ≈ 49px physical; 48 fell just
+  // under the ~44px comfortable-tap minimum once scaled to the phone screen).
+  const as = W < 700 ? 56 : 48;
+  const arrow = (xf, yf) => ({ x: W * xf, y: my(yf) - as / 2, w: as, h: as });
   BTN = {
     driverPrev: arrow(0.15, 0.225), driverNext: arrow(0.80, 0.225),
     stagePrev:  arrow(0.15, 0.61),  stageNext:  arrow(0.80, 0.61),
@@ -79,10 +82,11 @@ function syncViewport() {
   PAUSE = {
     btn:        { x: 8, y: 8, w: 122, h: 40 },
     resume:     { x: W * 0.5 - 140, y: my(0.30), w: 280, h: 60 },
-    genrePrev:  { x: W * 0.17 - 24, y: my(0.55) - 24, w: 48, h: 48 },
-    genreNext:  { x: W * 0.83 - 24, y: my(0.55) - 24, w: 48, h: 48 },
+    genrePrev:  { x: W * 0.17 - as / 2, y: my(0.55) - as / 2, w: as, h: as },
+    genreNext:  { x: W * 0.83 - as / 2, y: my(0.55) - as / 2, w: as, h: as },
     genreValue: { x: W * 0.30, y: my(0.515), w: W * 0.40, h: MH * 0.085 }, // tap = next station / upload
-    mute:       { x: W * 0.5 - 120, y: my(0.72) - 26, w: 240, h: 52 },
+    mute:       { x: W * 0.5 - 120, y: my(0.70) - 26, w: 240, h: 52 },
+    quit:       { x: W * 0.5 - 120, y: my(0.80) - 22, w: 240, h: 44 },   // end the run, bank, go home
   };
 }
 syncViewport();
@@ -109,8 +113,15 @@ export function createGame(audio) {
   const state = { mode: 'menu', save, audio, popup: null };
   const menuChoice = { character: 'yute', stage: 'fern-gully', vehicle: save.vehicle, genre: save.settings.genre };
   let road, stage, cart, field, run, camZ, spawnZ, steerLock = 0, activeWeights = [], raceWeights = [];
+  let heatWeights = null, heatBuilt = 0;   // police-heat spawn pool, rebuilt when heat rises
   const drawList = [];               // reusable z-sorted render list (no per-frame allocation)
-  let goGrace = 0;                   // seconds the game-over card ignores input (no accidental skip)
+  // Wall-clock timestamp until which the game-over card ignores input (no accidental
+  // skip from a tap in flight at crash time). Wall-clock, NOT an update()-decremented
+  // timer: rAF freezes in a backgrounded tab, and a frozen countdown would lock the
+  // card against every tap until the app is foregrounded again.
+  let goUntil = 0;
+  const nowMs = () => (typeof performance !== 'undefined' ? performance.now() : Date.now());
+  let quitFlag = false;              // this run ended by choice (pause → quit), not a wreck
   let squeakAccum = 0, hitShake = 0;
   let throttleInput = 0;             // -1 brake … 0 coast … +1 accelerate (set by main.js from input)
   let pauseHintT = 0;                // seconds remaining to show the "tap to pause" start hint
@@ -132,6 +143,7 @@ export function createGame(audio) {
   refreshMusicCount();
 
   function startRun(characterId, stageId) {
+    quitFlag = false;
     road = makeRoad();
     stage = getStage(stageId);
     // Wind the road to this stage's character — Fern Gully twists hardest, Holland Bamboo
@@ -169,7 +181,7 @@ export function createGame(audio) {
       .concat(itemWeightsFor(ch))      // character-specific bleach / wholesome items
       .concat(negativesFor(ch))        // character-gated temptations / responsibilities
       .concat([{ type: 'fruit', weight: FRUIT.weight }])   // paid street fruit — open to all
-      .concat(foodWeightsFor(ch))      // Ackee + Patty (Rasta gets the ital veggie patty)
+      .concat(foodWeightsFor(ch, stage))  // Ackee/Patty/Plantain (+ rural roast breadfruit)
       .map(w => {
         // Repair tools are the in-run lifeline — spawn them 20% more often.
         if (w.type === 'tools') return { type: 'tools', weight: w.weight * SPAWN_TUNE.toolMult };
@@ -183,6 +195,7 @@ export function createGame(audio) {
       });
     // Precomputed once per run — races strip road money from the spawn pool every time.
     raceWeights = activeWeights.filter(w => w.type !== 'coin');
+    heatWeights = null; heatBuilt = 0;   // fresh run, no police heat yet
     // Faith upkeep resets each run — pray/read-bible become available again.
     save.prayedSinceRun = false;
     save.readBibleSinceRun = false;
@@ -207,6 +220,15 @@ export function createGame(audio) {
   // --- pause / resume (player-initiated; the world freezes, music keeps playing) ---
   function pauseGame()  { if (state.mode === 'play')   state.mode = 'paused'; }
   function resumeGame() { if (state.mode === 'paused') { state.mode = 'play'; steerLock = 6; } }
+  // Quit from the pause screen: end the run PROPERLY (coins bank, best records, the
+  // game-over card shows the take) — in a race it's a DNF. The exit that isn't a crash.
+  function quitRun() {
+    if (state.mode !== 'paused') return;
+    state.mode = 'play';           // endRun/finishRace expect a live run to close out
+    quitFlag = true;               // the card reads "park up", not "mash up"
+    if (race) finishRace(race.rivals.length + 1);
+    else endRun();
+  }
   // Change the riddim live while paused: swap genre, persist, and (re)start the source so
   // the new music is audible immediately — no need to end the run to pick a different vibe.
   function changeRunGenre(dir) {
@@ -242,6 +264,7 @@ export function createGame(audio) {
   // the purse by placement, and drop back to the races screen with the result banner.
   function finishRace(place) {
     save.condition = Math.max(0, cart.condition.value - UPKEEP.perRunWear);
+    save.lifetimeRunOvers = (save.lifetimeRunOvers || 0) + run.runOvers;   // race carnage counts too
     decayBlessing(save);
     // Bank the EXACT road coins (no MIN_EARN floor — a floor would make losing the
     // cheapest tier profitable). Races have no road money, so this is usually ≤0; any
@@ -262,11 +285,13 @@ export function createGame(audio) {
   }
   function endRun() {
     state.mode = 'gameover';
-    goGrace = 0.6;   // a tap already in flight at crash time must not skip the card
-    audio && audio.sfx('wreck');
+    goUntil = nowMs() + 600;   // a tap already in flight at crash time must not skip the card
+    audio && audio.sfx(quitFlag ? 'coin' : 'wreck');   // a chosen park-up isn't a crash
     // Persist the ending condition MINUS baseline wear-and-tear, so every ride always
     // needs at least some repair between plays (40% floor applied next run by createCart).
     save.condition = Math.max(0, cart.condition.value - UPKEEP.perRunWear);
+    // The run-over ledger follows you across runs — the toll doesn't reset with the cart.
+    save.lifetimeRunOvers = (save.lifetimeRunOvers || 0) + run.runOvers;
     // Blessing fades a little each run — keeps faithful giving a recurring choice.
     decayBlessing(save);
     // Bank earnings (debt-aware: a heavily-fined run can leave the wallet in the red).
@@ -301,7 +326,6 @@ export function createGame(audio) {
   function update(dt) {
     syncViewport();
     if (goldToast > 0) goldToast--;
-    if (state.mode === 'gameover' && goGrace > 0) goGrace -= dt;
     // Soft-shoulder topple: play the roll-over animation (world frozen), then game over.
     if (state.mode === 'toppling') {
       cart.toppleT = Math.min(1, (cart.toppleT || 0) + dt / TOPPLE.dur);
@@ -343,7 +367,7 @@ export function createGame(audio) {
     run.distance += dDist;
     // Street race: pace the rivals off the player's speed; cross the line to settle.
     if (race) {
-      for (const rv of race.rivals) tickRival(rv, dt, cart.speed * 0.1 * cart.character.scoreMult, rng);
+      for (const rv of race.rivals) tickRival(rv, dt, cart.speed * 0.1 * cart.character.scoreMult, rng, run.distance);
       if (run.distance >= race.finish) { finishRace(placement(run.distance, race.rivals)); return; }
     }
     advance(field, dz, dt);
@@ -358,6 +382,16 @@ export function createGame(audio) {
       let spawnWeights = activeWeights;
       if (race) spawnWeights = raceWeights;
       else if (supercharged) spawnWeights = activeWeights.concat([{ type: 'coin', weight: SUPERCHARGE.coinWeightBonus }]);
+      else if (run.heat > 0) {
+        // Run-over heat: cops spawn more often while Babylon a watch yuh. The boosted
+        // pool is rebuilt only when heat actually rises (no per-spawn allocation).
+        if (!heatWeights || heatBuilt !== run.heat) {
+          heatBuilt = run.heat;
+          const mult = 1 + POLICE.heatSpawnPer * run.heat;
+          heatWeights = activeWeights.map(w => w.type === 'police' ? { type: 'police', weight: w.weight * mult } : w);
+        }
+        spawnWeights = heatWeights;
+      }
       // A bribed cop CLEARS the politician's road of traffic/obstacles for a while —
       // like coffee's smooth window, only safe coins spawn (never during a race).
       const roadsClear = effectActive(effects, 'clearRoads');
@@ -383,7 +417,7 @@ export function createGame(audio) {
     }
     const coinsBefore = run.coins, condBefore = cart.condition.value;
     cart.gusted = false; cart.washed = false; cart.pickupValue = 0; cart.nearMiss = false;
-    cart.pickupLabel = null; cart.hitNegative = null; cart.fined = false; cart.washCharge = 0; cart.bribed = false;
+    cart.pickupLabel = null; cart.hitNegative = null; cart.fined = false; cart.fineAmount = 0; cart.washCharge = 0; cart.bribed = false;
     cart.roadkill = null; cart.jolted = 0; cart.splashed = 0;
     resolveHits(run, cart, field, effects, save);
     // Graphic run-over: a fresh impact spawns the injury reaction at the cart plane and a
@@ -410,7 +444,8 @@ export function createGame(audio) {
     if (pickupToast) { pickupToast.t -= dt; if (pickupToast.t <= 0) pickupToast = null; }
     if (cart.pickupLabel) pickupToast = { label: cart.pickupLabel, good: true, t: 1.4 };
     else if (cart.hitNegative) pickupToast = { label: cart.hitNegative, good: false, t: 1.8 };
-    else if (cart.fined) pickupToast = { label: 'Police Fine −' + formatMoney(POLICE.fine), good: false, t: 1.6 };
+    else if (cart.fined) pickupToast = { label: 'Police Fine −' + formatMoney(cart.fineAmount || POLICE.fine), good: false, t: 1.6 };
+    else if (cart.roadkill) pickupToast = { label: run.heat > 1 ? 'Yuh lick down smaddy — police a watch yuh!' : 'Yuh lick down smaddy!', good: false, t: 1.8 };
     else if (cart.bribed) pickupToast = { label: 'Bribe di Police −' + formatMoney(POLITICIAN.bribe) + ' · roads clear!', good: false, t: 1.8 };
     else if (cart.washed) pickupToast = { label: 'Windscreen Wash −' + formatMoney(cart.washCharge || 0), good: false, t: 1.4 };
     squeakAccum += dz;
@@ -472,7 +507,7 @@ export function createGame(audio) {
     syncViewport();
     if (state.mode === 'menu') return renderMenu(ctx);
     if (state.mode === 'gameover') return renderGameOver(ctx);
-    renderRoad(ctx, road, stage.palette, camZ, W, H);
+    renderRoad(ctx, road, stage.palette, camZ, W, H, !!stage.river);
     renderScenery(ctx, stage, camZ, W, H);
     drawList.length = 0;
     for (const e of field.pool) if (e.active) drawList.push(e);
@@ -503,6 +538,8 @@ export function createGame(audio) {
       const gp = projectEntity(gore.x, CART_Z, W, H);
       drawRoadkill(ctx, gp.x + curveOffsetAt(camZ, CART_Z), gp.y + 6, cp.size * 0.9, gore.variation, gore.cat, gore.t, gore.type);
     }
+    // River mode: the ride floats the Rio Cobre on a bamboo raft (drawn under it).
+    if (stage.river) drawRaft(ctx, cp.x + cartCurve + jitX, cp.y + 6 + bobPx, cp.size * 0.9);
     drawCart(ctx, cart, cp.x + cartCurve + jitX, cp.y + 6 + bobPx, cp.size * 0.9);
     renderTouchZones(ctx, W, H);
     renderHud(ctx, { stageName: stage.name, coins: run.coins, distance: run.distance, condition: cart.condition, effects, lite, speed: cart.speed, throttle: throttleInput, combo: race ? 0 : run.combo }, W, H);
@@ -528,12 +565,13 @@ export function createGame(audio) {
     ctx.fillText('PAUSE', bx + 2 * bw + gap + 10, cy + 1);
     ctx.restore();
     // A fading, centred hint at the very start of a run so the control can't be missed.
+    // During a race it drops below the race panel instead of printing over it.
     if (pauseHintT > 0) {
       ctx.save();
       ctx.globalAlpha = Math.min(1, pauseHintT / 1.2);
       ctx.fillStyle = '#f0c020'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.font = '700 16px "Courier New", monospace';
-      ctx.fillText('PAUSE — tap top-left  or press P', W / 2, H * 0.17);
+      ctx.fillText('PAUSE — tap top-left  or press P', W / 2, race ? H * 0.34 : H * 0.17);
       ctx.restore();
     }
   }
@@ -571,14 +609,20 @@ export function createGame(audio) {
     button(ctx, PAUSE.mute, save.settings.muted ? 'SOUND: OFF' : 'SOUND: ON',
       { font: '700 20px "Courier New", monospace', stroke: '#9fb8a3', text: '#f4f1e6' });
 
+    // Quit home: ends the run properly (banks the coins, records the best) — the way
+    // out of a run that doesn't require crashing on purpose.
+    button(ctx, PAUSE.quit, '✕ QUIT RUN', { font: '700 18px "Courier New", monospace', stroke: '#c0382c', text: '#f0b8b0' });
+
     ctx.fillStyle = '#9fb8a3'; ctx.font = '500 14px "Courier New", monospace';
-    ctx.fillText('tap the PAUSE button or press P / Esc · resume any time', W / 2, my(0.86), W * 0.94);
+    ctx.fillText('P / Esc resume · Q quit — coins bank, nuttin lost', W / 2, my(0.885), W * 0.94);
     ctx.restore();
   }
 
   // Draw the race opponents on the road at their relative positions. A rival's lead in
   // distance maps to world-z the same way the world scrolls (≈40/scoreMult per unit), so
   // a rival ahead appears up the road; one level with you sits alongside; behind = unseen.
+  // Each visible rival carries a NAMEPLATE so you always know who you're chasing (the
+  // grudge nemesis reads gold with a star).
   function renderRaceRivals(ctx) {
     const K = 40 / (cart.character.scoreMult || 1);
     const list = race.rivals
@@ -588,28 +632,73 @@ export function createGame(audio) {
     for (const { rv, dz } of list) {
       const camZe = dz + CART_Z;
       const p = projectEntity(LANES[rv.lane], camZe, W, H);
-      if (p.visible) drawEntity(ctx, rv.sprite, p.x + curveOffsetAt(camZ, camZe), p.y, p.size, rv.seed);
+      if (!p.visible) continue;
+      const rx = p.x + curveOffsetAt(camZ, camZe);
+      drawEntity(ctx, rv.sprite, rx, p.y, p.size, rv.seed);
+      if (p.size > 14) {
+        const label = (rv.grudge ? '★ ' : '') + rv.name;
+        const fs = Math.max(11, Math.min(18, p.size * 0.16));
+        ctx.save();
+        ctx.font = `700 ${Math.round(fs)}px "Courier New", monospace`;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        const tw = ctx.measureText(label).width;
+        const ty = p.y - p.size * (rv.sprite === 'bus' ? 1.5 : 1.15);
+        ctx.fillStyle = 'rgba(14,26,18,0.72)';
+        ctx.fillRect(rx - tw / 2 - 6, ty - fs * 0.75, tw + 12, fs * 1.5);
+        ctx.fillStyle = rv.grudge ? '#f0c020' : '#e8efe6';
+        ctx.fillText(label, rx, ty);
+        ctx.restore();
+      }
     }
   }
 
-  // In-race overlay: live placement ladder + distance to the finish line. The ladder is
-  // the source of truth for position (rivals aren't drawn on the road in this version).
+  // In-race overlay: live placement + distance to the line + a PROGRESS STRIP showing
+  // every racer as a marker between start and finish — so even when a rival is off the
+  // road view you can see exactly who's where, and who to catch.
+  const RIVAL_DOT = { bus: '#e7c84a', taxi: '#d24a3a', coaster: '#c4d0d8' };
   function renderRaceHud(ctx) {
     const place = placement(run.distance, race.rivals);
     const toGo = Math.max(0, Math.ceil(race.finish - run.distance));
     const ord = ['', '1ST', '2ND', '3RD', '4TH'][place] || (place + 'TH');
     // On the narrow portrait stage the HUD gauges reach the centre — drop the box lower.
     const ry = W < 700 ? 118 : 62;
+    const px0 = W / 2 - 130, pw = 260, ph = 98;
     ctx.save();
-    ctx.fillStyle = 'rgba(14,26,18,0.82)'; ctx.fillRect(W / 2 - 130, ry, 260, 50);
+    ctx.fillStyle = 'rgba(14,26,18,0.82)'; ctx.fillRect(px0, ry, pw, ph);
     ctx.strokeStyle = place === 1 ? '#f0c020' : '#3a4a3e'; ctx.lineWidth = 2;
-    ctx.strokeRect(W / 2 - 130, ry, 260, 50);
+    ctx.strokeRect(px0, ry, pw, ph);
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillStyle = place === 1 ? '#f0c020' : '#f4f1e6';
     ctx.font = '700 24px "Courier New", monospace';
-    ctx.fillText('🏁 ' + ord + ' / ' + (race.rivals.length + 1), W / 2, ry + 18);
-    ctx.fillStyle = '#9fb8a3'; ctx.font = '500 14px "Courier New", monospace';
-    ctx.fillText(toGo + ' m to di line', W / 2, ry + 38);
+    ctx.fillText('🏁 ' + ord + ' / ' + (race.rivals.length + 1), W / 2, ry + 17);
+    ctx.fillStyle = '#9fb8a3'; ctx.font = '500 13px "Courier New", monospace';
+    ctx.fillText(toGo + ' m to di line', W / 2, ry + 36);
+    // — the strip: start ▸ finish with a marker per racer —
+    const sx0 = px0 + 14, sx1 = px0 + pw - 22, sy2 = ry + 58;
+    const mx2 = (d) => sx0 + Math.max(0, Math.min(1, d / race.finish)) * (sx1 - sx0);
+    ctx.strokeStyle = '#3a4a3e'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(sx0, sy2); ctx.lineTo(sx1, sy2); ctx.stroke();
+    // finish flag: a tiny checker block
+    ctx.fillStyle = '#f4f1e6'; ctx.fillRect(sx1 + 2, sy2 - 7, 5, 5);  ctx.fillRect(sx1 + 7, sy2 - 2, 5, 5);
+    ctx.fillStyle = '#1a1a1a'; ctx.fillRect(sx1 + 7, sy2 - 7, 5, 5);  ctx.fillRect(sx1 + 2, sy2 - 2, 5, 5);
+    for (const rv of race.rivals) {
+      const mx = mx2(rv.dist);
+      ctx.fillStyle = RIVAL_DOT[rv.sprite] || '#c4d0d8';
+      ctx.beginPath(); ctx.arc(mx, sy2, 5, 0, Math.PI * 2); ctx.fill();
+      if (rv.grudge) { ctx.strokeStyle = '#f0c020'; ctx.lineWidth = 2; ctx.stroke(); }
+    }
+    // the player: a gold arrow, drawn last so it always reads on top
+    const pxm = mx2(run.distance);
+    ctx.fillStyle = '#f0c020';
+    ctx.beginPath(); ctx.moveTo(pxm, sy2 - 9); ctx.lineTo(pxm - 6, sy2 + 7); ctx.lineTo(pxm + 6, sy2 + 7);
+    ctx.closePath(); ctx.fill();
+    // grudge callout — the race's personal stake, updated live
+    const grudge = race.rivals.find(r => r.grudge);
+    if (grudge) {
+      ctx.font = '700 13px "Courier New", monospace';
+      ctx.fillStyle = grudge.dist > run.distance ? '#e0a52a' : '#3fae54';
+      ctx.fillText('★ ' + grudge.name + (grudge.dist > run.distance ? ' — ketch him!' : ' — yuh in front!'), W / 2, ry + 82, pw - 16);
+    }
     ctx.restore();
   }
 
@@ -701,11 +790,12 @@ export function createGame(audio) {
       return;
     }
     if (inRect(PAUSE.mute, vx, vy)) { toggleMute(); return; }
+    if (inRect(PAUSE.quit, vx, vy)) { quitRun(); return; }
   }
 
   function menuPoint(vx, vy) {
     if (state.popup) { state.popup = null; return; }
-    if (state.mode === 'gameover') { if (goGrace <= 0) { router.go('hub'); state.mode = 'menu'; } return; }
+    if (state.mode === 'gameover') { if (nowMs() >= goUntil) { router.go('hub'); state.mode = 'menu'; } return; }
     // While driving, the only tap the menu layer cares about is the pause button (steering
     // is handled separately in input.js). While paused, route taps to the overlay controls.
     if (state.mode === 'play') { if (inRect(PAUSE.btn, vx, vy)) pauseGame(); return; }
@@ -862,11 +952,12 @@ export function createGame(audio) {
 
   function menuKey(key) {
     if (state.popup) { state.popup = null; return; }
-    if (state.mode === 'gameover') { if (goGrace <= 0) { router.go('hub'); state.mode = 'menu'; } return; }
+    if (state.mode === 'gameover') { if (nowMs() >= goUntil) { router.go('hub'); state.mode = 'menu'; } return; }
     // P / Esc pause and resume the run; while paused, ‹ , . › cycle the riddim live.
     if (state.mode === 'play') { if (key === 'p' || key === 'P' || key === 'Escape') pauseGame(); return; }
     if (state.mode === 'paused') {
       if (key === 'p' || key === 'P' || key === 'Escape' || key === 'Enter' || key === ' ') resumeGame();
+      else if (key === 'q' || key === 'Q') quitRun();
       else if (key === ',') changeRunGenre(-1);
       else if (key === '.') changeRunGenre(1);
       return;
@@ -1073,8 +1164,9 @@ export function createGame(audio) {
     // Front-facing portrait of the driver who just ran — the Conductor's bleach stage
     // reached this run shows here (the grim payoff of all that vanity).
     renderPortrait(ctx, cart.character.id, W / 2, my(0.15), 104, { bleachLevel: cart.bleachLevel });
-    ctx.fillStyle = '#c0382c'; ctx.font = '700 60px "Courier New", monospace';
-    ctx.fillText('CART MASH UP!', W / 2, my(0.32), W * 0.94);
+    // A chosen exit parks up calm; a wreck mashes up loud.
+    ctx.fillStyle = quitFlag ? '#f0c020' : '#c0382c'; ctx.font = '700 60px "Courier New", monospace';
+    ctx.fillText(quitFlag ? 'RUN PARK UP' : 'CART MASH UP!', W / 2, my(0.32), W * 0.94);
     ctx.fillStyle = '#cbe7cf'; ctx.font = '500 30px "Courier New", monospace';
     ctx.fillText(Math.floor(run.distance) + ' m   •   ' + formatMoney(run.coins), W / 2, my(0.46), W * 0.9);
     ctx.fillText('best: ' + (save.bests[stage.id] || 0) + ' m', W / 2, my(0.54), W * 0.9);
@@ -1082,18 +1174,25 @@ export function createGame(audio) {
     ctx.fillText('wallet: ' + formatMoney(save.wallet), W / 2, my(0.61), W * 0.9);
     // Rank display on gameover
     ctx.fillStyle = '#3fae54'; ctx.font = '700 20px "Courier New", monospace';
-    ctx.fillText('rank: ' + rankFor(save.lifetimeEarned).label, W / 2, my(0.68), W * 0.9);
+    ctx.fillText('rank: ' + rankFor(save.lifetimeEarned).label, W / 2, my(0.665), W * 0.9);
+    // The run-over ledger — the human toll of the run, never glossed over.
+    if (run.runOvers > 0) {
+      ctx.fillStyle = '#e0584a'; ctx.font = '700 16px "Courier New", monospace';
+      ctx.fillText('yuh lick down ' + run.runOvers + (run.runOvers === 1 ? ' smaddy' : ' people') +
+        ' dis run  ·  ' + (save.lifetimeRunOvers || 0) + ' altogether', W / 2, my(0.715), W * 0.94);
+    }
     // A crash that shook a tune-up loose is called out here — head to the Mech Shop to re-fit it.
     if (lastBust) {
       ctx.fillStyle = '#e0584a'; ctx.font = '700 18px "Courier New", monospace';
-      ctx.fillText('⚠ ' + lastBust.toUpperCase() + ' BUST — RE-FIT AT DI MECH SHOP', W / 2, my(0.735), W * 0.94);
+      ctx.fillText('⚠ ' + lastBust.toUpperCase() + ' BUST — RE-FIT AT DI MECH SHOP', W / 2, my(0.76), W * 0.94);
     }
     // The continue prompt fades in with the input grace so an in-flight crash tap
     // never skips the card before the player has read it.
+    const graceLeft = Math.max(0, goUntil - nowMs()) / 600;
     ctx.save();
-    ctx.globalAlpha = goGrace > 0 ? Math.max(0.15, 1 - goGrace / 0.6) : 1;
+    ctx.globalAlpha = graceLeft > 0 ? Math.max(0.15, 1 - graceLeft) : 1;
     ctx.fillStyle = '#f0c020'; ctx.font = '700 26px "Courier New", monospace';
-    ctx.fillText('TAP / PRESS TO CONTINUE', W / 2, my(0.78), W * 0.9);
+    ctx.fillText('TAP / PRESS TO CONTINUE', W / 2, my(0.81), W * 0.9);
     ctx.restore();
   }
 

@@ -104,10 +104,10 @@ export function render(ctx, { save, W, H }) {
   const set = upgradesForVehicle(save.vehicle);
   ctx.fillStyle = '#cbe7cf'; ctx.font = '700 18px "Courier New", monospace';
   ctx.textAlign = 'center';
-  ctx.fillText('TUNE-UPS — ' + getVehicle(save.vehicle).name.toUpperCase(), W / 2, H * 0.435);
+  ctx.fillText('TUNE-UPS — ' + getVehicle(save.vehicle).name.toUpperCase(), W / 2, H * 0.435, W * 0.94);
   // Tell the player what the parts now DO, and that a crash can bust one (the shakedown).
   ctx.fillStyle = '#9fb8a3'; ctx.font = '500 12px "Courier New", monospace';
-  ctx.fillText('sharpen handling & grip — but a hard crash can BUST a part (pay to re-fit)', W / 2, H * 0.47);
+  ctx.fillText('sharpen handling & grip — but a hard crash can BUST a part (pay to re-fit)', W / 2, H * 0.47, W * 0.94);
 
   const owned = ownedUpgrades(save, save.vehicle);
   const busted = bustedParts(save, save.vehicle);
@@ -118,7 +118,7 @@ export function render(ctx, { save, W, H }) {
   const maxBonus = set.reduce((s, u) => s + u.stability, 0) || 1;
   const gripFrac = Math.max(0, Math.min(1, stabilityBonus(owned, save.vehicle) / maxBonus));
   ctx.fillStyle = '#9fb8a3'; ctx.font = '500 13px "Courier New", monospace';
-  ctx.fillText('GRIP — steadier steering · soaks up gusts · holds the line', W / 2, H * 0.505);
+  ctx.fillText('GRIP — steadier steering · soaks up gusts · holds the line', W / 2, H * 0.505, W * 0.94);
   const gbx = R.repair.x, gby = H * 0.522;
   ctx.fillStyle = '#2a3a2e'; ctx.fillRect(gbx, gby, R.repair.w, 10);
   ctx.fillStyle = '#49b6c8'; ctx.fillRect(gbx, gby, R.repair.w * gripFrac, 10);

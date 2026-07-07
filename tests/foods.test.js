@@ -45,7 +45,30 @@ test('blessing lengthens the patty dash', () => {
   assert.ok(blessed.super > base.super, 'blessed dash lasts longer');
 });
 
-test('eligibleFoods lists Ackee + the correct patty per driver', () => {
-  assert.deepEqual(eligibleFoods({ id: 'yute' }).map(f => f.id), ['ackee', 'patty']);
-  assert.deepEqual(eligibleFoods({ id: 'rasta' }).map(f => f.id), ['ackee', 'veggiepatty']);
+test('eligibleFoods lists Ackee + the correct patty per driver + the fruits', () => {
+  assert.deepEqual(eligibleFoods({ id: 'yute' }).map(f => f.id), ['ackee', 'patty', 'plantain', 'breadfruit']);
+  assert.deepEqual(eligibleFoods({ id: 'rasta' }).map(f => f.id), ['ackee', 'veggiepatty', 'plantain', 'breadfruit']);
+});
+
+test('ripe plantain is quick energy: a modest heal + a short dash', () => {
+  const fx = {}; const cart = { condition: { value: 50, max: 100 }, blessing: null };
+  applyFood(fx, cart, 'plantain', null, { id: 'yute' });
+  assert.ok(cart.condition.value > 50, 'plantain heals a little');
+  assert.ok(fx.super > 0, 'plantain gives a short dash');
+});
+
+test('roast breadfruit is the filling staple: biggest food heal + steady hands', () => {
+  const fx = {}; const cart = { condition: { value: 30, max: 100 }, blessing: null };
+  applyFood(fx, cart, 'breadfruit', null, { id: 'rasta' });
+  assert.equal(cart.condition.value, 30 + CART.maxCondition * FOODS.breadfruit.heal / 100, 'the big heal lands');
+  assert.ok(fx.steady > 0, 'and it steadies the hands');
+  assert.ok(FOODS.breadfruit.heal > FOODS.ackee.heal && FOODS.breadfruit.heal > FOODS.patty.heal, 'the biggest food heal');
+});
+
+test('breadfruit spawns only on rural stages; plantain everywhere', () => {
+  const town = foodWeightsFor({ id: 'yute' }, { rural: false }).map(w => w.type);
+  const country = foodWeightsFor({ id: 'yute' }, { rural: true }).map(w => w.type);
+  assert.ok(town.includes('plantain') && country.includes('plantain'), 'plantain island-wide');
+  assert.ok(!town.includes('breadfruit'), 'no breadfruit in town');
+  assert.ok(country.includes('breadfruit'), 'breadfruit pon di country road');
 });

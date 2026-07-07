@@ -66,7 +66,10 @@ function projY(camZ, W, H) {
 }
 function projW(camZ, W, H) { return (CAM_DEPTH / camZ) * ROAD_W * (W / 2) * viewScaleFor(W, H); }
 
-export function renderRoad(ctx, road, palette, position, W, H) {
+// `river` (Bog Walk Gorge): the ribbon is the Rio Cobre, not asphalt — muddy banks
+// instead of marl shoulders, drifting water glints instead of a painted centre line,
+// and no asphalt patches. Same geometry, so every entity/raft projection still lands.
+export function renderRoad(ctx, road, palette, position, W, H, river = false) {
   const hy = horizonYFor(W, H);
   ctx.fillStyle = palette.sky;
   ctx.fillRect(0, 0, W, hy);
@@ -77,7 +80,7 @@ export function renderRoad(ctx, road, palette, position, W, H) {
 
   const baseIndex = Math.floor(position / SEG);
   const offset = position - baseIndex * SEG;
-  const marl = palette.shoulder || '#b3a07f';
+  const marl = river ? '#6f7a52' : (palette.shoulder || '#b3a07f');
   const asph = palette.road;
   const k = (W * viewScaleFor(W, H)) / 960;   // bend px scale — must match curveOffsetAt
 
@@ -111,16 +114,29 @@ export function renderRoad(ctx, road, palette, position, W, H) {
     // asphalt
     band(ctx, cxN, wNear * ROAD_DRAW, yNear, cxF, wFar * ROAD_DRAW, yFar,
       light ? asph : shade(asph, -0.05));
-    // half-done patch (deterministic, occasional, mismatched tone)
-    if ((idx * 2654435761 >>> 0) % 5 === 0) {
-      const lane = (((idx * 40503) >>> 0) % 100) / 100 - 0.5; // -0.5..0.5
-      const pwN = wNear * ROAD_DRAW * 0.34, pwF = wFar * ROAD_DRAW * 0.34;
-      band(ctx, cxN + lane * wNear * ROAD_DRAW, pwN, yNear, cxF + lane * wFar * ROAD_DRAW, pwF, yFar,
-        shade(asph, idx % 2 ? -0.12 : 0.08));
-    }
-    // single broken centre line
-    if (light) {
-      band(ctx, cxN, wNear * 0.02, yNear, cxF, wFar * 0.02, yFar, '#d8c24a');
+    if (river) {
+      // drifting water glints — thin bright streaks that slide with the current
+      // (offset drifts with the segment index so they read as moving water, and
+      // they sit at varying lanes so the surface never looks like lane markings)
+      if (light) {
+        const g1 = Math.sin(idx * 0.9) * 0.42, g2 = Math.sin(idx * 1.7 + 2.2) * 0.5;
+        band(ctx, cxN + g1 * wNear * ROAD_DRAW, wNear * 0.035, yNear,
+          cxF + g1 * wFar * ROAD_DRAW, wFar * 0.035, yFar, 'rgba(214,240,240,0.30)');
+        band(ctx, cxN + g2 * wNear * ROAD_DRAW, wNear * 0.02, yNear,
+          cxF + g2 * wFar * ROAD_DRAW, wFar * 0.02, yFar, 'rgba(180,225,225,0.20)');
+      }
+    } else {
+      // half-done patch (deterministic, occasional, mismatched tone)
+      if ((idx * 2654435761 >>> 0) % 5 === 0) {
+        const lane = (((idx * 40503) >>> 0) % 100) / 100 - 0.5; // -0.5..0.5
+        const pwN = wNear * ROAD_DRAW * 0.34, pwF = wFar * ROAD_DRAW * 0.34;
+        band(ctx, cxN + lane * wNear * ROAD_DRAW, pwN, yNear, cxF + lane * wFar * ROAD_DRAW, pwF, yFar,
+          shade(asph, idx % 2 ? -0.12 : 0.08));
+      }
+      // single broken centre line
+      if (light) {
+        band(ctx, cxN, wNear * 0.02, yNear, cxF, wFar * 0.02, yFar, '#d8c24a');
+      }
     }
   }
 }

@@ -72,3 +72,12 @@ test('corrupt data falls back to defaultSave', () => {
   const store = memStore({ 'pothole-run-save:v2': '{not json' });
   assert.equal(loadSave(store).wallet, 0);
 });
+
+test('loadSave migrates the old nurse id to principal (no ghost characters)', () => {
+  const old = JSON.stringify({
+    unlocks: { characters: ['yute', 'rasta', 'student', 'nurse'], stages: ['fern-gully'] },
+  });
+  const s = loadSave(fakeStorage(old));
+  assert.ok(s.unlocks.characters.includes('principal'), 'principal present');
+  assert.ok(!s.unlocks.characters.includes('nurse'), 'nurse id gone');
+});

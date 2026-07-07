@@ -135,7 +135,10 @@ export const TITHE = { mite: 2000, perGift: 0.5, maxResist: 0.40, maxExtend: 0.5
 // Police are a spawnable road obstacle (urban-frequent — weighted by stage). Direct
 // contact costs condition (traffic-tier damage, via the hazard's category) AND a hefty
 // cash fine skimmed off your fare. The Politician is immune (see characters.js).
-export const POLICE = { fine: 5000 };
+// HEAT — the run-over consequence subplot: every pedestrian/animal you plow through
+// raises in-run heat (capped at heatMax); cops spawn `heatSpawnPer` more per level
+// and each fine grows `heatFinePer` per level. Lick down people, Babylon a watch yuh.
+export const POLICE = { fine: 5000, heatMax: 5, heatSpawnPer: 0.6, heatFinePer: 0.5 };
 
 // Street races run MUCH faster than the normal game (speedMult on the cart's top speed
 // + accel) and pay far bigger — see races.js purses. Rivals are visible on the road.

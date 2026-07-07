@@ -34,6 +34,8 @@ export function drawEntity(ctx, type, sx, sy, size, seed = 0.137, value = 1) {
     case 'fruit':  drawFruit(ctx, sx, sy, s); break;
     // Jamaican street food — national ackee + the beef/veggie patty
     case 'ackee':       drawAckee(ctx, sx, sy, s); break;
+    case 'plantain':    drawPlantain(ctx, sx, sy, s); break;
+    case 'breadfruit':  drawBreadfruit(ctx, sx, sy, s); break;
     case 'patty':       drawPatty(ctx, sx, sy, s, false); break;
     case 'veggiepatty': drawPatty(ctx, sx, sy, s, true); break;
     // Bog Walk river-mode obstacles
@@ -341,59 +343,93 @@ function drawStall(ctx, x, y, s) {
 }
 // ---- animal figures — 12-bit lift ----
 
-// Goat: pale tan, two thin legs, oval body, stubby neck+head, two horn nubs, chin tuft
+// Goat — the classic Jamaican roadside ram: white coat with tan patches, head UP and
+// alert on a proper raised neck, back-swept horns, floppy ears, beard, flicked-up tail.
 function drawGoat(ctx, x, y, r) {
-  const mid = '#d8c7b0', shadow = '#b09878', hi = '#f0e8d8', dark = '#6b5a3a';
-  const by = y - r * 0.18; // body centre y
+  const coat = '#ece4d4', patch = '#b98a52', shadow = '#c4b498', dark = '#4a3a24';
 
-  // thin legs (two pairs, slightly splayed)
-  ctx.strokeStyle = dark; ctx.lineWidth = Math.max(1.5, r * 0.18); ctx.lineCap = 'round';
+  // legs — four, with visible knee bend and small dark hooves
+  ctx.strokeStyle = '#d8cdb8'; ctx.lineWidth = Math.max(1.5, r * 0.13); ctx.lineCap = 'round';
+  for (const [lx, lean] of [[-0.5, -0.04], [-0.24, 0.02], [0.2, -0.02], [0.46, 0.05]]) {
+    ctx.beginPath();
+    ctx.moveTo(x + r * lx, y - r * 0.42);
+    ctx.lineTo(x + r * (lx + lean), y - r * 0.18);
+    ctx.lineTo(x + r * (lx + lean * 2), y + r * 0.04);
+    ctx.stroke();
+    ctx.fillStyle = dark;
+    ctx.fillRect(x + r * (lx + lean * 2) - r * 0.05, y + r * 0.02, r * 0.1, r * 0.07);
+  }
+
+  // body — deep chest tapering to the hip, white coat
+  const by = y - r * 0.52;
+  ctx.fillStyle = coat;
   ctx.beginPath();
-  ctx.moveTo(x - r * 0.45, by + r * 0.28); ctx.lineTo(x - r * 0.42, y + r * 0.08);
-  ctx.moveTo(x - r * 0.15, by + r * 0.28); ctx.lineTo(x - r * 0.12, y + r * 0.08);
-  ctx.moveTo(x + r * 0.15, by + r * 0.28); ctx.lineTo(x + r * 0.18, y + r * 0.08);
-  ctx.moveTo(x + r * 0.45, by + r * 0.28); ctx.lineTo(x + r * 0.48, y + r * 0.08);
-  ctx.stroke();
+  ctx.moveTo(x - r * 0.66, by + r * 0.02);                                   // chest
+  ctx.quadraticCurveTo(x - r * 0.72, by - r * 0.28, x - r * 0.34, by - r * 0.32); // shoulder
+  ctx.quadraticCurveTo(x + r * 0.1, by - r * 0.40, x + r * 0.52, by - r * 0.30);  // back line
+  ctx.quadraticCurveTo(x + r * 0.72, by - r * 0.24, x + r * 0.66, by + r * 0.04); // rump
+  ctx.quadraticCurveTo(x + r * 0.3, by + r * 0.30, x - r * 0.2, by + r * 0.26);   // belly
+  ctx.quadraticCurveTo(x - r * 0.6, by + r * 0.24, x - r * 0.66, by + r * 0.02);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = shadow; ctx.lineWidth = Math.max(1, r * 0.03); ctx.stroke();
+  // tan patches (saddle + rump) — the mixed coat every Jamaican road goat wears
+  ctx.fillStyle = patch;
+  ctx.beginPath(); ctx.ellipse(x + r * 0.08, by - r * 0.16, r * 0.30, r * 0.18, 0.15, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(x + r * 0.52, by - r * 0.04, r * 0.16, r * 0.14, -0.2, 0, Math.PI * 2); ctx.fill();
+  // belly shadow
+  ctx.fillStyle = 'rgba(120,100,70,0.25)';
+  ctx.beginPath(); ctx.ellipse(x, by + r * 0.16, r * 0.5, r * 0.12, 0, 0, Math.PI * 2); ctx.fill();
 
-  // body — base fill
-  ctx.beginPath(); ctx.ellipse(x, by, r * 0.72, r * 0.38, 0, 0, Math.PI * 2);
-  ctx.fillStyle = mid; ctx.fill();
-  // shadow underside
-  ctx.beginPath(); ctx.ellipse(x, by + r * 0.12, r * 0.65, r * 0.2, 0, 0, Math.PI * 2);
-  ctx.fillStyle = shadow; ctx.fill();
-  // highlight top
-  ctx.beginPath(); ctx.ellipse(x - r * 0.1, by - r * 0.1, r * 0.38, r * 0.14, -0.3, 0, Math.PI * 2);
-  ctx.fillStyle = hi; ctx.fill();
+  // tail — short, flicked UP (the goat tell)
+  ctx.strokeStyle = coat; ctx.lineWidth = Math.max(1.5, r * 0.11);
+  ctx.beginPath(); ctx.moveTo(x + r * 0.64, by - r * 0.2);
+  ctx.quadraticCurveTo(x + r * 0.78, by - r * 0.42, x + r * 0.70, by - r * 0.52); ctx.stroke();
 
-  // tail (short flick to the right)
-  ctx.strokeStyle = shadow; ctx.lineWidth = Math.max(1, r * 0.13);
-  ctx.beginPath(); ctx.moveTo(x + r * 0.68, by - r * 0.08);
-  ctx.quadraticCurveTo(x + r * 0.92, by - r * 0.32, x + r * 0.82, by - r * 0.46); ctx.stroke();
-
-  // neck + head
-  const hx = x - r * 0.55, hy = by - r * 0.55;
-  ctx.beginPath(); ctx.ellipse(hx, hy + r * 0.12, r * 0.18, r * 0.26, -0.4, 0, Math.PI * 2);
-  ctx.fillStyle = mid; ctx.fill();
-  ctx.beginPath(); ctx.arc(hx - r * 0.08, hy - r * 0.1, r * 0.22, 0, Math.PI * 2);
-  ctx.fillStyle = mid; ctx.fill();
-  // head shadow
-  ctx.beginPath(); ctx.arc(hx, hy - r * 0.02, r * 0.14, 0, Math.PI * 2);
-  ctx.fillStyle = shadow; ctx.fill();
-  // eye
-  ctx.beginPath(); ctx.arc(hx - r * 0.14, hy - r * 0.14, Math.max(1, r * 0.06), 0, Math.PI * 2);
-  ctx.fillStyle = '#1a1008'; ctx.fill();
-  // nostril
-  ctx.beginPath(); ctx.arc(hx - r * 0.24, hy - r * 0.06, Math.max(1, r * 0.04), 0, Math.PI * 2);
-  ctx.fillStyle = dark; ctx.fill();
-  // horns (two small nubs pointing back-up)
-  ctx.strokeStyle = '#9a8a60'; ctx.lineWidth = Math.max(1.5, r * 0.1);
+  // raised neck up to an ALERT head (watching the traffic it refuses to move for)
+  const hx = x - r * 0.72, hy = by - r * 0.72;
+  ctx.fillStyle = coat;
   ctx.beginPath();
-  ctx.moveTo(hx - r * 0.04, hy - r * 0.28); ctx.lineTo(hx + r * 0.06, hy - r * 0.48);
-  ctx.moveTo(hx + r * 0.1, hy - r * 0.26); ctx.lineTo(hx + r * 0.22, hy - r * 0.44);
+  ctx.moveTo(x - r * 0.6, by + r * 0.02);
+  ctx.lineTo(hx - r * 0.02, hy + r * 0.06);
+  ctx.lineTo(hx + r * 0.22, hy + r * 0.18);
+  ctx.lineTo(x - r * 0.3, by - r * 0.28);
+  ctx.closePath(); ctx.fill();
+  // head — a tidy wedge, muzzle down-left
+  ctx.beginPath();
+  ctx.moveTo(hx + r * 0.16, hy - r * 0.18);
+  ctx.lineTo(hx - r * 0.26, hy + r * 0.02);
+  ctx.lineTo(hx - r * 0.30, hy + r * 0.16);
+  ctx.lineTo(hx - r * 0.12, hy + r * 0.22);
+  ctx.lineTo(hx + r * 0.2, hy + r * 0.06);
+  ctx.closePath();
+  ctx.fillStyle = coat; ctx.fill();
+  ctx.strokeStyle = shadow; ctx.lineWidth = Math.max(1, r * 0.025); ctx.stroke();
+  // tan blaze down the face
+  ctx.fillStyle = patch;
+  ctx.beginPath();
+  ctx.moveTo(hx + r * 0.1, hy - r * 0.14); ctx.lineTo(hx - r * 0.2, hy + r * 0.04);
+  ctx.lineTo(hx - r * 0.12, hy + r * 0.1); ctx.lineTo(hx + r * 0.12, hy - r * 0.06);
+  ctx.closePath(); ctx.fill();
+  // floppy ear (drops back from the crown)
+  ctx.fillStyle = patch;
+  ctx.beginPath(); ctx.ellipse(hx + r * 0.2, hy + r * 0.02, r * 0.17, r * 0.08, 0.7, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = shadow; ctx.stroke();
+  // horns — two back-swept curves (not nubs)
+  ctx.strokeStyle = '#8a7a50'; ctx.lineWidth = Math.max(1.5, r * 0.08); ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(hx + r * 0.08, hy - r * 0.16);
+  ctx.quadraticCurveTo(hx + r * 0.3, hy - r * 0.44, hx + r * 0.5, hy - r * 0.4);
+  ctx.moveTo(hx + r * 0.16, hy - r * 0.12);
+  ctx.quadraticCurveTo(hx + r * 0.36, hy - r * 0.34, hx + r * 0.52, hy - r * 0.3);
   ctx.stroke();
-  // chin tuft
-  ctx.strokeStyle = shadow; ctx.lineWidth = Math.max(1, r * 0.08);
-  ctx.beginPath(); ctx.moveTo(hx - r * 0.2, hy - r * 0.04); ctx.lineTo(hx - r * 0.24, hy + r * 0.1); ctx.stroke();
+  // eye (calm, unbothered) + nostril + beard
+  ctx.fillStyle = '#1a1008';
+  ctx.beginPath(); ctx.arc(hx - r * 0.02, hy - r * 0.02, Math.max(1, r * 0.05), 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = dark;
+  ctx.beginPath(); ctx.arc(hx - r * 0.26, hy + r * 0.12, Math.max(1, r * 0.035), 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = shadow; ctx.lineWidth = Math.max(1, r * 0.07);
+  ctx.beginPath(); ctx.moveTo(hx - r * 0.14, hy + r * 0.2); ctx.lineTo(hx - r * 0.18, hy + r * 0.38); ctx.stroke();
+  ctx.lineCap = 'butt';
 }
 
 // Cattle: dark brown, wide body, broad head, short swept horns, large muzzle
@@ -1913,6 +1949,70 @@ export function drawRoadkill(ctx, x, y, s, variation, cat, t, type) {
     star(ctx, -s * 0.3 + Math.cos(a) * s * 0.24, -s * 0.3 + Math.sin(a) * s * 0.12, s * 0.05);
   }
   ctx.restore();
+}
+
+// Ripe plantain — a hand of two fat yellow plantains, black-tipped and sugar-flecked
+// (ripe, not green), joined at the crown.
+function drawPlantain(ctx, x, y, s) {
+  ctx.fillStyle = 'rgba(0,0,0,0.20)'; ellipsePath(ctx, x, y + s * 0.05, s * 0.46, s * 0.09); ctx.fill();
+  for (const [dx, rot] of [[-0.10, -0.28], [0.12, -0.06]]) {
+    ctx.save();
+    ctx.translate(x + s * dx, y - s * 0.30); ctx.rotate(rot);
+    // the fruit: a fat crescent
+    ctx.fillStyle = '#e8c020';
+    ctx.beginPath();
+    ctx.moveTo(-s * 0.10, s * 0.30);
+    ctx.quadraticCurveTo(-s * 0.30, 0, -s * 0.08, -s * 0.30);
+    ctx.lineTo(s * 0.08, -s * 0.26);
+    ctx.quadraticCurveTo(-s * 0.08, 0, s * 0.10, s * 0.26);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = '#a8842c'; ctx.lineWidth = Math.max(1, s * 0.025); ctx.stroke();
+    // ridge line + ripe sugar flecks + black tips
+    ctx.strokeStyle = '#c8a02c'; ctx.lineWidth = Math.max(1, s * 0.02);
+    ctx.beginPath(); ctx.moveTo(-s * 0.06, s * 0.24); ctx.quadraticCurveTo(-s * 0.18, 0, -s * 0.02, -s * 0.24); ctx.stroke();
+    ctx.fillStyle = '#6b4a1a';
+    for (const [fx, fy] of [[-0.14, 0.08], [-0.08, -0.10], [-0.16, -0.02]]) {
+      ctx.beginPath(); ctx.ellipse(s * fx, s * fy, s * 0.03, s * 0.015, 0.4, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.fillStyle = '#241a0a';
+    ctx.beginPath(); ctx.arc(-s * 0.09, s * 0.29, s * 0.045, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+  // the crown joining the hand
+  ctx.fillStyle = '#8a6a28';
+  ctx.beginPath(); ctx.arc(x + s * 0.02, y - s * 0.60, s * 0.07, 0, Math.PI * 2); ctx.fill();
+}
+
+// Roast breadfruit — the round country staple, roasted: charred green-brown skin with
+// the tell-tale dimple grid, split to show the steaming cream heart.
+function drawBreadfruit(ctx, x, y, s) {
+  ctx.fillStyle = 'rgba(0,0,0,0.20)'; ellipsePath(ctx, x, y + s * 0.05, s * 0.44, s * 0.09); ctx.fill();
+  const cy = y - s * 0.30, R = s * 0.34;
+  // charred-roast body (green-brown)
+  ctx.fillStyle = '#6b6a2c';
+  ctx.beginPath(); ctx.arc(x, cy, R, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = '#3a3418'; ctx.lineWidth = Math.max(1, s * 0.03); ctx.stroke();
+  // char patches from the coal fire
+  ctx.fillStyle = 'rgba(30,24,10,0.55)';
+  ctx.beginPath(); ctx.arc(x - R * 0.45, cy + R * 0.35, R * 0.35, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(x + R * 0.55, cy - R * 0.15, R * 0.25, 0, Math.PI * 2); ctx.fill();
+  // the dimpled skin grid
+  ctx.fillStyle = 'rgba(20,20,8,0.35)';
+  for (let gy = -2; gy <= 2; gy++) {
+    for (let gx = -2; gx <= 2; gx++) {
+      const px = x + gx * R * 0.32, py = cy + gy * R * 0.32;
+      if ((px - x) ** 2 + (py - cy) ** 2 < (R * 0.85) ** 2) {
+        ctx.beginPath(); ctx.arc(px, py, Math.max(1, R * 0.06), 0, Math.PI * 2); ctx.fill();
+      }
+    }
+  }
+  // split open at the top — creamy roasted heart + stem
+  ctx.fillStyle = '#f2e2b8';
+  ctx.beginPath(); ctx.ellipse(x + R * 0.1, cy - R * 0.55, R * 0.42, R * 0.20, 0.15, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = '#c8a86a'; ctx.lineWidth = Math.max(1, s * 0.02); ctx.stroke();
+  ctx.strokeStyle = '#4a5a20'; ctx.lineWidth = Math.max(1.5, s * 0.04); ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(x - R * 0.5, cy - R * 0.75); ctx.lineTo(x - R * 0.7, cy - R * 1.05); ctx.stroke();
+  ctx.lineCap = 'butt';
 }
 
 // ── Di Principal's road objects ───────────────────────────────────────────────

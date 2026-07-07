@@ -11,10 +11,13 @@ function inRect(r, x, y) { return x >= r.x && x <= r.x + r.w && y >= r.y && y <=
 
 function dealerRects(W, H) {
   const bw = 160, bh = 48;
+  // Keep PREV/NEXT fully on the stage — at the 0.08/0.92 anchors the 160px buttons
+  // hang off both edges of the narrow portrait stage.
+  const px = Math.max(10, W * 0.08 - bw / 2);
   return {
     back:   { x: 24, y: 18, w: 80, h: 36 },
-    prev:   { x: W * 0.08 - bw / 2, y: H * 0.56 - bh / 2, w: bw, h: bh },
-    next:   { x: W * 0.92 - bw / 2, y: H * 0.56 - bh / 2, w: bw, h: bh },
+    prev:   { x: px, y: H * 0.56 - bh / 2, w: bw, h: bh },
+    next:   { x: W - px - bw, y: H * 0.56 - bh / 2, w: bw, h: bh },
     action: { x: W / 2 - 140, y: H * 0.80 - bh / 2, w: 280, h: bh }
   };
 }

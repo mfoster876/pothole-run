@@ -33,6 +33,7 @@ export function defaultSave() {
     unlocks: { characters: ['yute', 'rasta', 'student', 'principal'], stages: ['fern-gully'] },
     settings: { muted: false, genre: 'reggae', radioStation: 0, graphics: 'smooth' },
     lifetimeEarned: 0,
+    lifetimeRunOvers: 0,   // the run-over ledger — the human toll across every run
     wallet: 0,
     condition: 100,
     bounties: [],

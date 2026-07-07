@@ -1,6 +1,36 @@
 import { conditionTier } from './wreck.js';
 import { HOP, LIGHT } from './constants.js';
 
+// Bamboo raft the ride floats on in river mode (Bog Walk Gorge) — a lashed platform
+// of bamboo poles seen edge-on, with white water foaming off both sides. Drawn UNDER
+// the vehicle so the "why am I driving on a road?" read becomes "I'm rafting the river."
+export function drawRaft(ctx, cx, cy, s) {
+  const w = s * 1.7, h = s * 0.22, top = cy + s * 0.30;
+  // wake foam pushed out both sides
+  ctx.fillStyle = 'rgba(235,248,248,0.55)';
+  ctx.beginPath(); ctx.ellipse(cx - w * 0.56, top + h * 0.7, s * 0.28, s * 0.09, 0.2, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(cx + w * 0.56, top + h * 0.7, s * 0.28, s * 0.09, -0.2, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = 'rgba(235,248,248,0.35)';
+  ctx.beginPath(); ctx.ellipse(cx, top + h * 1.15, w * 0.55, s * 0.07, 0, 0, Math.PI * 2); ctx.fill();
+  // the bamboo deck — two visible pole courses with node lines
+  for (const [dy, tone, edge] of [[0, '#c9b26a', '#8a7638'], [h * 0.55, '#b09a52', '#77622c']]) {
+    ctx.fillStyle = tone;
+    ctx.fillRect(cx - w / 2, top + dy, w, h * 0.6);
+    ctx.strokeStyle = edge; ctx.lineWidth = Math.max(1, s * 0.02);
+    ctx.strokeRect(cx - w / 2, top + dy, w, h * 0.6);
+    for (let i = 1; i < 6; i++) {
+      const nx = cx - w / 2 + (w / 6) * i;
+      ctx.beginPath(); ctx.moveTo(nx, top + dy); ctx.lineTo(nx, top + dy + h * 0.6); ctx.stroke();
+    }
+  }
+  // lashings at both ends
+  ctx.strokeStyle = '#4a3a18'; ctx.lineWidth = Math.max(1.5, s * 0.04);
+  ctx.beginPath();
+  ctx.moveTo(cx - w * 0.42, top - s * 0.02); ctx.lineTo(cx - w * 0.42, top + h * 1.2);
+  ctx.moveTo(cx + w * 0.42, top - s * 0.02); ctx.lineTo(cx + w * 0.42, top + h * 1.2);
+  ctx.stroke();
+}
+
 // Draw the player's ride, rear-view, centred at (cx, cy) with body scale s.
 // Dispatches on cart.vehicle.sprite; the handcart is the signature default.
 export function drawCart(ctx, cart, cx, cy, s) {

@@ -49,6 +49,9 @@ const PAGES = [
           'slide left; tap or hold the RIGHT side to slide',
           'right. On desktop, use the ARROW KEYS.',
           '',
+          'PAUSE with the top-left button (or P); from',
+          'pause, QUIT RUN goes home — coins bank first.',
+          '',
           'Yuh can ride onto the soft SHOULDER — no',
           'hazards out there, but it\'s bumpy and slowly',
           'drains yuh cart condition while yuh on it.'

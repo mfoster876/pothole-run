@@ -71,12 +71,24 @@ export function enterRace(save, tier, rng = Math.random) {
   return { tier, finish: tier.distance, rivals: makeRivals(tier, rng), done: false, place: 0 };
 }
 
+// Pack elasticity: rivals rubber-band GENTLY around the player so the race stays
+// visible on the road — a rival dropping far behind digs deep, one running far ahead
+// eases off. Placement is still earned (pace spread + stumbles decide the finish);
+// the band just stops the pack vanishing over the horizon, which made races feel
+// like driving alone.
+const PACK = { gap: 80, catchup: 1.18, ease: 0.88 };
+
 // Advance one rival over dt at the player's reference speed. Occasional pothole stumble
-// slows it briefly — that's the beatable window.
-export function tickRival(rival, dt, refSpeed, rng = Math.random) {
+// slows it briefly — that's the beatable window. Pass `playerDist` to engage the pack band.
+export function tickRival(rival, dt, refSpeed, rng = Math.random, playerDist = null) {
   if (rival.stumble > 0) rival.stumble = Math.max(0, rival.stumble - dt);
   else if (rng() < 0.012) rival.stumble = 0.6;
-  const speed = refSpeed * rival.pace * (rival.stumble > 0 ? 0.5 : 1);
+  let speed = refSpeed * rival.pace * (rival.stumble > 0 ? 0.5 : 1);
+  if (playerDist != null) {
+    const gap = rival.dist - playerDist;
+    if (gap < -PACK.gap) speed *= PACK.catchup;
+    else if (gap > PACK.gap) speed *= PACK.ease;
+  }
   rival.dist += speed * dt;
   return rival.dist;
 }

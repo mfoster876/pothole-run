@@ -50,10 +50,13 @@ function btn(ctx, r, label, opts = {}) {
 export function render(ctx, { save, W, H }) {
   ctx.fillStyle = '#0e1a12'; ctx.fillRect(0, 0, W, H);
 
-  // Title
+  // Title — on the narrow portrait stage it shrinks and drops below the corner
+  // buttons (gear / ?) instead of colliding with them.
+  const compact = W < 700;
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillStyle = '#f0c020'; ctx.font = '700 58px "Courier New", monospace';
-  ctx.fillText('POTHOLE RUN', W / 2, H * 0.10);
+  ctx.fillStyle = '#f0c020';
+  ctx.font = compact ? '700 44px "Courier New", monospace' : '700 58px "Courier New", monospace';
+  ctx.fillText('POTHOLE RUN', W / 2, compact ? H * 0.115 : H * 0.10, W * 0.8);
 
   // Rank + lifetime + wallet banner
   const rank = rankFor(save.lifetimeEarned);
@@ -88,12 +91,12 @@ export function render(ctx, { save, W, H }) {
     ctx.fillStyle = crit ? '#e0584a' : '#e0a52a';
     ctx.font = '700 14px "Courier New", monospace'; ctx.textAlign = 'center';
     ctx.fillText('⚠ ride at ' + Math.round(save.condition) + '% — repair at di MECH SHOP fi best driving',
-      W / 2, H * 0.90);
+      W / 2, H * 0.90, W * 0.94);
   }
 
   ctx.fillStyle = '#9fb8a3'; ctx.font = '500 13px "Courier New", monospace';
   ctx.textAlign = 'center';
-  ctx.fillText('⚙ settings (top-left)   ·   ? = how to play   ·   M = mute', W / 2, H * 0.96);
+  ctx.fillText('⚙ settings (top-left)   ·   ? = how to play   ·   M = mute', W / 2, H * 0.96, W * 0.94);
 }
 
 function inRect(r, x, y) { return x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h; }

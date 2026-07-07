@@ -63,6 +63,8 @@ export const HAZARD_TYPES = {
   // Ackee = national fruit: heal + steadiness. Patty = a dash + heal + pocket change.
   // Routed to applyPowerup via powerup:'food' → applyFood (see foods.js).
   ackee:       { damage: 0, collectible: true, powerup: 'food', food: 'ackee',       depth: 3, color: '#f2a33a', label: 'Ackee' },
+  plantain:    { damage: 0, collectible: true, powerup: 'food', food: 'plantain',    depth: 3, color: '#e8c020', label: 'Ripe Plantain' },
+  breadfruit:  { damage: 0, collectible: true, powerup: 'food', food: 'breadfruit',  depth: 3, color: '#8a9a3a', label: 'Roast Breadfruit' },
   patty:       { damage: 0, collectible: true, powerup: 'food', food: 'patty',       depth: 3, color: '#e8b23a', label: 'Beef Patty' },
   veggiepatty: { damage: 0, collectible: true, powerup: 'food', food: 'veggiepatty', depth: 3, color: '#7bbf4a', label: 'Veggie Patty' },
   // Drink collectibles — character-gated; routed to applyDrink via powerup:'drink'
