@@ -34,8 +34,11 @@ export const NEGATIVES = {
   // Bleaching products burn his skin (damage), burn through his CASH (cashBurn), and
   // disfigure him one stage worse (bleach). Sunlight just scorches the bleached skin.
   cakesoap:    { id: 'cakesoap',    label: 'Cake Soap',    char: 'conductor', damage: 10, cashBurn: 1500, bleach: true, color: '#3a6ad0' },
-  currypowder: { id: 'currypowder', label: 'Curry Powder', char: 'conductor', damage: 8,  cashBurn: 1000, bleach: true, color: '#d9a01f' },
-  toothpaste:  { id: 'toothpaste',  label: 'Toothpaste',   char: 'conductor', damage: 6,  cashBurn: 800,  bleach: true, color: '#e8f2f5' },
+  // The DIY mix — curry powder + toothpaste bundled as one street recipe (they were two
+  // separate pickups; Milton merged them 2026-07-07).
+  blchmix:     { id: 'blchmix',     label: 'Bleaching Creme Ingredients', char: 'conductor', damage: 8, cashBurn: 1000, bleach: true, color: '#d9a01f' },
+  // The shop-bought tub — same cream tub the School Yute must dodge, now on his list too.
+  blchtub:     { id: 'blchtub',     label: 'Bleaching Cream',             char: 'conductor', damage: 10, cashBurn: 1400, bleach: true, color: '#cfe0ff' },
   sunlight:    { id: 'sunlight',    label: 'Sunlight',     char: 'conductor', damage: 12, bleach: true, color: '#f0c020' },
 
   // ── Di Principal — the compromises of the office (social commentary, deliberate) ──
@@ -67,7 +70,7 @@ const ELIGIBLE = {
   yute:       ['bleaching', 'tightpants', 'weed', 'molly', 'teensex'],
   rasta:      ['obeah', 'pork', 'jw'],
   politician: ['roadfix', 'constituent', 'lightpole', 'hustlerlunch', 'voter', 'contractor'],
-  conductor:  ['cakesoap', 'currypowder', 'toothpaste', 'sunlight'],   // vanity + sun he must dodge
+  conductor:  ['cakesoap', 'blchmix', 'blchtub', 'sunlight'],   // vanity + sun he must dodge
   principal:  ['placementbribe', 'ptameeting'],
 };
 
@@ -81,7 +84,7 @@ const UNIVERSAL = ['unripeackee'];
 const WEIGHTS = {
   bleaching: 0.5, tightpants: 0.4, weed: 0.5, molly: 0.35, teensex: 0.3,
   obeah: 0.4, pork: 0.5, jw: 0.4,
-  cakesoap: 0.6, currypowder: 0.6, toothpaste: 0.6, sunlight: 0.8,
+  cakesoap: 0.6, blchmix: 0.6, blchtub: 0.6, sunlight: 0.8,
   roadfix: 1.2, constituent: 1.4, lightpole: 0.9, hustlerlunch: 1.0, voter: 1.2, contractor: 0.8,
   placementbribe: 0.5, ptameeting: 0.5,
   unripeackee: 0.4,

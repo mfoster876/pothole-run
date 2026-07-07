@@ -32,6 +32,9 @@ export const HAZARD_TYPES = {
   dog:      { damage: DAMAGE.animal,  collectible: false, depth: 3, color: '#9a7a4a', label: 'street dog', vz: 120, category: 'animal' },
   cat:      { damage: DAMAGE.animal,  collectible: false, depth: 2, color: '#5a5a5a', label: 'cat', vz: 160, category: 'animal' },
   cattle:   { damage: DAMAGE.traffic, collectible: false, depth: 5, color: '#5a4636', label: 'stray cattle', category: 'animal' },
+  // ROCKFALL — a boulder fresh off the gorge wall, dust still hanging, loose stones
+  // scattered around it. The steep-valley hazard (Fern Gully). Heavy hit, hard jolt.
+  rockfall: { damage: DAMAGE.traffic, collectible: false, depth: 4, color: '#9a8a68', label: 'rockfall', category: 'road', jolt: 1.1 },
   // Donkey coconut cart — a slow rural road-occupant (scrolls like a static obstacle, no vz).
   // Traffic-tier hit; rare and rural-only (only listed in the two country stages).
   coconutcart:{ damage: DAMAGE.traffic, collectible: false, depth: 5, color: '#9a6a34', label: 'coconut cart', category: 'traffic', len: 160 },
@@ -56,6 +59,9 @@ export const HAZARD_TYPES = {
   // white merinos, crossing the channel like jaywalkers cross a road. Pedestrian
   // category: running one down counts on the roadkill ledger and draws police heat.
   swimmer:     { damage: DAMAGE.animal,  collectible: false, depth: 3, color: '#2f8a5a', label: 'swimmer', category: 'pedestrian', walk: true, splash: true, jolt: 0.4 },
+  // Rare river-culture obstacle: a TYRE SWING off an overhanging branch — somebody standing
+  // on the tyre, mid-dive, or already splashing in. A person, so the ledger counts a hit.
+  tyreswing:   { damage: DAMAGE.animal,  collectible: false, depth: 4, color: '#4a3a2a', label: 'tyre swing diver', category: 'pedestrian', splash: true, jolt: 0.5 },
   burntcar:    { damage: DAMAGE.traffic, collectible: false, depth: 5, color: '#2a2622', label: 'burnt-out car', category: 'river', jolt: 0.9, splash: true },
   floatcar:    { damage: DAMAGE.traffic, collectible: false, depth: 5, color: '#6a6f66', label: 'floating car', category: 'river', vz: 70, jolt: 0.8, splash: true },
   limerock:    { damage: DAMAGE.traffic, collectible: false, depth: 4, color: '#cbb98a', label: 'limestone rock', category: 'river', jolt: 1.0 },

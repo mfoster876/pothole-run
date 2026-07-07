@@ -31,7 +31,7 @@ test('eligibility is gated to the right driver', () => {
   assert.deepEqual(negativesFor(getCharacter('politician')).map(n => n.type),
     ['roadfix', 'constituent', 'lightpole', 'hustlerlunch', 'voter', 'contractor']);
   assert.deepEqual(negativesFor(getCharacter('conductor')).map(n => n.type),
-    ['cakesoap', 'currypowder', 'toothpaste', 'sunlight']);
+    ['cakesoap', 'blchmix', 'blchtub', 'sunlight']);
 });
 
 test('every character-gated negative belongs to exactly one eligible driver', () => {

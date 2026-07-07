@@ -14,6 +14,7 @@ export const STAGES = [
     hazardWeights: [
       { type: 'pothole', weight: 5 }, { type: 'coin', weight: 4 },
       { type: 'slick', weight: 2 }, { type: 'stall', weight: 2 }, { type: 'manhole', weight: 1 },
+      { type: 'rockfall', weight: 1.5 },                        // boulders come off the steep gorge walls
       { type: 'taxi', weight: 3 }, { type: 'dog', weight: 2 },
       { type: 'jaywalker', weight: 2 }, { type: 'goat', weight: 2 },
       { type: 'police', weight: 1 },                            // rural — police only now and then
@@ -89,6 +90,7 @@ export const STAGES = [
       { type: 'croc', weight: 2 }, { type: 'limerock', weight: 2 },
       { type: 'burntcar', weight: 1.5 }, { type: 'floatcar', weight: 1.5 },
       { type: 'swimmer', weight: 2.5 },                           // people swimming the river — DON'T run them down
+      { type: 'tyreswing', weight: 0.6 },                         // somewhat rare: tyre-swing divers off the branches
       { type: 'rivermumma', weight: 0.5 },                        // rare, dangerous folklore siren
       { type: 'tools', weight: 3 }, { type: 'water', weight: 1 }
     ]

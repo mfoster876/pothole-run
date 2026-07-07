@@ -1209,9 +1209,16 @@ export function createGame(audio) {
     // Front-facing portrait of the driver who just ran — the Conductor's bleach stage
     // reached this run shows here (the grim payoff of all that vanity).
     renderPortrait(ctx, cart.character.id, W / 2, my(0.15), 104, { bleachLevel: cart.bleachLevel });
-    // A chosen exit parks up calm; a wreck mashes up loud.
+    // A chosen exit parks up calm; a wreck mashes up loud — named for the RIDE that
+    // died (a raft doesn't "cart mash up", it capsizes; a bike drops you).
+    const sprite = (cart.vehicle && cart.vehicle.sprite) || 'handcart';
+    const wreckTitle = sprite === 'raft' ? 'RAFT CAPSIZE!'
+      : (sprite === 'bicycle' || sprite === 'yengyeng') ? 'BIKE DROP YUH!'
+      : sprite === 'cybertruck' ? 'TRUCK MASH UP!'
+      : sprite === 'handcart' ? 'CART MASH UP!'
+      : 'CAR MASH UP!';
     ctx.fillStyle = quitFlag ? '#f0c020' : '#c0382c'; ctx.font = '700 60px "Courier New", monospace';
-    ctx.fillText(quitFlag ? 'RUN PARK UP' : 'CART MASH UP!', W / 2, my(0.32), W * 0.94);
+    ctx.fillText(quitFlag ? 'RUN PARK UP' : wreckTitle, W / 2, my(0.32), W * 0.94);
     ctx.fillStyle = '#cbe7cf'; ctx.font = '500 30px "Courier New", monospace';
     ctx.fillText(Math.floor(run.distance) + ' m   •   ' + formatMoney(run.coins), W / 2, my(0.46), W * 0.9);
     // High-score tracker: the stage records. Gold + a pulsing ★ banner when THIS run set one.

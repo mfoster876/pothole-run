@@ -41,6 +41,8 @@ export function drawEntity(ctx, type, sx, sy, size, seed = 0.137, value = 1) {
     case 'veggiepatty': drawPatty(ctx, sx, sy, s, true); break;
     // Bog Walk river-mode obstacles
     case 'swimmer':     drawSwimmer(ctx, sx, sy, s, seed); break;
+    case 'tyreswing':   drawTyreSwing(ctx, sx, sy, s, seed); break;
+    case 'rockfall':    drawRockfall(ctx, sx, sy, s, seed); break;
     case 'floatbottle': floatBottle(ctx, sx, sy, s); break;
     case 'plasticbag':  plasticBag(ctx, sx, sy, s); break;
     case 'croc':        crocodile(ctx, sx, sy, s, seed); break;
@@ -62,8 +64,9 @@ export function drawEntity(ctx, type, sx, sy, size, seed = 0.137, value = 1) {
     case 'champagne':  drinkBottle(ctx, sx, sy, s, '#f7d873', '#c9a830', 'CH'); break;
     // Conductor bleach vanity items — dedicated, recognizable icons
     case 'cakesoap':    cakeSoap(ctx, sx, sy, s); break;
-    case 'currypowder': curryPowderBag(ctx, sx, sy, s); break;
-    case 'toothpaste':  toothpasteTube(ctx, sx, sy, s); break;
+    // the DIY recipe: curry-powder bag + toothpaste tube bundled as ONE pickup
+    case 'blchmix':     curryPowderBag(ctx, sx - s * 0.22, sy, s * 0.8); toothpasteTube(ctx, sx + s * 0.3, sy, s * 0.75); break;
+    case 'blchtub':     bleachingCream(ctx, sx, sy, s); break;   // the shop tub (same as the Yute's)
     // School Yute wholesome items — dedicated icons of the real things
     case 'books':      drawBookStack(ctx, sx, sy, s); break;
     case 'stationery': drawStationery(ctx, sx, sy, s); break;
@@ -3029,6 +3032,96 @@ function drawSwimmer(ctx, x, y, s, seed) {
   ctx.moveTo(x + s * k * 0.12, y - s * k * 0.14);
   ctx.quadraticCurveTo(x + s * k * 0.38, y - s * k * (0.3 + 0.28 * lift), x + s * k * (0.52 + 0.1 * lift), y - s * k * (0.1 + 0.1 * lift));
   ctx.stroke(); ctx.lineCap = 'butt';
+}
+
+// ROCKFALL — a boulder just off the gorge wall: big jagged limestone block sitting on the
+// road, loose stones scattered where it bounced, and pale dust still hanging above it so
+// it reads as freshly FALLEN, not parked.
+function drawRockfall(ctx, x, y, s, seed) {
+  const base = Math.floor((seed || 0.33) * 2147483647);
+  const vr = mulberry32(base ^ 0x6d2b);
+  const scale = 0.85 + vr() * 0.4;
+  // ground shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.28)'; ellipsePath(ctx, x, y + s * 0.04, s * 0.62 * scale, s * 0.14 * scale); ctx.fill();
+  // the boulder — jagged limestone block
+  jaggedPath(ctx, x, y - s * 0.34 * scale, s * 0.55 * scale, s * 0.42 * scale, 9, mulberry32(base ^ 0x1c3f), 0.24);
+  ctx.fillStyle = '#b3a37c'; ctx.fill();
+  ctx.strokeStyle = '#7d6f4e'; ctx.lineWidth = Math.max(1, s * 0.04); ctx.stroke();
+  // sunlit top facet + a shaded cleft
+  ctx.fillStyle = 'rgba(250,244,220,0.5)';
+  jaggedPath(ctx, x - s * 0.1 * scale, y - s * 0.52 * scale, s * 0.3 * scale, s * 0.14 * scale, 7, mulberry32(base ^ 0x4e11), 0.2); ctx.fill();
+  ctx.strokeStyle = 'rgba(70,58,36,0.65)'; ctx.lineWidth = Math.max(1, s * 0.035);
+  ctx.beginPath(); ctx.moveTo(x - s * 0.06, y - s * 0.5 * scale); ctx.lineTo(x + s * 0.06, y - s * 0.12); ctx.stroke();
+  // loose stones scattered where it bounced
+  ctx.fillStyle = '#9a8a68';
+  for (let i = 0; i < 4; i++) {
+    const a = vr() * Math.PI * 2, rr = 0.55 + vr() * 0.45;
+    ctx.beginPath();
+    ctx.arc(x + Math.cos(a) * s * 0.6 * rr, y + Math.sin(a) * s * 0.1 * rr, Math.max(1.5, s * (0.05 + vr() * 0.04)), 0, Math.PI * 2);
+    ctx.fill();
+  }
+  // dust still hanging above — the "it JUST fell" cue
+  ctx.fillStyle = 'rgba(214,202,170,0.4)';
+  for (let i = 0; i < 3; i++) {
+    ctx.beginPath();
+    ctx.arc(x - s * 0.15 + i * s * 0.16, y - s * (0.72 + i * 0.14) * scale, s * (0.12 + i * 0.045), 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+// A car-tyre rope swing off an overhanging branch — pure river culture. Seed picks the
+// moment you catch: somebody STANDING braced on the tyre, LEAPING head-first, or the
+// SPLASH just after (empty tyre still swinging). A person in your channel either way.
+function drawTyreSwing(ctx, x, y, s, seed) {
+  const r = mulberry32(Math.floor((seed || 0.5) * 2147483647) ^ 0x77e1);
+  const pose = Math.floor(r() * 3);                     // 0 standing · 1 diving · 2 splashed
+  const side = r() < 0.5 ? -1 : 1;                      // which bank the branch reaches from
+  const shirt = ['#c0392b', '#e0b020', '#2a8a3a', '#eef0ea'][Math.floor(r() * 4)];
+  const skin = '#6b432a';
+  const tyX = x, tyY = y - s * 0.72;                    // the tyre hangs above the water
+  // overhanging branch coming in from the bank + the rope down to the tyre
+  ctx.strokeStyle = '#4a3a20'; ctx.lineWidth = Math.max(2, s * 0.09); ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(x + side * s * 1.5, y - s * 1.9);
+  ctx.quadraticCurveTo(x + side * s * 0.6, y - s * 1.78, x + side * s * 0.12, y - s * 1.62); ctx.stroke();
+  ctx.fillStyle = '#2f6a30';                            // a tuft of leaves on the branch
+  ctx.beginPath(); ctx.ellipse(x + side * s * 1.1, y - s * 1.92, s * 0.42, s * 0.2, side * 0.2, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = '#b09a6a'; ctx.lineWidth = Math.max(1.5, s * 0.045);
+  ctx.beginPath(); ctx.moveTo(x + side * s * 0.12, y - s * 1.62); ctx.lineTo(tyX, tyY - s * 0.16); ctx.stroke();
+  ctx.lineCap = 'butt';
+  // the car tyre (black torus, side-on)
+  ctx.strokeStyle = '#15151a'; ctx.lineWidth = Math.max(3, s * 0.13);
+  ctx.beginPath(); ctx.arc(tyX, tyY, s * 0.2, 0, Math.PI * 2); ctx.stroke();
+  ctx.strokeStyle = 'rgba(255,255,255,0.14)'; ctx.lineWidth = Math.max(1, s * 0.03);
+  ctx.beginPath(); ctx.arc(tyX - s * 0.05, tyY - s * 0.06, s * 0.16, Math.PI * 0.9, Math.PI * 1.6); ctx.stroke();
+  if (pose === 0) {
+    // STANDING braced on top of the tyre, arms wide for balance
+    ctx.strokeStyle = skin; ctx.lineWidth = Math.max(2, s * 0.055); ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(tyX - s * 0.05, tyY - s * 0.48); ctx.lineTo(tyX - s * 0.28, tyY - s * 0.6);
+    ctx.moveTo(tyX + s * 0.05, tyY - s * 0.48); ctx.lineTo(tyX + s * 0.28, tyY - s * 0.6); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(tyX - s * 0.045, tyY - s * 0.34); ctx.lineTo(tyX - s * 0.06, tyY - s * 0.2);
+    ctx.moveTo(tyX + s * 0.045, tyY - s * 0.34); ctx.lineTo(tyX + s * 0.06, tyY - s * 0.2); ctx.stroke();
+    ctx.lineCap = 'butt';
+    ctx.fillStyle = shirt; ctx.fillRect(tyX - s * 0.09, tyY - s * 0.56, s * 0.18, s * 0.24);
+    ctx.fillStyle = skin; ctx.beginPath(); ctx.arc(tyX, tyY - s * 0.64, s * 0.075, 0, Math.PI * 2); ctx.fill();
+  } else if (pose === 1) {
+    // LEAPING off — head-first toward the water beside the tyre, arms reaching
+    const dx = -side * s * 0.42, px = tyX + dx, py = tyY + s * 0.12;
+    ctx.fillStyle = shirt;
+    ctx.save(); ctx.translate(px, py); ctx.rotate(-side * 2.3);
+    ctx.fillRect(-s * 0.08, -s * 0.2, s * 0.16, s * 0.34); ctx.restore();
+    ctx.fillStyle = skin; ctx.beginPath(); ctx.arc(px + dx * 0.5, py + s * 0.26, s * 0.07, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = skin; ctx.lineWidth = Math.max(2, s * 0.05); ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(px + dx * 0.5, py + s * 0.3); ctx.lineTo(px + dx * 0.85, py + s * 0.44); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(px - dx * 0.2, py - s * 0.24); ctx.lineTo(px - dx * 0.55, py - s * 0.36); ctx.stroke();
+    ctx.lineCap = 'butt';
+  } else {
+    // JUST SPLASHED — empty tyre, a white plume where they went in
+    ripple(ctx, x - side * s * 0.35, y, s * 0.7);
+    ctx.fillStyle = 'rgba(240,250,250,0.85)';
+    for (const [ox, oy, rr] of [[0, -0.16, 0.09], [-0.14, -0.05, 0.06], [0.13, -0.06, 0.06], [0, -0.32, 0.05]]) {
+      ctx.beginPath(); ctx.arc(x - side * s * 0.35 + ox * s, y + oy * s, rr * s, 0, Math.PI * 2); ctx.fill();
+    }
+  }
 }
 
 // River Mumma — the folklore siren on her rock, now a WHOLE FAMILY of sirens: seed picks
