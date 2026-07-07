@@ -18,7 +18,8 @@ bittersweet.
   You can ride onto the soft **shoulder** to dodge — hazard-free but bumpy, and it slowly drains the cart.
 - **Mute:** `M`
 - **How to play:** the **`?`** button on the hub opens a 4-page in-game help guide.
-- **Portrait phones:** rotate to landscape (a patois prompt nudges you).
+- **Portrait phones:** the game plays full-bleed in portrait (a taller virtual stage) — no need to rotate; landscape keeps the classic 960×540 framing.
+- **Backgrounding:** switching apps / locking the phone auto-pauses a live run.
 
 ## What's in the game
 
@@ -91,7 +92,7 @@ src/
   audio.js         Web Audio procedural music + SFX, plus user-track playback
   hud.js input.js money.js upgrades.js tapcode.js
   screens/         hub, play (in game.js), mechshop, cardealer, aspirations,
-                   cashpot, tithes (Faith), ending, help, rotatePrompt, router
+                   cashpot, tithes (Faith), ending, help, router
 tests/             node:test unit tests for the pure-logic modules
 docs/superpowers/  specs + implementation plans (full design history)
 ```

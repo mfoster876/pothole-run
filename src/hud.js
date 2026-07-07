@@ -1,6 +1,6 @@
 import { conditionTier } from './wreck.js';
 import { formatMoney } from './money.js';
-import { SUPERCHARGE, CART } from './constants.js';
+import { SUPERCHARGE, CART, COMBO } from './constants.js';
 
 // The cart's internal speed is an abstract unit; this turns it into a "theoretical"
 // km/h for the speedometer. Tuned so an easy cruise already sits at the 50 km/h urban
@@ -10,22 +10,29 @@ export const KMH_PER_UNIT = 0.7;
 export const URBAN_LIMIT_KMH = 50;
 export function speedToKmh(speed) { return Math.round(Math.max(0, speed || 0) * KMH_PER_UNIT); }
 
-export function renderHud(ctx, { stageName, coins, distance, condition, effects = {}, lite = false, speed = 0, throttle = 0 }, W, H = 540) {
+export function renderHud(ctx, { stageName, coins, distance, condition, effects = {}, lite = false, speed = 0, throttle = 0, combo = 0 }, W, H = 540) {
   ctx.font = '700 26px "Courier New", monospace';
   ctx.textBaseline = 'middle';
 
   ctx.fillStyle = 'rgba(14,26,18,0.78)';
   ctx.fillRect(0, 0, W, 56);
-  ctx.fillStyle = '#f4f1e6';
-  ctx.textAlign = 'left';
-  // Start past the top-left ❚❚ PAUSE button (drawn by game.js) so they never overlap.
-  ctx.fillText(stageName.toUpperCase(), 140, 28);
+  const moneyTxt = formatMoney(coins);
+  const moneyHalf = ctx.measureText(moneyTxt).width / 2;
+  // Stage name starts past the top-left ❚❚ PAUSE button (drawn by game.js) and must not
+  // run into the centred cash readout — on the narrow portrait stage there's no room
+  // for it at all, so it simply drops (the player picked the stage seconds ago).
+  const stageRoom = W / 2 - moneyHalf - 152;
+  if (stageRoom >= 60) {
+    ctx.fillStyle = '#f4f1e6';
+    ctx.textAlign = 'left';
+    ctx.fillText(stageName.toUpperCase(), 140, 28, stageRoom);
+  }
   ctx.textAlign = 'center';
   ctx.fillStyle = '#f0c020';
-  ctx.fillText(formatMoney(coins), W / 2, 28);
+  ctx.fillText(moneyTxt, W / 2, 28);
   ctx.textAlign = 'right';
   ctx.fillStyle = '#cbe7cf';
-  ctx.fillText(Math.floor(distance) + ' m', W - 24, 28);
+  ctx.fillText(Math.floor(distance) + ' m', W - 24, 28, W / 2 - moneyHalf - 36);
 
   const mw = 220, mx = W - mw - 24, my = 64;
   ctx.fillStyle = '#1c1c1c';
@@ -72,10 +79,20 @@ export function renderHud(ctx, { stageName, coins, distance, condition, effects 
   const boostLabel = effects.burn ? '🧴 BLEACH BOOST  ' : (effects.tipsy ? '🍺 IRIE BOOST  ' : '⚡ SUPERCHARGE  ');
   if (superT > 0) renderSupercharge(ctx, superT, effects.superMax || SUPERCHARGE.dur, hot, boostLabel, W, H, lite);
 
-  // Once the boost ends the impairment lingers (sloppy steering) — warn the player
-  // so the swerve isn't a mystery. (During the boost the boost label covers it.)
+  // Near-miss combo: shaving past hazards multiplies every pickup — surface it so the
+  // risk/reward loop is visible, not a hidden stat. Hidden while boost/impairment
+  // banners own the same centre strip.
   const tipsyT = effects.tipsy || 0;
   const burnT  = effects.burn || 0;
+  if (combo > 0 && superT <= 0 && tipsyT <= 0 && burnT <= 0) {
+    ctx.fillStyle = '#8fd0a0'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = '700 16px "Courier New", monospace';
+    // On the narrow portrait stage the SPD/CART gauges reach the centre — sit below them.
+    ctx.fillText('✦ NEAR-MISS COMBO  +' + Math.round(combo * COMBO.bonusPer * 100) + '% CASH', W / 2, W < 700 ? 112 : 74);
+  }
+
+  // Once the boost ends the impairment lingers (sloppy steering) — warn the player
+  // so the swerve isn't a mystery. (During the boost the boost label covers it.)
   if (superT <= 0 && (tipsyT > 0 || burnT > 0)) {
     ctx.save();
     const wob = Math.sin((typeof performance !== 'undefined' ? performance.now() : 0) / 1000 * 6) * 3;
@@ -125,13 +142,15 @@ export function renderPickupToast(ctx, toast, W, H = 540) {
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.font = '700 26px "Courier New", monospace';
   const txt = (toast.good ? '✦ ' : '✕ ') + String(toast.label).toUpperCase();
-  const bw = ctx.measureText(txt).width + 44, by = H * 0.30;
+  // Measure once per toast, not per frame — text metrics are the priciest HUD call.
+  if (toast.w == null) toast.w = ctx.measureText(txt).width;
+  const bw = Math.min(toast.w, W * 0.86) + 44, by = H * 0.30;
   ctx.fillStyle = toast.good ? 'rgba(14,26,18,0.85)' : 'rgba(44,12,10,0.88)';
   ctx.fillRect(W / 2 - bw / 2, by - 24, bw, 44);
   ctx.strokeStyle = toast.good ? '#3fae54' : '#c0382c'; ctx.lineWidth = 2;
   ctx.strokeRect(W / 2 - bw / 2, by - 24, bw, 44);
   ctx.fillStyle = toast.good ? '#f0c020' : '#ff8a78';
-  ctx.fillText(txt, W / 2, by - 1);
+  ctx.fillText(txt, W / 2, by - 1, bw - 24);
   ctx.restore();
 }
 

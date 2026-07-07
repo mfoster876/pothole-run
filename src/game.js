@@ -6,7 +6,7 @@ import { foodWeightsFor } from './foods.js';
 import { negativesFor } from './negatives.js';
 import { makeRoad, renderRoad, projectEntity, curveOffsetAt, curvatureAt, setCurveScale, CART_Z } from './road.js';
 import { createCart, steer, updateCart, onShoulder, tipShoulder } from './cart.js';
-import { createField, spawn, advance, activeEntities } from './entities.js';
+import { createField, spawn, advance } from './entities.js';
 import { spawnInterval, pickHazard, laneFor } from './spawner.js';
 import { createRun, resolveHits } from './run.js';
 import { isWrecked, applyDamage, conditionTier } from './wreck.js';
@@ -45,36 +45,47 @@ import * as help from './screens/help.js';
 import { count as countMusic } from './usermusic.js';
 import { stationAt, stationCount } from './radio.js';
 
-// Read per-frame (not cached) — the virtual stage flips to a taller/narrower portrait size
+// Refreshed per-frame — the virtual stage flips to a taller/narrower portrait size
 // on phones (see main.js), and the whole renderer is parameterised by these W/H.
 let W = VIRTUAL.width, H = VIRTUAL.height;
-function syncViewport() { W = VIRTUAL.width; H = VIRTUAL.height; }
+// Menu / pause / game-over content lays out inside a vertical band no taller than
+// ~1.15×W, centred in the stage. In landscape the band IS the stage (unchanged); on a
+// tall portrait stage it keeps rows together instead of stretching them screen-height.
+let MH = VIRTUAL.height, MY0 = 0;
+const my = (f) => MY0 + MH * f;
 const GENRE_LABEL = { reggae: 'Reggae', ska: 'Ska', dancehall: 'Dancehall', hiphop: 'Hip-Hop', mymusic: 'My Music', radio: 'JA Radio' };
 
-// Menu hit-regions (virtual coords). One row each for driver, ride, stage, genre.
-const arrow = (xf, yf) => ({ x: W * xf, y: H * yf - 24, w: 48, h: 48 });
-const BTN = {
-  driverPrev: arrow(0.15, 0.225), driverNext: arrow(0.80, 0.225),
-  stagePrev:  arrow(0.15, 0.61),  stageNext:  arrow(0.80, 0.61),
-  genrePrev:  arrow(0.15, 0.70),  genreNext:  arrow(0.80, 0.70),
-  genreValue: { x: W * 0.24, y: H * 0.665, w: W * 0.52, h: H * 0.09 }, // tap to upload when "My Music" (covers label + hint)
-  start:      { x: W * 0.5 - 130, y: H * 0.795 - 28, w: 260, h: 54 },
-  back:       { x: 24, y: 18, w: 80, h: 36 },
-  legend:     { x: W - 150, y: 18, w: 122, h: 36 }   // per-driver legend (play screen)
-};
+// Menu + pause hit-regions (virtual coords), REBUILT whenever the stage size changes —
+// rects computed for the landscape stage are wrong on the portrait one and vice versa.
+// `PAUSE.btn` is the little ❚❚ shown while driving (top-left, clear of the steering
+// zones); the rest of PAUSE are the paused-screen controls (riddim / station / mute).
+let BTN = null, PAUSE = null;
+function syncViewport() {
+  if (BTN && W === VIRTUAL.width && H === VIRTUAL.height) return;
+  W = VIRTUAL.width; H = VIRTUAL.height;
+  MH = Math.min(H, Math.round(W * 1.15));
+  MY0 = Math.round((H - MH) / 2);
+  const arrow = (xf, yf) => ({ x: W * xf, y: my(yf) - 24, w: 48, h: 48 });
+  BTN = {
+    driverPrev: arrow(0.15, 0.225), driverNext: arrow(0.80, 0.225),
+    stagePrev:  arrow(0.15, 0.61),  stageNext:  arrow(0.80, 0.61),
+    genrePrev:  arrow(0.15, 0.70),  genreNext:  arrow(0.80, 0.70),
+    genreValue: { x: W * 0.24, y: my(0.665), w: W * 0.52, h: MH * 0.09 }, // tap to upload when "My Music" (covers label + hint)
+    start:      { x: W * 0.5 - 130, y: my(0.795) - 28, w: 260, h: 54 },
+    back:       { x: 24, y: 18, w: 80, h: 36 },
+    legend:     { x: W - 150, y: 18, w: 122, h: 36 }   // per-driver legend (play screen)
+  };
+  PAUSE = {
+    btn:        { x: 8, y: 8, w: 122, h: 40 },
+    resume:     { x: W * 0.5 - 140, y: my(0.30), w: 280, h: 60 },
+    genrePrev:  { x: W * 0.17 - 24, y: my(0.55) - 24, w: 48, h: 48 },
+    genreNext:  { x: W * 0.83 - 24, y: my(0.55) - 24, w: 48, h: 48 },
+    genreValue: { x: W * 0.30, y: my(0.515), w: W * 0.40, h: MH * 0.085 }, // tap = next station / upload
+    mute:       { x: W * 0.5 - 120, y: my(0.72) - 26, w: 240, h: 52 },
+  };
+}
+syncViewport();
 function inRect(r, x, y) { return x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h; }
-
-// Pause overlay hit-regions (virtual coords). `btn` is the little ❚❚ shown while driving
-// (top-left, clear of the steering zones); the rest are the paused-screen controls so you
-// can change the riddim / station and mute without leaving the run.
-const PAUSE = {
-  btn:        { x: 8, y: 8, w: 122, h: 40 },
-  resume:     { x: W * 0.5 - 140, y: H * 0.30, w: 280, h: 60 },
-  genrePrev:  { x: W * 0.17 - 24, y: H * 0.55 - 24, w: 48, h: 48 },
-  genreNext:  { x: W * 0.83 - 24, y: H * 0.55 - 24, w: 48, h: 48 },
-  genreValue: { x: W * 0.30, y: H * 0.515, w: W * 0.40, h: H * 0.085 }, // tap = next station / upload
-  mute:       { x: W * 0.5 - 120, y: H * 0.72 - 26, w: 240, h: 52 },
-};
 
 const CAR_TIP = {
   title: 'WINDSCREEN YOUTHS',
@@ -96,7 +107,9 @@ export function createGame(audio) {
   const router = createRouter('hub');
   const state = { mode: 'menu', save, audio, popup: null };
   const menuChoice = { character: 'yute', stage: 'fern-gully', vehicle: save.vehicle, genre: save.settings.genre };
-  let road, stage, cart, field, run, camZ, spawnZ, steerLock = 0, activeWeights = [];
+  let road, stage, cart, field, run, camZ, spawnZ, steerLock = 0, activeWeights = [], raceWeights = [];
+  const drawList = [];               // reusable z-sorted render list (no per-frame allocation)
+  let goGrace = 0;                   // seconds the game-over card ignores input (no accidental skip)
   let squeakAccum = 0, hitShake = 0;
   let throttleInput = 0;             // -1 brake … 0 coast … +1 accelerate (set by main.js from input)
   let pauseHintT = 0;                // seconds remaining to show the "tap to pause" start hint
@@ -167,6 +180,8 @@ export function createGame(audio) {
         if (w.type === 'police') return { type: 'police', weight: w.weight * (ch.policeMult || 1) };
         return w;
       });
+    // Precomputed once per run — races strip road money from the spawn pool every time.
+    raceWeights = activeWeights.filter(w => w.type !== 'coin');
     // Faith upkeep resets each run — pray/read-bible become available again.
     save.prayedSinceRun = false;
     save.readBibleSinceRun = false;
@@ -246,6 +261,7 @@ export function createGame(audio) {
   }
   function endRun() {
     state.mode = 'gameover';
+    goGrace = 0.6;   // a tap already in flight at crash time must not skip the card
     audio && audio.sfx('wreck');
     // Persist the ending condition MINUS baseline wear-and-tear, so every ride always
     // needs at least some repair between plays (40% floor applied next run by createCart).
@@ -284,6 +300,7 @@ export function createGame(audio) {
   function update(dt) {
     syncViewport();
     if (goldToast > 0) goldToast--;
+    if (state.mode === 'gameover' && goGrace > 0) goGrace -= dt;
     // Soft-shoulder topple: play the roll-over animation (world frozen), then game over.
     if (state.mode === 'toppling') {
       cart.toppleT = Math.min(1, (cart.toppleT || 0) + dt / TOPPLE.dur);
@@ -338,7 +355,7 @@ export function createGame(audio) {
       // No money on the road during a street race (the purse is the prize). Otherwise a
       // supercharge floods extra coins.
       let spawnWeights = activeWeights;
-      if (race) spawnWeights = activeWeights.filter(w => w.type !== 'coin');
+      if (race) spawnWeights = raceWeights;
       else if (supercharged) spawnWeights = activeWeights.concat([{ type: 'coin', weight: SUPERCHARGE.coinWeightBonus }]);
       // A bribed cop CLEARS the politician's road of traffic/obstacles for a while —
       // like coffee's smooth window, only safe coins spawn (never during a race).
@@ -456,7 +473,10 @@ export function createGame(audio) {
     if (state.mode === 'gameover') return renderGameOver(ctx);
     renderRoad(ctx, road, stage.palette, camZ, W, H);
     renderScenery(ctx, stage, camZ, W, H);
-    for (const e of activeEntities(field).sort((a, b) => b.z - a.z)) {
+    drawList.length = 0;
+    for (const e of field.pool) if (e.active) drawList.push(e);
+    drawList.sort((a, b) => b.z - a.z);   // painter's order, in a reused scratch array
+    for (const e of drawList) {
       const camZe = e.z + CART_Z;
       const p = projectEntity(e.x, camZe, W, H);
       if (p.visible) drawEntity(ctx, e.type, p.x + curveOffsetAt(camZ, camZe), p.y, p.size, e.seed, e.value);
@@ -484,7 +504,7 @@ export function createGame(audio) {
     }
     drawCart(ctx, cart, cp.x + cartCurve + jitX, cp.y + 6 + bobPx, cp.size * 0.9);
     renderTouchZones(ctx, W, H);
-    renderHud(ctx, { stageName: stage.name, coins: run.coins, distance: run.distance, condition: cart.condition, effects, lite, speed: cart.speed, throttle: throttleInput }, W, H);
+    renderHud(ctx, { stageName: stage.name, coins: run.coins, distance: run.distance, condition: cart.condition, effects, lite, speed: cart.speed, throttle: throttleInput, combo: race ? 0 : run.combo }, W, H);
     renderPickupToast(ctx, pickupToast, W, H);
     if (race) renderRaceHud(ctx);
     if (state.mode === 'play') renderPauseButton(ctx);
@@ -524,34 +544,34 @@ export function createGame(audio) {
     ctx.fillStyle = 'rgba(0,0,0,0.74)'; ctx.fillRect(0, 0, W, H);
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillStyle = '#f0c020'; ctx.font = '700 52px "Courier New", monospace';
-    ctx.fillText('PAUSED', W / 2, H * 0.17);
+    ctx.fillText('PAUSED', W / 2, my(0.17));
 
     button(ctx, PAUSE.resume, '▶ RESUME', { stroke: '#3fae54', text: '#cbe7cf' });
 
     ctx.fillStyle = '#cbe7cf'; ctx.font = '500 16px "Courier New", monospace';
-    ctx.fillText('RIDDIM', W / 2, H * 0.46);
+    ctx.fillText('RIDDIM', W / 2, my(0.46));
     button(ctx, PAUSE.genrePrev, '‹', { font: '700 30px "Courier New", monospace' });
     button(ctx, PAUSE.genreNext, '›', { font: '700 30px "Courier New", monospace' });
     ctx.fillStyle = '#f0c020'; ctx.font = '700 26px "Courier New", monospace';
     const g = save.settings.genre;
     if (g === 'mymusic') {
-      ctx.fillText('My Music (' + myMusicCount + ')', W / 2, H * 0.55);
+      ctx.fillText('My Music (' + myMusicCount + ')', W / 2, my(0.55), W * 0.56);
       ctx.fillStyle = '#9fb8a3'; ctx.font = '500 13px "Courier New", monospace';
-      ctx.fillText(myMusicCount ? 'tap here to add more tracks' : 'tap here to upload your own tracks', W / 2, H * 0.605);
+      ctx.fillText(myMusicCount ? 'tap here to add more tracks' : 'tap here to upload your own tracks', W / 2, my(0.605), W * 0.9);
     } else if (g === 'radio') {
       const st = stationCount() ? stationAt(save.settings.radioStation || 0) : null;
-      ctx.fillText(st ? st.name : 'JA Radio', W / 2, H * 0.55);
+      ctx.fillText(st ? st.name : 'JA Radio', W / 2, my(0.55), W * 0.56);
       ctx.fillStyle = '#9fb8a3'; ctx.font = '500 13px "Courier New", monospace';
-      ctx.fillText(st ? 'live online · tap here for next station' : 'no stations available', W / 2, H * 0.605);
+      ctx.fillText(st ? 'live online · tap here for next station' : 'no stations available', W / 2, my(0.605), W * 0.9);
     } else {
-      ctx.fillText(GENRE_LABEL[g] || 'Reggae', W / 2, H * 0.55);
+      ctx.fillText(GENRE_LABEL[g] || 'Reggae', W / 2, my(0.55), W * 0.56);
     }
 
     button(ctx, PAUSE.mute, save.settings.muted ? 'SOUND: OFF' : 'SOUND: ON',
       { font: '700 20px "Courier New", monospace', stroke: '#9fb8a3', text: '#f4f1e6' });
 
     ctx.fillStyle = '#9fb8a3'; ctx.font = '500 14px "Courier New", monospace';
-    ctx.fillText('tap the PAUSE button or press P / Esc · resume any time', W / 2, H * 0.86);
+    ctx.fillText('tap the PAUSE button or press P / Esc · resume any time', W / 2, my(0.86), W * 0.94);
     ctx.restore();
   }
 
@@ -577,16 +597,18 @@ export function createGame(audio) {
     const place = placement(run.distance, race.rivals);
     const toGo = Math.max(0, Math.ceil(race.finish - run.distance));
     const ord = ['', '1ST', '2ND', '3RD', '4TH'][place] || (place + 'TH');
+    // On the narrow portrait stage the HUD gauges reach the centre — drop the box lower.
+    const ry = W < 700 ? 118 : 62;
     ctx.save();
-    ctx.fillStyle = 'rgba(14,26,18,0.82)'; ctx.fillRect(W / 2 - 130, 62, 260, 50);
+    ctx.fillStyle = 'rgba(14,26,18,0.82)'; ctx.fillRect(W / 2 - 130, ry, 260, 50);
     ctx.strokeStyle = place === 1 ? '#f0c020' : '#3a4a3e'; ctx.lineWidth = 2;
-    ctx.strokeRect(W / 2 - 130, 62, 260, 50);
+    ctx.strokeRect(W / 2 - 130, ry, 260, 50);
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillStyle = place === 1 ? '#f0c020' : '#f4f1e6';
     ctx.font = '700 24px "Courier New", monospace';
-    ctx.fillText('🏁 ' + ord + ' / ' + (race.rivals.length + 1), W / 2, 80);
+    ctx.fillText('🏁 ' + ord + ' / ' + (race.rivals.length + 1), W / 2, ry + 18);
     ctx.fillStyle = '#9fb8a3'; ctx.font = '500 14px "Courier New", monospace';
-    ctx.fillText(toGo + ' m to di line', W / 2, 100);
+    ctx.fillText(toGo + ' m to di line', W / 2, ry + 38);
     ctx.restore();
   }
 
@@ -682,7 +704,7 @@ export function createGame(audio) {
 
   function menuPoint(vx, vy) {
     if (state.popup) { state.popup = null; return; }
-    if (state.mode === 'gameover') { router.go('hub'); state.mode = 'menu'; return; }
+    if (state.mode === 'gameover') { if (goGrace <= 0) { router.go('hub'); state.mode = 'menu'; } return; }
     // While driving, the only tap the menu layer cares about is the pause button (steering
     // is handled separately in input.js). While paused, route taps to the overlay controls.
     if (state.mode === 'play') { if (inRect(PAUSE.btn, vx, vy)) pauseGame(); return; }
@@ -839,7 +861,7 @@ export function createGame(audio) {
 
   function menuKey(key) {
     if (state.popup) { state.popup = null; return; }
-    if (state.mode === 'gameover') { router.go('hub'); state.mode = 'menu'; return; }
+    if (state.mode === 'gameover') { if (goGrace <= 0) { router.go('hub'); state.mode = 'menu'; } return; }
     // P / Esc pause and resume the run; while paused, ‹ , . › cycle the riddim live.
     if (state.mode === 'play') { if (key === 'p' || key === 'P' || key === 'Escape') pauseGame(); return; }
     if (state.mode === 'paused') {
@@ -975,9 +997,9 @@ export function createGame(audio) {
     ctx.fillStyle = '#0e1a12'; ctx.fillRect(0, 0, W, H);
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillStyle = '#f0c020'; ctx.font = '700 58px "Courier New", monospace';
-    ctx.fillText('POTHOLE RUN', W / 2, H * 0.09);
+    ctx.fillText('POTHOLE RUN', W / 2, my(0.09), W * 0.94);
     ctx.fillStyle = '#9fb8a3'; ctx.font = '500 16px "Courier New", monospace';
-    ctx.fillText('dodge di potholes — bank coins — upgrade di ride', W / 2, H * 0.15);
+    ctx.fillText('dodge di potholes — bank coins — upgrade di ride', W / 2, my(0.15), W * 0.94);
 
     // Back button + per-driver legend
     button(ctx, BTN.back, '‹ HUB', { font: '700 18px "Courier New", monospace', stroke: '#9fb8a3', text: '#9fb8a3' });
@@ -989,37 +1011,37 @@ export function createGame(audio) {
     // DRIVER
     button(ctx, BTN.driverPrev, '‹'); button(ctx, BTN.driverNext, '›');
     ctx.fillStyle = '#f4f1e6'; ctx.font = '700 26px "Courier New", monospace';
-    ctx.fillText(driver.name, W / 2, H * 0.225);
+    ctx.fillText(driver.name, W / 2, my(0.225), W * 0.56);
 
     // Show current vehicle (read-only — change it in Car Dealer)
     const veh = getVehicle(save.vehicle);
     ctx.fillStyle = '#9fb8a3'; ctx.font = '500 14px "Courier New", monospace';
-    ctx.fillText('ride: ' + veh.name + '  (change in Car Dealer)', W / 2, H * 0.345);
+    ctx.fillText('ride: ' + veh.name + '  (change in Car Dealer)', W / 2, my(0.345), W * 0.9);
 
     // Front-facing portrait of the selected driver (faces are never seen rear-view in play)
-    renderPortrait(ctx, menuChoice.character, W / 2, H * 0.475, 120);
+    renderPortrait(ctx, menuChoice.character, W / 2, my(0.475), 120);
 
     // STAGE
     button(ctx, BTN.stagePrev, '‹'); button(ctx, BTN.stageNext, '›');
     ctx.fillStyle = '#f4f1e6'; ctx.font = '700 26px "Courier New", monospace';
-    ctx.fillText(stg.name, W / 2, H * 0.61);
+    ctx.fillText(stg.name, W / 2, my(0.61), W * 0.56);
 
     // GENRE
     button(ctx, BTN.genrePrev, '‹'); button(ctx, BTN.genreNext, '›');
     ctx.fillStyle = '#cbe7cf'; ctx.font = '500 15px "Courier New", monospace';
-    ctx.fillText('RIDDIM', W / 2, H * 0.66);
+    ctx.fillText('RIDDIM', W / 2, my(0.66));
     ctx.fillStyle = '#f0c020'; ctx.font = '700 26px "Courier New", monospace';
     if (menuChoice.genre === 'mymusic') {
-      ctx.fillText('My Music (' + myMusicCount + ')', W / 2, H * 0.70);
+      ctx.fillText('My Music (' + myMusicCount + ')', W / 2, my(0.70), W * 0.56);
       ctx.fillStyle = '#9fb8a3'; ctx.font = '500 13px "Courier New", monospace';
-      ctx.fillText(myMusicCount ? 'tap here to add more tracks' : 'tap here to upload your own tracks', W / 2, H * 0.735);
+      ctx.fillText(myMusicCount ? 'tap here to add more tracks' : 'tap here to upload your own tracks', W / 2, my(0.735), W * 0.9);
     } else if (menuChoice.genre === 'radio') {
       const st = stationCount() ? stationAt(save.settings.radioStation || 0) : null;
-      ctx.fillText(st ? st.name : 'JA Radio', W / 2, H * 0.70);
+      ctx.fillText(st ? st.name : 'JA Radio', W / 2, my(0.70), W * 0.56);
       ctx.fillStyle = '#9fb8a3'; ctx.font = '500 13px "Courier New", monospace';
-      ctx.fillText(st ? 'live online · tap here to change station' : 'no stations available', W / 2, H * 0.735);
+      ctx.fillText(st ? 'live online · tap here to change station' : 'no stations available', W / 2, my(0.735), W * 0.9);
     } else {
-      ctx.fillText(GENRE_LABEL[menuChoice.genre] || 'Reggae', W / 2, H * 0.70);
+      ctx.fillText(GENRE_LABEL[menuChoice.genre] || 'Reggae', W / 2, my(0.70), W * 0.56);
     }
 
     button(ctx, BTN.start, 'START');
@@ -1049,24 +1071,29 @@ export function createGame(audio) {
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     // Front-facing portrait of the driver who just ran — the Conductor's bleach stage
     // reached this run shows here (the grim payoff of all that vanity).
-    renderPortrait(ctx, cart.character.id, W / 2, H * 0.15, 104, { bleachLevel: cart.bleachLevel });
+    renderPortrait(ctx, cart.character.id, W / 2, my(0.15), 104, { bleachLevel: cart.bleachLevel });
     ctx.fillStyle = '#c0382c'; ctx.font = '700 60px "Courier New", monospace';
-    ctx.fillText('CART MASH UP!', W / 2, H * 0.32);
+    ctx.fillText('CART MASH UP!', W / 2, my(0.32), W * 0.94);
     ctx.fillStyle = '#cbe7cf'; ctx.font = '500 30px "Courier New", monospace';
-    ctx.fillText(Math.floor(run.distance) + ' m   •   ' + formatMoney(run.coins), W / 2, H * 0.46);
-    ctx.fillText('best: ' + (save.bests[stage.id] || 0) + ' m', W / 2, H * 0.54);
+    ctx.fillText(Math.floor(run.distance) + ' m   •   ' + formatMoney(run.coins), W / 2, my(0.46), W * 0.9);
+    ctx.fillText('best: ' + (save.bests[stage.id] || 0) + ' m', W / 2, my(0.54), W * 0.9);
     ctx.fillStyle = '#9fb8a3'; ctx.font = '500 20px "Courier New", monospace';
-    ctx.fillText('wallet: ' + formatMoney(save.wallet), W / 2, H * 0.61);
+    ctx.fillText('wallet: ' + formatMoney(save.wallet), W / 2, my(0.61), W * 0.9);
     // Rank display on gameover
     ctx.fillStyle = '#3fae54'; ctx.font = '700 20px "Courier New", monospace';
-    ctx.fillText('rank: ' + rankFor(save.lifetimeEarned).label, W / 2, H * 0.68);
+    ctx.fillText('rank: ' + rankFor(save.lifetimeEarned).label, W / 2, my(0.68), W * 0.9);
     // A crash that shook a tune-up loose is called out here — head to the Mech Shop to re-fit it.
     if (lastBust) {
       ctx.fillStyle = '#e0584a'; ctx.font = '700 18px "Courier New", monospace';
-      ctx.fillText('⚠ ' + lastBust.toUpperCase() + ' BUST — RE-FIT AT DI MECH SHOP', W / 2, H * 0.735);
+      ctx.fillText('⚠ ' + lastBust.toUpperCase() + ' BUST — RE-FIT AT DI MECH SHOP', W / 2, my(0.735), W * 0.94);
     }
+    // The continue prompt fades in with the input grace so an in-flight crash tap
+    // never skips the card before the player has read it.
+    ctx.save();
+    ctx.globalAlpha = goGrace > 0 ? Math.max(0.15, 1 - goGrace / 0.6) : 1;
     ctx.fillStyle = '#f0c020'; ctx.font = '700 26px "Courier New", monospace';
-    ctx.fillText('TAP / PRESS TO CONTINUE', W / 2, H * 0.78);
+    ctx.fillText('TAP / PRESS TO CONTINUE', W / 2, my(0.78), W * 0.9);
+    ctx.restore();
   }
 
   return { state, update, render, onSteer, setThrottle, menuPoint, menuKey, toggleMute, menuChoice, refreshMusicCount };

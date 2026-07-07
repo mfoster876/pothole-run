@@ -66,7 +66,7 @@ function resize() {
   viewport.offsetX = Math.floor((canvas.width  - VIRTUAL.width  * viewport.scale) / 2);
   viewport.offsetY = Math.floor((canvas.height - VIRTUAL.height * viewport.scale) / 2);
 
-  // Expose physical canvas size (for the rotate prompt overlay).
+  // Expose physical canvas size.
   viewport.width  = canvas.width;
   viewport.height = canvas.height;
 }
@@ -131,8 +131,14 @@ if (musicInput) {
   });
 }
 
-// Play-mode steering (hold-repeat lane slides). Acts only while playing.
-const input = createInput(canvas, { onSteer: (d) => game.onSteer(d), onTap: () => audio.unlock() });
+// Play-mode steering (hold-repeat lane slides). Acts only while playing. The reserved
+// zone is the 56px virtual HUD strip (pause button + readouts) — mapped through the real
+// viewport so it stays accurate in portrait and landscape alike.
+const input = createInput(canvas, {
+  onSteer: (d) => game.onSteer(d),
+  onTap: () => audio.unlock(),
+  reserved: (cx, cy) => toVirtual(cx, cy).y < 56
+});
 
 // Convert a client point into virtual stage coords. Uses the canvas's real rendered rect
 // (via clientToVirtual) so hit-testing stays correct under the Fast-graphics DPR cap,
@@ -147,6 +153,13 @@ function handlePoint(clientX, clientY) {
   game.menuPoint(p.x, p.y);
 }
 canvas.addEventListener('pointerdown', (e) => handlePoint(e.clientX, e.clientY));
+// Auto-pause a live run when the app/tab goes to the background (home button, app
+// switch, screen lock) so the player resumes deliberately instead of mid-hazard.
+if (typeof document.addEventListener === 'function') {
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden && game.state.mode === 'play') game.menuKey('p');
+  });
+}
 window.addEventListener('keydown', (e) => {
   if (e.key === 'm' || e.key === 'M') { game.toggleMute(); return; }
   game.menuKey(e.key);

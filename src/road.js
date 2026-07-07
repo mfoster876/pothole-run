@@ -120,12 +120,20 @@ function poly(ctx, x1, y1, x2, y2, x3, y3, x4, y4, color) {
   ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.lineTo(x3, y3); ctx.lineTo(x4, y4);
   ctx.closePath(); ctx.fill();
 }
+// Memoized — shade() runs for every road band every frame; only a handful of
+// (palette colour, amount) pairs ever occur, so cache the built rgb() strings.
+const shadeCache = new Map();
 function shade(hex, amt) {
+  const key = hex + amt;
+  let c = shadeCache.get(key);
+  if (c) return c;
   const n = parseInt(hex.slice(1), 16);
   const r = Math.max(0, Math.min(255, (n >> 16) + amt * 255));
   const g = Math.max(0, Math.min(255, ((n >> 8) & 255) + amt * 255));
   const b = Math.max(0, Math.min(255, (n & 255) + amt * 255));
-  return `rgb(${r | 0},${g | 0},${b | 0})`;
+  c = `rgb(${r | 0},${g | 0},${b | 0})`;
+  shadeCache.set(key, c);
+  return c;
 }
 
 // Project an entity/cart at normalized lane x (-1..1) and camera-space distance

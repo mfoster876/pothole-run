@@ -1,4 +1,4 @@
-export function createInput(target, { onSteer, onTap }) {
+export function createInput(target, { onSteer, onTap, reserved }) {
   // left/right = lane steer (held, auto-repeat); up/down = throttle (held, polled via
   // throttle()). Throttle is keyboard-only (↑/↓ or W/S) — touch keeps the steer-only layout.
   const held = { left: false, right: false, up: false, down: false };
@@ -10,10 +10,11 @@ export function createInput(target, { onSteer, onTap }) {
     if (side === 'right' && !held.right) { held.right = true; onSteer(+1); repeatTimer = REPEAT; }
   }
   function release(side) { held[side] = false; }
-  // Which lane-steer a touch implies — or null for the top strip, which is reserved for
-  // the on-screen pause button (so tapping ❚❚ never also slings the cart sideways).
+  // Which lane-steer a touch implies — or null inside the reserved HUD strip (the
+  // caller maps the point into virtual stage coords, so the ❚❚ pause button never
+  // also slings the cart sideways, in either orientation).
   function steerSide(clientX, clientY) {
-    if (clientY < window.innerHeight * 0.12) return null;
+    if (reserved && reserved(clientX, clientY)) return null;
     return clientX < window.innerWidth / 2 ? 'left' : 'right';
   }
 

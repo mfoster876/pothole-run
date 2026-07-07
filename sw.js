@@ -1,4 +1,4 @@
-const CACHE = 'pothole-run-v42';
+const CACHE = 'pothole-run-v43';
 const ASSETS = [
   './', './index.html', './styles.css', './manifest.webmanifest',
   './src/main.js', './src/constants.js', './src/game.js', './src/road.js',
@@ -10,7 +10,7 @@ const ASSETS = [
   // Wave 1 additions: economy/power-ups/bounties/solvability + the screen modules
   './src/economy.js', './src/powerups.js', './src/bounties.js', './src/solvability.js',
   './src/screens/router.js', './src/screens/hub.js', './src/screens/mechshop.js',
-  './src/screens/cardealer.js', './src/screens/aspirations.js', './src/screens/rotatePrompt.js',
+  './src/screens/cardealer.js', './src/screens/aspirations.js',
   // Wave 2: ranks, aspirations data/logic, cash pot, ending + cashpot screens
   './src/ranks.js', './src/aspirations.js', './src/cashpot.js',
   './src/screens/ending.js', './src/screens/cashpot.js',
@@ -21,6 +21,7 @@ const ASSETS = [
   './src/usermusic.js', './src/screens/help.js',  // Phase 2.1: custom soundtracks + help screen
   './src/radio.js',     // live Jamaican internet radio (riddim option)
   './src/charitems.js',  // Phase 2.2: character-specific bleach / wholesome items
+  './src/foods.js',      // Ackee + Patty street food (was missing — broke offline install)
   './src/races.js', './src/screens/races.js',  // Phase 2.4: bank-gated street races
   // Phase 3: rebalance + negatives framework, police, politician mechanics, legend
   './src/negatives.js', './src/legend.js', './src/screens/legend.js',
