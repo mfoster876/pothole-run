@@ -61,15 +61,16 @@ export const STAGES = [
     palette: { sky: '#b7c2cc', hill: '#4a5560', ground: '#6a6f74', road: '#4c4f56', rumble: '#5a5048' },
     // Urban grid at the foot of the Blue Mountains — moderate bends.
     curveMult: 1.0,
+    fruitMult: 0.4,     // street fruit is a country thing — far rarer in the business district
     hazardWeights: [
       { type: 'pothole', weight: 4 }, { type: 'coin', weight: 4 },
       { type: 'bus', weight: 4 }, { type: 'taxi', weight: 4 }, { type: 'coaster', weight: 2 },
       { type: 'manhole', weight: 1 }, { type: 'jaywalker', weight: 3 }, { type: 'stall', weight: 2 },
       { type: 'dog', weight: 1 },
       { type: 'police', weight: 3 },                            // urban — police out in force
-      // New Kingston street life (all walk across the road)
+      // New Kingston street life (all walk across the road; the broom-selling rasta
+      // works the country roads and the tourist strip, not the business district)
       { type: 'beggar', weight: 1 }, { type: 'vendor', weight: 2 }, { type: 'peanutcart', weight: 1 },
-      { type: 'broomman', weight: 0.6 },                          // broom-seller among the street vendors (no donkey cart in the city)
       { type: 'tools', weight: 3 }, { type: 'water', weight: 1 }
     ]
   },

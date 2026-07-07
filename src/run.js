@@ -54,7 +54,8 @@ export function resolveHits(run, cart, field, effects = cart._effects || {}, sav
     // Run-over: hitting a person/animal while grounded (you didn't hop over them) plows
     // straight through — flag it so the game can play the graphic injury reaction, no
     // matter whether the driver themselves takes damage (the reckless toll on others).
-    if (!info.collectible && (info.category === 'pedestrian' || info.category === 'animal') && !((cart.jumpT || 0) > 0)) {
+    // (`noRunOver` exempts the windscreen youth — he washes and charges, he isn't hit.)
+    if (!info.collectible && !info.noRunOver && (info.category === 'pedestrian' || info.category === 'animal') && !((cart.jumpT || 0) > 0)) {
       // Carry the victim's identity (type) so the reaction draws the SAME person/animal
       // that was hit — not a generic stand-in.
       cart.roadkill = { cat: info.category, type: e.type, variation: Math.floor((cart.x * 1000 + run.distance) % 4 + 4) % 4, x: e.x };

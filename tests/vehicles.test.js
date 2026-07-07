@@ -45,7 +45,7 @@ test('a faster ride raises top speed for the same driver', () => {
   assert.ok(fast.speed > cart.speed * 1.3, 'porsche clearly outruns the handcart');
 });
 
-test('windscreen youth costs coins on contact (forced wash, scaled charge)', () => {
+test('windscreen youth charges for the wash — no damage, no run-over', () => {
   const cart = createCart(getCharacter('yute'), getVehicle('swift'));
   cart.x = 0; // dead centre
   const field = createField();
@@ -57,7 +57,9 @@ test('windscreen youth costs coins on contact (forced wash, scaled charge)', () 
   assert.equal(run.coins, 5000 - charge);
   assert.equal(cart.washCharge, charge);
   assert.ok(cart.washed === true);
-  assert.ok(cart.condition.value < 100, 'minor scrape damage too');
+  assert.equal(cart.condition.value, 100, 'a wash is not a crash — no vehicle damage');
+  assert.equal(run.runOvers || 0, 0, 'the youth was paid, not plowed — no roadkill/heat');
+  assert.equal(run.heat || 0, 0);
 });
 
 test('save defaults include a garage, a genre, and the unseen car tip', () => {

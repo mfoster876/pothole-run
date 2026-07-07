@@ -37,7 +37,6 @@ export const DAMAGE = {
   traffic: 20,         // +10% difficulty
   animal: 15,          // +10% difficulty
   bump: 4,
-  wiper: 4,
   repairPerCoin: 1
 };
 

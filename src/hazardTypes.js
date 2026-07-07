@@ -33,9 +33,10 @@ export const HAZARD_TYPES = {
   // Donkey coconut cart — a slow rural road-occupant (scrolls like a static obstacle, no vz).
   // Traffic-tier hit; rare and rural-only (only listed in the two country stages).
   coconutcart:{ damage: DAMAGE.traffic, collectible: false, depth: 5, color: '#9a6a34', label: 'coconut cart', category: 'traffic' },
-  // soapy-can windscreen youth — only spawns when you're driving a car. Minor
-  // scrape damage, but costs you coins (`coinLoss` handled in run.js).
-  wiper:    { damage: DAMAGE.wiper,   collectible: false, depth: 3, color: '#5aa0c0', label: 'windscreen youth', coinLoss: true, category: 'pedestrian' },
+  // soapy-can windscreen youth — only spawns when you're driving a car. He isn't an
+  // obstacle you mow down: contact means he WASHED the screen and you PAY (`coinLoss`
+  // in run.js). No vehicle damage, and `noRunOver` keeps him off the roadkill ledger.
+  wiper:    { damage: 0, collectible: false, depth: 3, color: '#5aa0c0', label: 'windscreen youth', coinLoss: true, category: 'pedestrian', noRunOver: true },
   // Police — urban-frequent road obstacle (weighted per stage). Traffic-tier damage
   // PLUS a cash fine on contact (run.js). The Politician is immune.
   police:   { damage: DAMAGE.traffic, collectible: false, depth: 4, color: '#27407a', label: 'police', category: 'police', fine: true },

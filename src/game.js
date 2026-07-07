@@ -19,7 +19,7 @@ import { getStage } from './stages.js';
 import { VEHICLES, getVehicle } from './vehicles.js';
 import { upgradesForVehicle, stabilityBonus, handlingBonus } from './upgrades.js';
 import { pickMoney, pickPoliticianMoney, nextBill, biasBill, formatMoney } from './money.js';
-import { loadSave, writeSave, recordBest, addCoins, buyVehicle, selectVehicle, buyUpgrade, ownedUpgrades, refitPart, maybeBustPart, GENRES } from './save.js';
+import { loadSave, writeSave, recordBest, recordBestTake, addCoins, buyVehicle, selectVehicle, buyUpgrade, ownedUpgrades, refitPart, maybeBustPart, GENRES } from './save.js';
 import { emptyState as tapcodeEmpty, feedTap } from './tapcode.js';
 import { bankRun } from './economy.js';
 import { createEffects, tickEffects, effectActive, applyPowerup } from './powerups.js';
@@ -137,6 +137,8 @@ export function createGame(audio) {
   let pickupToast = null;   // transient HUD toast naming the last pick-up / negative hit
   let gore = null;          // transient run-over reaction ({ cat, variation, x, t }) at the cart plane
   let lastBust = null;      // name of the tune-up busted by the run that just ended (game-over notice)
+  let newBestDist = false;  // the run that just ended set a distance record (game-over ★)
+  let newBestTake = false;  // …or a best-single-run-take record
   let myMusicCount = 0; // how many of the player's own tracks are stored (for the riddim picker)
   const rng = Math.random;
   function refreshMusicCount() { try { countMusic().then((n) => { myMusicCount = n || 0; }).catch(() => {}); } catch (_) {} }
@@ -181,7 +183,7 @@ export function createGame(audio) {
       .concat(itemWeightsFor(ch))      // character-specific bleach / wholesome items
       .concat(negativesFor(ch))        // character-gated temptations / responsibilities
       .concat(universalNegatives())    // unripe-ackee poison trap — bites every driver
-      .concat([{ type: 'fruit', weight: FRUIT.weight }])   // paid street fruit — open to all
+      .concat([{ type: 'fruit', weight: FRUIT.weight * (stage.fruitMult || 1) }])   // paid street fruit — open to all (rarer in town)
       .concat(foodWeightsFor(ch, stage))  // Ackee/Patty/Plantain (+ rural roast breadfruit)
       .map(w => {
         // Repair tools are the in-run lifeline — spawn them 20% more often.
@@ -298,7 +300,10 @@ export function createGame(audio) {
     // Bank earnings (debt-aware: a heavily-fined run can leave the wallet in the red).
     bankRun(save, run.coins);
     addCoins(save, Math.max(0, run.coins));   // progress currency never drops on a bad run
-    recordBest(save, stage.id, Math.floor(run.distance));
+    // High-score tracker: record distance + best single-run take, and remember whether
+    // THIS run set either record so the game-over card can celebrate it.
+    newBestDist = recordBest(save, stage.id, Math.floor(run.distance));
+    newBestTake = recordBestTake(save, stage.id, Math.round(run.coins));
     // The crash may BUST a fitted tune-up — the mech shop's recurring shakedown. The
     // rougher the run ended, the likelier a part shook loose; you pay to re-fit it.
     const bustedId = maybeBustPart(save, save.vehicle, isWrecked(cart.condition), cart.condition.value, rng);
@@ -1118,6 +1123,15 @@ export function createGame(audio) {
     button(ctx, BTN.stagePrev, '‹'); button(ctx, BTN.stageNext, '›');
     ctx.fillStyle = '#f4f1e6'; ctx.font = '700 26px "Courier New", monospace';
     ctx.fillText(stg.name, W / 2, my(0.61), W * 0.56);
+    // High-score tracker: this stage's records — in the footer band above the wallet
+    // line (absolute H fractions, like the wallet line, so it's clear in BOTH
+    // orientations; the my() mid-column is too crowded for a third line).
+    const bd = save.bests[stg.id] || 0, bt = (save.bestTakes || {})[stg.id] || 0;
+    if (bd > 0 || bt > 0) {
+      ctx.fillStyle = '#d8b020'; ctx.font = '500 14px "Courier New", monospace';
+      ctx.fillText('★ ' + stg.name + ' record: ' + bd + ' m' +
+        (bt > 0 ? '  ·  best take: ' + formatMoney(bt) : ''), W / 2, H * 0.935, W * 0.94);
+    }
 
     // GENRE
     button(ctx, BTN.genrePrev, '‹'); button(ctx, BTN.genreNext, '›');
@@ -1170,7 +1184,20 @@ export function createGame(audio) {
     ctx.fillText(quitFlag ? 'RUN PARK UP' : 'CART MASH UP!', W / 2, my(0.32), W * 0.94);
     ctx.fillStyle = '#cbe7cf'; ctx.font = '500 30px "Courier New", monospace';
     ctx.fillText(Math.floor(run.distance) + ' m   •   ' + formatMoney(run.coins), W / 2, my(0.46), W * 0.9);
-    ctx.fillText('best: ' + (save.bests[stage.id] || 0) + ' m', W / 2, my(0.54), W * 0.9);
+    // High-score tracker: the stage records. Gold + a pulsing ★ banner when THIS run set one.
+    const isRecord = newBestDist || newBestTake;
+    if (isRecord) {
+      const pulse = 0.75 + 0.25 * Math.sin(nowMs() / 160);
+      ctx.save(); ctx.globalAlpha = pulse;
+      ctx.fillStyle = '#f0c020'; ctx.font = '700 24px "Courier New", monospace';
+      ctx.fillText('★ NEW ' + (newBestDist && newBestTake ? 'DISTANCE + MONEY RECORD'
+        : newBestDist ? 'DISTANCE RECORD' : 'MONEY RECORD') + ' ★', W / 2, my(0.515), W * 0.9);
+      ctx.restore();
+    }
+    ctx.fillStyle = isRecord ? '#f0c020' : '#cbe7cf'; ctx.font = '500 20px "Courier New", monospace';
+    const bestTake = (save.bestTakes || {})[stage.id] || 0;
+    ctx.fillText('best: ' + (save.bests[stage.id] || 0) + ' m' +
+      (bestTake > 0 ? '   ·   best take: ' + formatMoney(bestTake) : ''), W / 2, my(0.56), W * 0.9);
     ctx.fillStyle = '#9fb8a3'; ctx.font = '500 20px "Courier New", monospace';
     ctx.fillText('wallet: ' + formatMoney(save.wallet), W / 2, my(0.61), W * 0.9);
     // Rank display on gameover

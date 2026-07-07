@@ -23,7 +23,8 @@ export function ownedUpgrades(state, vehicleId) {
 export function defaultSave() {
   return {
     coins: 0,
-    bests: {},
+    bests: {},                    // high-score tracker: best distance (m) per stage
+    bestTakes: {},                // high-score tracker: best single-run earnings per stage
     // vehicle: which rides you own and which is selected; handcart is the free icon.
     garage: ['handcart'],
     vehicle: 'handcart',
@@ -87,9 +88,18 @@ export function writeSave(state, storage = globalThis.localStorage) {
   storage.setItem(KEY, JSON.stringify(state));
   return state;
 }
+// Record a best-distance run. Returns TRUE when this run set a new record (so the
+// game-over card can celebrate it), false otherwise.
 export function recordBest(state, stageId, score) {
-  if (score > (state.bests[stageId] ?? 0)) state.bests[stageId] = score;
-  return state;
+  if (score > (state.bests[stageId] ?? 0)) { state.bests[stageId] = score; return true; }
+  return false;
+}
+// Record a best single-run TAKE (money earned). Only positive takes count — limping home
+// in debt is never a record. Returns TRUE on a new record.
+export function recordBestTake(state, stageId, take) {
+  if (!state.bestTakes) state.bestTakes = {};   // pre-tracker saves lack the map
+  if (take > 0 && take > (state.bestTakes[stageId] ?? 0)) { state.bestTakes[stageId] = take; return true; }
+  return false;
 }
 export function addCoins(state, n) {
   state.coins += n;

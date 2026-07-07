@@ -299,16 +299,33 @@ function vehicleDamage(ctx, s, tier, family) {
 
 // ============ generic car body, rear-view ============
 // opts: roof (cabin height ×s), taper (roofline narrowing), light (tail colour),
-// suv/wide/tray/wagon/ev flavour flags.
+// suv/wide/tray/wagon/ev flavour flags. Every marque shares this body but reads
+// distinct: SUVs/wagons carry roof rails + a rear wiper, sporty low-slung shapes
+// (wide or heavily tapered — the Porsche and Audi) get twin exhausts, the EV keeps
+// its full-width light bar. Paint has depth (lit roofline → shaded sills), the
+// glass carries a sky glint, and the rear ends in a proper bumper with a plate.
 function drawCar(ctx, cart, s, opts, bleach = 0) {
   const body = cart.vehicle.body;
   const w = s * (opts.wide ? 1.0 : 0.84);
   const roofTop = -s * (0.55 + opts.roof * 0.5);
+  const sporty = opts.wide || opts.taper >= 0.12;   // Porsche / Audi silhouettes
   // wheels poking out below the body
   wheel(ctx, -w * 0.92, s * 0.34, s * 0.26);
   wheel(ctx, w * 0.92, s * 0.34, s * 0.26);
-  // lower body / boot
-  rr(ctx, -w, -s * 0.18, w * 2, s * 0.56, s * 0.12); ctx.fillStyle = body; ctx.fill();
+  // twin exhaust tips under the bumper on the sporty marques, one pipe otherwise
+  ctx.fillStyle = '#3a3a40';
+  if (sporty) {
+    ctx.beginPath(); ctx.ellipse(-w * 0.55, s * 0.40, s * 0.07, s * 0.045, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(w * 0.55, s * 0.40, s * 0.07, s * 0.045, 0, 0, Math.PI * 2); ctx.fill();
+  } else {
+    ctx.beginPath(); ctx.ellipse(-w * 0.6, s * 0.40, s * 0.06, s * 0.04, 0, 0, Math.PI * 2); ctx.fill();
+  }
+  // lower body / boot — painted with depth: lit at the beltline, shaded to the sills
+  const paint = ctx.createLinearGradient(0, -s * 0.18, 0, s * 0.38);
+  paint.addColorStop(0, shade(body, 0.10));
+  paint.addColorStop(0.45, body);
+  paint.addColorStop(1, shade(body, -0.18));
+  rr(ctx, -w, -s * 0.18, w * 2, s * 0.56, s * 0.12); ctx.fillStyle = paint; ctx.fill();
   ctx.strokeStyle = shade(body, -0.4); ctx.lineWidth = 2; ctx.stroke();
   // cabin / rear window, tapered inward toward the roof
   const cw = w * (1 - opts.taper);
@@ -318,19 +335,54 @@ function drawCar(ctx, cart, s, opts, bleach = 0) {
   ctx.lineTo(cw * 0.86, roofTop); ctx.quadraticCurveTo(cw, roofTop, cw, roofTop + s * 0.08);
   ctx.lineTo(w, -s * 0.14); ctx.closePath();
   ctx.fillStyle = shade(body, opts.ev ? 0.05 : -0.08); ctx.fill(); ctx.stroke();
-  // rear windscreen (driver shows through)
+  // side mirrors — small body-colour wings just below the roofline at the cabin edges
+  ctx.fillStyle = shade(body, -0.12);
+  rr(ctx, -cw - s * 0.11, roofTop + s * 0.16, s * 0.13, s * 0.09, s * 0.03); ctx.fill();
+  rr(ctx, cw - s * 0.02,  roofTop + s * 0.16, s * 0.13, s * 0.09, s * 0.03); ctx.fill();
+  // roof rails on the SUVs and the wagon (the working-car / family-car tell)
+  if (opts.suv || opts.wagon) {
+    ctx.fillStyle = shade(body, -0.3);
+    ctx.fillRect(-cw * 0.82, roofTop - s * 0.045, cw * 0.14, s * 0.045);
+    ctx.fillRect(cw * 0.68,  roofTop - s * 0.045, cw * 0.14, s * 0.045);
+  }
+  // rear windscreen (driver shows through) with a diagonal sky glint
   rr(ctx, -cw * 0.74, roofTop + s * 0.06, cw * 1.48, s * 0.34, s * 0.05);
   ctx.fillStyle = '#16242e'; ctx.fill();
+  ctx.save();
+  rr(ctx, -cw * 0.74, roofTop + s * 0.06, cw * 1.48, s * 0.34, s * 0.05); ctx.clip();
+  ctx.fillStyle = 'rgba(180,210,230,0.16)';
+  ctx.beginPath();
+  ctx.moveTo(-cw * 0.5, roofTop + s * 0.06); ctx.lineTo(-cw * 0.2, roofTop + s * 0.06);
+  ctx.lineTo(-cw * 0.45, roofTop + s * 0.40); ctx.lineTo(-cw * 0.74, roofTop + s * 0.40);
+  ctx.closePath(); ctx.fill();
+  ctx.restore();
   drawHead(ctx, cart.character, s * 0.6, 0, roofTop + s * 0.2, bleach);
-  // body highlight strip
-  ctx.fillStyle = 'rgba(255,255,255,0.12)'; ctx.fillRect(-w * 0.96, -s * 0.12, w * 1.92, s * 0.05);
-  // tail-lights
-  ctx.fillStyle = opts.light;
-  rr(ctx, -w * 0.92, s * 0.06, w * 0.34, s * 0.12, s * 0.03); ctx.fill();
-  rr(ctx, w * 0.58, s * 0.06, w * 0.34, s * 0.12, s * 0.03); ctx.fill();
+  // rear wiper resting across the glass on the wagon / SUVs
+  if (opts.suv || opts.wagon) {
+    ctx.strokeStyle = '#15151a'; ctx.lineWidth = Math.max(1, s * 0.025); ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(cw * 0.1, roofTop + s * 0.38); ctx.lineTo(cw * 0.52, roofTop + s * 0.14); ctx.stroke();
+    ctx.lineCap = 'butt';
+  }
+  // beltline highlight strip
+  ctx.fillStyle = 'rgba(255,255,255,0.14)'; ctx.fillRect(-w * 0.96, -s * 0.12, w * 1.92, s * 0.05);
+  // tail-light clusters — outer lens in the marque colour with a brighter inner
+  // brake segment and a soft glow, so the rear reads lit rather than stickered
+  for (const sideX of [-w * 0.92, w * 0.58]) {
+    ctx.fillStyle = 'rgba(226,58,58,0.18)';                       // glow bloom
+    rr(ctx, sideX - s * 0.02, s * 0.04, w * 0.38, s * 0.16, s * 0.04); ctx.fill();
+    ctx.fillStyle = opts.light;
+    rr(ctx, sideX, s * 0.06, w * 0.34, s * 0.12, s * 0.03); ctx.fill();
+    ctx.fillStyle = 'rgba(255,235,220,0.75)';                     // hot inner segment
+    rr(ctx, sideX + w * 0.05, s * 0.085, w * 0.10, s * 0.07, s * 0.02); ctx.fill();
+  }
   if (opts.ev) { ctx.fillStyle = opts.light; ctx.fillRect(-w * 0.6, s * 0.12, w * 1.2, s * 0.025); } // EV light bar
-  // licence plate
+  // rear bumper — a slightly darker band closing off the tail below the lights
+  ctx.fillStyle = shade(body, -0.22);
+  rr(ctx, -w * 0.98, s * 0.24, w * 1.96, s * 0.14, s * 0.05); ctx.fill();
+  // licence plate in a dark frame, sitting on the bumper line
+  ctx.fillStyle = '#26262c'; ctx.fillRect(-s * 0.18, s * 0.11, s * 0.36, s * 0.13);
   ctx.fillStyle = '#e8e8e0'; ctx.fillRect(-s * 0.16, s * 0.12, s * 0.32, s * 0.1);
+  ctx.fillStyle = '#5a5a62'; ctx.fillRect(-s * 0.12, s * 0.155, s * 0.24, s * 0.025); // plate characters
   if (opts.tray) { // pickup tailgate lip
     ctx.fillStyle = shade(body, -0.25); ctx.fillRect(-w, -s * 0.22, w * 2, s * 0.08);
   }

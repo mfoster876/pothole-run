@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { defaultSave, loadSave, writeSave, recordBest, addCoins } from '../src/save.js';
+import { defaultSave, loadSave, writeSave, recordBest, recordBestTake, addCoins } from '../src/save.js';
 
 function fakeStorage(seed = null) {
   const m = new Map();
@@ -28,11 +28,26 @@ test('writeSave round-trips through storage', () => {
   assert.equal(saved.coins, 42);
   assert.equal(loadSave(storage).coins, 42);
 });
-test('recordBest only raises the best', () => {
+test('recordBest only raises the best — and reports when a record was set', () => {
   const s = defaultSave();
-  recordBest(s, 'fern-gully', 500);
-  recordBest(s, 'fern-gully', 300);
+  assert.equal(recordBest(s, 'fern-gully', 500), true,  'first run is a new record');
+  assert.equal(recordBest(s, 'fern-gully', 300), false, 'a lesser run is not');
   assert.equal(s.bests['fern-gully'], 500);
+});
+
+test('recordBestTake tracks best single-run earnings per stage (positive takes only)', () => {
+  const s = defaultSave();
+  assert.equal(recordBestTake(s, 'fern-gully', 2500), true,  'first positive take is a record');
+  assert.equal(recordBestTake(s, 'fern-gully', 1000), false, 'a lesser take is not');
+  assert.equal(recordBestTake(s, 'fern-gully', -400), false, 'a debt run is never a record');
+  assert.equal(s.bestTakes['fern-gully'], 2500);
+});
+
+test('recordBestTake tolerates a pre-tracker save with no bestTakes map', () => {
+  const s = defaultSave();
+  delete s.bestTakes;                       // an old save loaded before the tracker existed
+  assert.equal(recordBestTake(s, 'negril', 800), true);
+  assert.equal(s.bestTakes.negril, 800);
 });
 test('addCoins accumulates', () => {
   const s = defaultSave();

@@ -11,14 +11,18 @@ import { drawEntity } from '../src/sprites.js';
 const RURAL = ['fern-gully', 'holland-bamboo'];
 const URBANISH = ['negril', 'new-kingston'];
 
-test('broom man is a walking pedestrian on every ROAD stage', () => {
+test('broom man walks the country roads + tourist strip — NOT New Kingston or the river', () => {
   const b = HAZARD_TYPES.broomman;
   assert.equal(b.category, 'pedestrian');
   assert.equal(b.walk, true);
-  for (const s of STAGES) {
-    if (s.river) continue;   // river mode (Bog Walk) has no roadside broom seller
-    assert.ok(s.hazardWeights.some(w => w.type === 'broomman'), `${s.id} should spawn the broom seller`);
+  for (const id of [...RURAL, 'negril']) {
+    assert.ok(getStage(id).hazardWeights.some(w => w.type === 'broomman'), `${id} should spawn the broom seller`);
   }
+  // Milton's call (2026-07-07): the broom-selling rasta doesn't work the business district.
+  assert.ok(!getStage('new-kingston').hazardWeights.some(w => w.type === 'broomman'),
+    'new-kingston must NOT spawn the broom seller');
+  assert.ok(!getStage('bog-walk').hazardWeights.some(w => w.type === 'broomman'),
+    'the river has no roadside broom seller');
 });
 
 test('coconut cart is rural-ONLY and RARE (never in the city / tourist strip)', () => {
