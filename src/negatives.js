@@ -100,12 +100,17 @@ export function isNegative(id) {
   return !!NEGATIVES[id];
 }
 
-/** Weighted spawn list ({ type, weight }) of the negatives this driver attracts. */
-export function negativesFor(character) {
+/** Weighted spawn list ({ type, weight }) of the negatives this driver attracts.
+ *  Stage-aware: roadOnly negatives never float the river (no fallen poles on the Rio
+ *  Cobre) and riverOnly injustices never litter the tarmac. */
+export function negativesFor(character, stage) {
   if (!character) return [];
   const list = ELIGIBLE[character.id];
   if (!list) return [];
-  return list.map(id => ({ type: id, weight: WEIGHTS[id] }));
+  const river = !!(stage && stage.river);
+  return list
+    .filter(id => (river ? !NEGATIVES[id].roadOnly : !NEGATIVES[id].riverOnly))
+    .map(id => ({ type: id, weight: WEIGHTS[id] }));
 }
 
 /** Weighted spawn list of the negatives that bite EVERY driver (e.g. unripe ackee). */
