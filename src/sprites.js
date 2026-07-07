@@ -8,7 +8,7 @@ export function drawEntity(ctx, type, sx, sy, size, seed = 0.137, value = 1) {
     case 'manhole': manhole(ctx, sx, sy, s); break;
     case 'slick': slick(ctx, sx, sy, s, seed); break;
     case 'flood': slick(ctx, sx, sy, s * 1.3, seed, 'rgba(90,110,90,0.55)'); break;
-    case 'bump': roundedBar(ctx, sx, sy, s * 1.4, s * 0.3, '#8a8a8a'); break;
+    case 'bump': drawSpeedBump(ctx, sx, sy, s); break;
     case 'goat': drawGoat(ctx, sx, sy, s * 0.6); break;
     case 'dog': drawDog(ctx, sx, sy, s * 0.5); break;
     case 'cat': drawCat(ctx, sx, sy, s * 0.34); break;
@@ -85,6 +85,11 @@ export function drawEntity(ctx, type, sx, sy, size, seed = 0.137, value = 1) {
     // Politician GOOD money pickups
     case 'privatebribe': drawPrivateBribe(ctx, sx, sy, s); break;
     case 'ladynight':    drawLadyNight(ctx, sx, sy, s); break;
+    // Di Principal — authority perks (pickups) + office compromises (avoid)
+    case 'schoolbell':     drawSchoolBell(ctx, sx, sy, s); break;
+    case 'extralessons':   drawExtraLessons(ctx, sx, sy, s); break;
+    case 'placementbribe': drawBrownEnvelope(ctx, sx, sy, s); break;
+    case 'ptameeting':     drawPtaNotice(ctx, sx, sy, s); break;
     default: crater(ctx, sx, sy, s, seed);
   }
 }
@@ -258,6 +263,30 @@ function money(ctx, x, y, s, value) {
 }
 function roundedBar(ctx, x, y, w, h, fill) {
   ctx.fillStyle = fill; ctx.fillRect(x - w / 2, y - h, w, h);
+}
+
+// A real Jamaican sleeping policeman: a raised asphalt hump painted with fading
+// yellow warning bands, sitting proud of the road with a cast shadow — not a grey bar.
+function drawSpeedBump(ctx, x, y, s) {
+  const w = s * 0.85, h = s * 0.30;   // half-width / mound height
+  // cast shadow at the base
+  ctx.fillStyle = 'rgba(0,0,0,0.30)';
+  ctx.beginPath(); ctx.ellipse(x, y + h * 0.12, w * 1.02, h * 0.28, 0, 0, Math.PI * 2); ctx.fill();
+  // the asphalt mound (half-ellipse) — slightly darker than the road so it reads raised
+  ctx.fillStyle = '#3e3e44';
+  ctx.beginPath(); ctx.ellipse(x, y, w, h, 0, Math.PI, 0); ctx.lineTo(x + w, y); ctx.closePath(); ctx.fill();
+  // worn yellow warning bands painted over the hump
+  ctx.save();
+  ctx.beginPath(); ctx.ellipse(x, y, w, h, 0, Math.PI, 0); ctx.closePath(); ctx.clip();
+  ctx.fillStyle = '#d8b020';
+  const band = Math.max(3, s * 0.16);
+  for (let bx = -w; bx < w; bx += band * 2) ctx.fillRect(x + bx, y - h, band, h);
+  // sun highlight along the crest + wear scuffs so the paint looks driven-over
+  ctx.fillStyle = 'rgba(255,255,255,0.14)';
+  ctx.beginPath(); ctx.ellipse(x, y - h * 0.28, w * 0.9, h * 0.34, 0, Math.PI, 0); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = 'rgba(62,62,68,0.5)';
+  ctx.fillRect(x - w * 0.5, y - h * 0.55, w, h * 0.18);
+  ctx.restore();
 }
 
 // ---- vendor stall: a Jamaican roadside higgler's market stall — a wooden table of
@@ -1059,24 +1088,40 @@ function drawFruit(ctx, x, y, s) {
 // ---- ackee: Jamaica's national fruit — a split red-pink pod opening to reveal the
 // glossy yellow arils and their shiny black seeds (only ripe, open ackee is safe). ----
 function drawAckee(ctx, x, y, s) {
+  // A ripe OPEN ackee as it actually hangs: one red leathery pod split into three
+  // petals folded outward, the cream arils clustered in the middle, each capped by
+  // its glossy black seed — plus the stem and a leaf so it reads as picked fruit.
   ctx.fillStyle = 'rgba(0,0,0,0.20)'; ellipsePath(ctx, x, y + s * 0.06, s * 0.5, s * 0.1); ctx.fill();
-  // the leathery pod, split into three lobes (red → pink where it has ripened open)
-  const lobes = [[-0.26, 0.02, 0.9], [0.24, 0.0, 0.95], [0.0, -0.28, 0.85]];
-  for (const [dx, dy, sc] of lobes) {
+  const cy = y - s * 0.26;                       // pod centre
+  // stem + leaf
+  ctx.strokeStyle = '#4a6a2a'; ctx.lineWidth = Math.max(1.5, s * 0.05); ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(x, cy - s * 0.30); ctx.quadraticCurveTo(x + s * 0.08, cy - s * 0.46, x + s * 0.16, cy - s * 0.54); ctx.stroke();
+  ctx.lineCap = 'butt';
+  ctx.fillStyle = '#3f7d3a';
+  ctx.beginPath(); ctx.ellipse(x + s * 0.30, cy - s * 0.54, s * 0.17, s * 0.07, -0.5, 0, Math.PI * 2); ctx.fill();
+  // three petals of the split pod, radiating out and down from the centre
+  for (const ang of [Math.PI * 0.5 - 2.1, Math.PI * 0.5, Math.PI * 0.5 + 2.1]) {
+    const px = x + Math.cos(ang) * s * 0.22, py = cy + Math.sin(ang) * s * 0.22;
     ctx.fillStyle = '#c4361f';
-    ctx.beginPath(); ctx.ellipse(x + s * dx, y - s * 0.22 + s * dy, s * 0.30 * sc, s * 0.34 * sc, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = '#7f1c10'; ctx.lineWidth = Math.max(1, s * 0.03); ctx.stroke();
-    // the pod is open at the top — a pinkish inner rim
-    ctx.fillStyle = '#e6836f';
-    ctx.beginPath(); ctx.ellipse(x + s * dx, y - s * 0.30 + s * dy, s * 0.18 * sc, s * 0.12 * sc, 0, 0, Math.PI * 2); ctx.fill();
-    // the buttery yellow aril nestled inside
-    ctx.fillStyle = '#f4c033';
-    ctx.beginPath(); ctx.ellipse(x + s * dx, y - s * 0.31 + s * dy, s * 0.12 * sc, s * 0.11 * sc, 0, 0, Math.PI * 2); ctx.fill();
-    // the shiny black seed
-    ctx.fillStyle = '#161616';
-    ctx.beginPath(); ctx.ellipse(x + s * dx + s * 0.03, y - s * 0.31 + s * dy, s * 0.045 * sc, s * 0.05 * sc, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,0.55)';
-    ctx.beginPath(); ctx.ellipse(x + s * dx + s * 0.06, y - s * 0.35 + s * dy, s * 0.02, s * 0.02, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(px, py, s * 0.34, s * 0.20, ang, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#8a2010'; ctx.lineWidth = Math.max(1, s * 0.03); ctx.stroke();
+    // sun-ripened blush along the petal's outer edge
+    ctx.fillStyle = '#e05a30';
+    ctx.beginPath(); ctx.ellipse(px + Math.cos(ang) * s * 0.12, py + Math.sin(ang) * s * 0.12, s * 0.20, s * 0.10, ang, 0, Math.PI * 2); ctx.fill();
+  }
+  // pale inner membrane where the pod opened
+  ctx.fillStyle = '#e8c9a0';
+  ctx.beginPath(); ctx.arc(x, cy, s * 0.19, 0, Math.PI * 2); ctx.fill();
+  // the cream-yellow arils with their glossy black seeds
+  for (const [dx, dy] of [[-0.11, 0.05], [0.11, 0.05], [0, -0.09]]) {
+    const ax = x + s * dx, ay = cy + s * dy;
+    ctx.fillStyle = '#f4d060';
+    ctx.beginPath(); ctx.ellipse(ax, ay + s * 0.03, s * 0.095, s * 0.115, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#c8a030'; ctx.lineWidth = Math.max(1, s * 0.02); ctx.stroke();
+    ctx.fillStyle = '#141414';
+    ctx.beginPath(); ctx.ellipse(ax, ay - s * 0.07, s * 0.055, s * 0.06, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.beginPath(); ctx.arc(ax + s * 0.02, ay - s * 0.09, s * 0.017, 0, Math.PI * 2); ctx.fill();
   }
 }
 
@@ -1247,25 +1292,49 @@ function drawBroomMan(ctx, x, y, s) {
   // the man, in an earth-tone shirt
   person(ctx, x, y, s, '#3a6a3a');
 
-  // ---- bundle of brooms slung over the (viewer-left) shoulder, angled up-right ----
+  // ---- bundle of thatch yard brooms over the (viewer-left) shoulder ----
+  // Each broom is a straight handle with a FILLED tapered straw head at the top and a
+  // dark binding wrap where head meets handle — solid shapes that read as brooms at
+  // road distance, instead of a tangle of thin fan lines.
   const sxk = x - s * 0.18, syk = y - s * 0.82;     // shoulder anchor
-  const handle = '#c8a86a', handleDk = '#a07c40', leaf = '#8a6a38', leafDk = '#5f481f';
-  for (let i = 0; i < 4; i++) {
-    const sp = (i - 1.5) * 0.07, ang = -0.7 + sp;
-    const ex = sxk + Math.cos(ang) * s * 1.5, ey = syk + Math.sin(ang) * s * 1.5;
-    ctx.strokeStyle = i % 2 ? handle : handleDk; ctx.lineWidth = Math.max(1.5, s * 0.06); ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.moveTo(sxk, syk); ctx.lineTo(ex, ey); ctx.stroke();
-    // dried-leaf broom head splayed at the top end
-    ctx.strokeStyle = i % 2 ? leaf : leafDk; ctx.lineWidth = Math.max(1, s * 0.03);
-    for (let j = 0; j < 5; j++) {
-      const fa = ang + (j - 2) * 0.16;
-      ctx.beginPath(); ctx.moveTo(ex, ey); ctx.lineTo(ex + Math.cos(fa) * s * 0.42, ey + Math.sin(fa) * s * 0.42); ctx.stroke();
+  const handles = ['#c8a86a', '#a07c40', '#c8a86a'];
+  for (let i = 0; i < 3; i++) {
+    const ang = -0.95 + i * 0.17;                    // fan the bundle up-right
+    const tipX = sxk + Math.cos(ang) * s * 1.30, tipY = syk + Math.sin(ang) * s * 1.30;
+    // handle, running from just behind the shoulder up to the head
+    ctx.strokeStyle = handles[i]; ctx.lineWidth = Math.max(2, s * 0.07); ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(sxk - Math.cos(ang) * s * 0.35, syk - Math.sin(ang) * s * 0.35);
+    ctx.lineTo(tipX, tipY);
+    ctx.stroke();
+    // straw head: a filled taper widening from the binding out past the handle tip
+    const hx = Math.cos(ang), hy2 = Math.sin(ang);           // along the handle
+    const px2 = -hy2, py2 = hx;                              // perpendicular
+    const baseX = tipX - hx * s * 0.10, baseY = tipY - hy2 * s * 0.10;
+    const endX = tipX + hx * s * 0.52, endY = tipY + hy2 * s * 0.52;
+    ctx.fillStyle = i % 2 ? '#c89a38' : '#d8b24a';
+    ctx.beginPath();
+    ctx.moveTo(baseX + px2 * s * 0.05, baseY + py2 * s * 0.05);
+    ctx.lineTo(endX + px2 * s * 0.20, endY + py2 * s * 0.20);
+    ctx.lineTo(endX - px2 * s * 0.20, endY - py2 * s * 0.20);
+    ctx.lineTo(baseX - px2 * s * 0.05, baseY - py2 * s * 0.05);
+    ctx.closePath(); ctx.fill();
+    // a few darker straw streaks so the head reads as bound thatch
+    ctx.strokeStyle = '#a8842c'; ctx.lineWidth = Math.max(1, s * 0.025);
+    for (const f of [-0.6, 0, 0.6]) {
+      ctx.beginPath();
+      ctx.moveTo(baseX, baseY);
+      ctx.lineTo(endX + px2 * s * 0.16 * f, endY + py2 * s * 0.16 * f);
+      ctx.stroke();
     }
+    // binding wrap at the neck of the head
+    ctx.strokeStyle = '#5a3a18'; ctx.lineWidth = Math.max(2, s * 0.06);
+    ctx.beginPath();
+    ctx.moveTo(baseX + px2 * s * 0.08, baseY + py2 * s * 0.08);
+    ctx.lineTo(baseX - px2 * s * 0.08, baseY - py2 * s * 0.08);
+    ctx.stroke();
   }
   ctx.lineCap = 'butt';
-  // a tie binding the handles just past the shoulder
-  ctx.strokeStyle = '#5a3a18'; ctx.lineWidth = Math.max(1.5, s * 0.05);
-  ctx.beginPath(); ctx.arc(sxk + s * 0.34, syk - s * 0.34, s * 0.11, 0, Math.PI * 2); ctx.stroke();
 
   // ---- knitted RASTA TAM over the crown, with a couple of locks ----
   ctx.fillStyle = '#1f7a34';
@@ -1724,9 +1793,28 @@ function porkCut(ctx, x, y, s) {
 // a dazed, knocked-over figure "seeing stars". `t` = seconds remaining (~0.7→0); prog runs
 // 0 (impact) →1 (settled). `variation` picks one of several micro-reactions; `cat` is
 // 'pedestrian' or 'animal'.
-export function drawRoadkill(ctx, x, y, s, variation, cat, t) {
+// Victim looks, keyed by the entity type that was actually hit — the knocked-down
+// figure keeps the same shirt / coat as the walking sprite so the player recognises
+// exactly who they plowed through. Falls back to a generic look for unknown types.
+const ROADKILL_LOOK = {
+  hustler:   { shirt: '#d06a30' },
+  jaywalker: { shirt: '#3f7a9a' },
+  beggar:    { shirt: '#6a6a72', wheel: true },     // his overturned wheelchair wheel
+  vendor:    { shirt: '#c0392b', fruit: true },     // her spilled fruit rolls loose
+  peanutcart:{ shirt: '#8a6a3a', fruit: true },
+  broomman:  { shirt: '#3a6a3a', brooms: true, tam: true },
+  wiper:     { shirt: '#b8b83a' },
+  goat:   { body: '#cfc0a0', legs: '#9a8a66', horns: true },
+  dog:    { body: '#8a5a30', legs: '#5a3820' },
+  cat:    { body: '#8a8a92', legs: '#5a5a62', scale: 0.75 },
+  cattle: { body: '#5a3c28', legs: '#3a2418', scale: 1.3, horns: true },
+  croc:   { body: '#4a7a3a', legs: '#2f5a26', scale: 1.2 },
+};
+
+export function drawRoadkill(ctx, x, y, s, variation, cat, t, type) {
   const prog = Math.max(0, Math.min(1, 1 - (t || 0) / 0.7));
   const v = ((variation % 4) + 4) % 4;
+  const look = ROADKILL_LOOK[type] || {};
   ctx.save();
   // impact dust puff — a soft tan/grey cloud that expands and fades (no blood)
   const puff = s * (0.3 + 0.5 * prog);
@@ -1741,17 +1829,50 @@ export function drawRoadkill(ctx, x, y, s, variation, cat, t) {
 
   if (cat === 'animal') {
     // an animal knocked onto its side, legs out — startled, not gory
-    ctx.fillStyle = '#7a5a36';
-    ctx.beginPath(); ctx.ellipse(x, y - s * 0.02, s * 0.42, s * 0.2, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = '#4a3420'; ctx.lineWidth = Math.max(1.5, s * 0.07); ctx.lineCap = 'round';
+    const as = s * (look.scale || 1);
+    ctx.fillStyle = look.body || '#7a5a36';
+    ctx.beginPath(); ctx.ellipse(x, y - as * 0.02, as * 0.42, as * 0.2, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = look.legs || '#4a3420'; ctx.lineWidth = Math.max(1.5, as * 0.07); ctx.lineCap = 'round';
     for (const dx of [-0.18, 0.0, 0.18]) {
-      ctx.beginPath(); ctx.moveTo(x + s * dx, y - s * 0.08); ctx.lineTo(x + s * dx + s * 0.06, y - s * 0.34); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x + as * dx, y - as * 0.08); ctx.lineTo(x + as * dx + as * 0.06, y - as * 0.34); ctx.stroke();
+    }
+    if (look.horns) {
+      ctx.strokeStyle = '#d8ccb0'; ctx.lineWidth = Math.max(1.5, as * 0.06);
+      ctx.beginPath(); ctx.moveTo(x - as * 0.38, y - as * 0.16); ctx.lineTo(x - as * 0.5, y - as * 0.3);
+      ctx.moveTo(x - as * 0.32, y - as * 0.2); ctx.lineTo(x - as * 0.38, y - as * 0.36); ctx.stroke();
     }
     ctx.lineCap = 'butt'; ctx.restore(); return;
   }
 
   // a person knocked down — intact, sitting up dazed, arms thrown up (the flailing hands)
-  const skin = '#7a4a28', shirt = '#3f7a9a';
+  const skin = '#7a4a28', shirt = look.shirt || '#3f7a9a';
+  // the victim's signature belongings scattered by the impact — who you hit stays legible
+  if (look.brooms) {
+    ctx.strokeStyle = '#c8a86a'; ctx.lineWidth = Math.max(1.5, s * 0.05); ctx.lineCap = 'round';
+    for (const [bx, by, ba] of [[-0.7, 0.16, 0.3], [0.55, 0.22, -0.2]]) {
+      const hx = x + s * bx, hy2 = y + s * by;
+      ctx.beginPath(); ctx.moveTo(hx, hy2); ctx.lineTo(hx + Math.cos(ba) * s * 0.7, hy2 + Math.sin(ba) * s * 0.14); ctx.stroke();
+      ctx.fillStyle = '#d8b24a';
+      ctx.beginPath(); ctx.ellipse(hx - Math.cos(ba) * s * 0.12, hy2 + s * 0.01, s * 0.14, s * 0.07, ba, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.lineCap = 'butt';
+  }
+  if (look.fruit) {
+    for (const [fx, fy, fc] of [[-0.6, 0.18, '#e8a020'], [0.62, 0.1, '#d04a2a'], [0.45, 0.26, '#e8d24a']]) {
+      ctx.fillStyle = fc; ctx.beginPath(); ctx.arc(x + s * fx, y + s * fy, s * 0.09, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+  if (look.wheel) {
+    ctx.strokeStyle = '#2a2a30'; ctx.lineWidth = Math.max(1.5, s * 0.05);
+    ctx.beginPath(); ctx.arc(x + s * 0.62, y + s * 0.04, s * 0.2, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath();
+    for (let k = 0; k < 3; k++) {
+      const a = k * 2.1 + prog * 2;
+      ctx.moveTo(x + s * 0.62, y + s * 0.04);
+      ctx.lineTo(x + s * 0.62 + Math.cos(a) * s * 0.2, y + s * 0.04 + Math.sin(a) * s * 0.2);
+    }
+    ctx.stroke();
+  }
   const tilt = [-0.4, 0.2, 0.7, -0.8][v];
   const armsUp = v % 2 === 0;
   const flail = Math.sin(prog * Math.PI * 5) * 0.35 * (1 - prog * 0.6);
@@ -1777,9 +1898,14 @@ export function drawRoadkill(ctx, x, y, s, variation, cat, t) {
     ctx.moveTo(-s * 0.1, s * 0.04);   ctx.lineTo(-s * 0.42, s * 0.18);
   }
   ctx.stroke(); ctx.lineCap = 'butt';
-  // head + hair (no blood)
+  // head + hair (no blood) — the broom seller keeps his knitted rasta tam
   ctx.fillStyle = skin; ctx.beginPath(); ctx.arc(-s * 0.3, -s * 0.06, s * 0.13, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = '#1c1208'; ctx.beginPath(); ctx.arc(-s * 0.3, -s * 0.1, s * 0.13, Math.PI, 0); ctx.fill();
+  ctx.fillStyle = look.tam ? '#1f7a34' : '#1c1208';
+  ctx.beginPath(); ctx.arc(-s * 0.3, -s * 0.1, s * 0.13, Math.PI, 0); ctx.fill();
+  if (look.tam) {
+    ctx.fillStyle = '#f0c020'; ctx.fillRect(-s * 0.43, -s * 0.115, s * 0.26, s * 0.025);
+    ctx.fillStyle = '#c0241c'; ctx.fillRect(-s * 0.43, -s * 0.09, s * 0.26, s * 0.025);
+  }
   // dazed "seeing stars" circling the head — a cartoon ouch, not gore
   ctx.fillStyle = '#f0c020';
   for (let k = 0; k < 3; k++) {
@@ -1787,6 +1913,75 @@ export function drawRoadkill(ctx, x, y, s, variation, cat, t) {
     star(ctx, -s * 0.3 + Math.cos(a) * s * 0.24, -s * 0.3 + Math.sin(a) * s * 0.12, s * 0.05);
   }
   ctx.restore();
+}
+
+// ── Di Principal's road objects ───────────────────────────────────────────────
+// brass hand bell — one ring and di pickney scatter (clears the road)
+function drawSchoolBell(ctx, x, y, s) {
+  ctx.fillStyle = 'rgba(0,0,0,0.20)'; ellipsePath(ctx, x, y + s * 0.04, s * 0.38, s * 0.09); ctx.fill();
+  // wooden handle
+  ctx.strokeStyle = '#6a4420'; ctx.lineWidth = Math.max(2, s * 0.09); ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(x, y - s * 0.52); ctx.lineTo(x, y - s * 0.78); ctx.stroke(); ctx.lineCap = 'butt';
+  // brass dome + flared rim
+  ctx.fillStyle = '#d8a020';
+  ctx.beginPath();
+  ctx.moveTo(x - s * 0.30, y - s * 0.10);
+  ctx.quadraticCurveTo(x - s * 0.30, y - s * 0.56, x, y - s * 0.56);
+  ctx.quadraticCurveTo(x + s * 0.30, y - s * 0.56, x + s * 0.30, y - s * 0.10);
+  ctx.lineTo(x + s * 0.36, y - s * 0.02); ctx.lineTo(x - s * 0.36, y - s * 0.02);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = '#8a6210'; ctx.lineWidth = Math.max(1, s * 0.03); ctx.stroke();
+  // shine + clapper
+  ctx.fillStyle = 'rgba(255,255,255,0.45)';
+  ctx.beginPath(); ctx.ellipse(x - s * 0.12, y - s * 0.38, s * 0.05, s * 0.12, -0.3, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#4a3210'; ctx.beginPath(); ctx.arc(x, y + s * 0.02, s * 0.06, 0, Math.PI * 2); ctx.fill();
+}
+// exercise book + chalk — after-school extra lessons (the fees are the pickup)
+function drawExtraLessons(ctx, x, y, s) {
+  ctx.fillStyle = 'rgba(0,0,0,0.20)'; ellipsePath(ctx, x, y + s * 0.04, s * 0.42, s * 0.09); ctx.fill();
+  ctx.save();
+  ctx.translate(x, y - s * 0.24); ctx.rotate(-0.08);
+  ctx.fillStyle = '#3f9a5f'; ctx.fillRect(-s * 0.34, -s * 0.24, s * 0.68, s * 0.48);
+  ctx.strokeStyle = '#1f6a3a'; ctx.lineWidth = Math.max(1, s * 0.03); ctx.strokeRect(-s * 0.34, -s * 0.24, s * 0.68, s * 0.48);
+  ctx.fillStyle = '#f4f1e6'; ctx.fillRect(-s * 0.26, -s * 0.16, s * 0.52, s * 0.14);
+  ctx.fillStyle = '#1f6a3a';
+  ctx.font = `700 ${Math.max(6, Math.round(s * 0.14))}px "Courier New", monospace`;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText('LESSONS', 0, -s * 0.09);
+  // the fee — a folded note tucked in the book
+  ctx.fillStyle = '#4a9a4a'; ctx.fillRect(-s * 0.12, s * 0.06, s * 0.30, s * 0.12);
+  ctx.strokeStyle = '#2a6a2a'; ctx.strokeRect(-s * 0.12, s * 0.06, s * 0.30, s * 0.12);
+  ctx.restore();
+}
+// the brown envelope — a school-placement bribe (temptation to AVOID)
+function drawBrownEnvelope(ctx, x, y, s) {
+  ctx.fillStyle = 'rgba(0,0,0,0.20)'; ellipsePath(ctx, x, y + s * 0.04, s * 0.44, s * 0.09); ctx.fill();
+  ctx.save();
+  ctx.translate(x, y - s * 0.22); ctx.rotate(0.06);
+  // cash peeking out the open top
+  ctx.fillStyle = '#4a9a4a'; ctx.fillRect(-s * 0.22, -s * 0.34, s * 0.44, s * 0.18);
+  ctx.strokeStyle = '#2a6a2a'; ctx.lineWidth = Math.max(1, s * 0.025); ctx.strokeRect(-s * 0.22, -s * 0.34, s * 0.44, s * 0.18);
+  // manila envelope
+  ctx.fillStyle = '#c8a050'; ctx.fillRect(-s * 0.36, -s * 0.20, s * 0.72, s * 0.42);
+  ctx.strokeStyle = '#8a6a28'; ctx.lineWidth = Math.max(1, s * 0.03); ctx.strokeRect(-s * 0.36, -s * 0.20, s * 0.72, s * 0.42);
+  // flap creases
+  ctx.beginPath();
+  ctx.moveTo(-s * 0.36, -s * 0.20); ctx.lineTo(0, s * 0.04); ctx.lineTo(s * 0.36, -s * 0.20);
+  ctx.stroke();
+  ctx.restore();
+}
+// PTA meeting notice — a board pon a post that flags yuh down
+function drawPtaNotice(ctx, x, y, s) {
+  ctx.fillStyle = 'rgba(0,0,0,0.20)'; ellipsePath(ctx, x, y + s * 0.04, s * 0.36, s * 0.09); ctx.fill();
+  ctx.strokeStyle = '#6a4420'; ctx.lineWidth = Math.max(2, s * 0.07);
+  ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y - s * 0.62); ctx.stroke();
+  ctx.fillStyle = '#7a5a9a'; ctx.fillRect(x - s * 0.34, y - s * 0.94, s * 0.68, s * 0.36);
+  ctx.strokeStyle = '#4a3468'; ctx.lineWidth = Math.max(1, s * 0.03);
+  ctx.strokeRect(x - s * 0.34, y - s * 0.94, s * 0.68, s * 0.36);
+  ctx.fillStyle = '#f4f1e6';
+  ctx.font = `700 ${Math.max(6, Math.round(s * 0.2))}px "Courier New", monospace`;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText('PTA', x, y - s * 0.76);
 }
 
 // A tiny 4-point sparkle/star (for the dazed "seeing stars" effect).

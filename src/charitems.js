@@ -24,6 +24,13 @@ export const ITEMS = {
   //   spiritual blessing he obtained (the wages of the vice — drainBlessing wipes it).
   privatebribe: { id: 'privatebribe', label: 'Private-Sector Bribe', char: 'politician', cashMin: 50000, cashMax: 5000000, boost: 1.2, color: '#1f9a4c' },
   ladynight:    { id: 'ladynight',    label: 'Lady of di Night',     char: 'politician', heal: 25, boost: 2.0, cashDrain: 150000, drainBlessing: true, color: '#c0306a' },
+
+  // ── Di Principal — the school runs on her authority ──
+  // schoolbell: one ring and di pickney SCATTER — the road clears for a moment
+  //   (clearRoads reuses the politician's bribed-cop road-clearing window).
+  // extralessons: after-school lessons fees — the classic side income, steady cash.
+  schoolbell:   { id: 'schoolbell',   label: 'School Bell',        char: 'principal', steady: 3.0, heal: 6, clearRoads: 2.5, color: '#d8a020' },
+  extralessons: { id: 'extralessons', label: 'Extra Lessons Fees', char: 'principal', cash: 800, steady: 2.0, color: '#3f9a5f' },
 };
 
 // Eligibility list per character id. The Lady of di Night is a shared temptation —
@@ -37,7 +44,7 @@ const ELIGIBLE = {
   taximan:    ['ladynight'],
   // The Uni Girl is a student too — she picks up the same wholesome study items.
   student:    ['books', 'stationery', 'bagjuice', 'lasco'],
-  nurse:      [],
+  principal:  ['schoolbell', 'extralessons'],
   higgler:    [],
 };
 
@@ -45,6 +52,7 @@ const ELIGIBLE = {
 const WEIGHTS = {
   books: 0.8, stationery: 0.8, bagjuice: 0.7, lasco: 0.5,
   privatebribe: 0.5, ladynight: 0.6,
+  schoolbell: 0.6, extralessons: 0.7,
 };
 
 /**
@@ -92,6 +100,10 @@ export function applyItem(effects, cart, id, run, save) {
     const dur = it.boost * ext;
     effects.super = Math.max(effects.super || 0, dur);
     effects.superMax = effects.super;
+  }
+  if (typeof it.clearRoads === 'number') {
+    // the school bell scatters di pickney — same safe-road window as the bribed cop
+    effects.clearRoads = Math.max(effects.clearRoads || 0, it.clearRoads);
   }
   if (run) {
     if (typeof it.cash === 'number' || it.cashMin != null) run.coins += pickBribe(it);  // a windfall (fixed or a $50k–$5M backhander)

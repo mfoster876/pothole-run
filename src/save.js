@@ -30,7 +30,7 @@ export function defaultSave() {
     upgrades: {},                 // per-vehicle owned upgrades: { [vehicleId]: [ids] } (see upgrades.js)
     busted: {},                   // per-vehicle BUSTED upgrades awaiting a paid re-fit: { [vehicleId]: [ids] }
     seenCarTip: false,            // has the windscreen-youth pop-up been shown?
-    unlocks: { characters: ['yute', 'rasta', 'student', 'nurse'], stages: ['fern-gully'] },
+    unlocks: { characters: ['yute', 'rasta', 'student', 'principal'], stages: ['fern-gully'] },
     settings: { muted: false, genre: 'reggae', radioStation: 0, graphics: 'smooth' },
     lifetimeEarned: 0,
     wallet: 0,
@@ -66,9 +66,12 @@ export function loadSave(storage = globalThis.localStorage) {
       prayedSinceRun:   parsed.prayedSinceRun   === true ? true : false,
       readBibleSinceRun: parsed.readBibleSinceRun === true ? true : false,
     };
-    // Always-free roster — patch older saves so the women (student + nurse) are available.
+    // Always-free roster — patch older saves so the women (student + principal) are
+    // available. The Nurse was re-themed as Di Principal — migrate the old id so
+    // existing saves never carry a ghost character the menu can't render.
     if (!Array.isArray(save.unlocks.characters)) save.unlocks.characters = [...base.unlocks.characters];
-    for (const c of ['yute', 'rasta', 'student', 'nurse']) {
+    save.unlocks.characters = save.unlocks.characters.map(c => c === 'nurse' ? 'principal' : c);
+    for (const c of ['yute', 'rasta', 'student', 'principal']) {
       if (!save.unlocks.characters.includes(c)) save.unlocks.characters.push(c);
     }
     if (!save.garage.includes(save.vehicle)) save.vehicle = save.garage[0];

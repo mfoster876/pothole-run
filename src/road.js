@@ -39,39 +39,53 @@ export function curvatureAt(position) {
 // Accumulated horizontal screen offset (px) of the road centreline at distance
 // camZ ahead of the camera. Double-integral of curvature → near≈0, far bends away.
 // Shared by renderRoad, entities and the cart so everything tracks the bend.
-export function curveOffsetAt(position, camZ) {
+export function curveOffsetAt(position, camZ, W = VIRTUAL.width, H = VIRTUAL.height) {
+  // Bend offsets are screen-space px, so they scale with the projected road width
+  // (∝ W × view scale; ×1 on the tuned 960-wide landscape stage).
+  const k = (W * viewScaleFor(W, H)) / 960;
   const baseIndex = Math.floor(position / SEG);
   const offset = position - baseIndex * SEG;
   const target = (camZ + offset) / SEG;
   let dx = 0, x = 0;
   const whole = Math.floor(target);
-  for (let n = 1; n <= whole; n++) { dx += curveAt(baseIndex + n) * CURVE_SCALE; x += dx; }
+  for (let n = 1; n <= whole; n++) { dx += curveAt(baseIndex + n) * CURVE_SCALE * k; x += dx; }
   const frac = target - whole;
-  if (frac > 0) { dx += curveAt(baseIndex + whole + 1) * CURVE_SCALE * frac; x += dx * frac; }
+  if (frac > 0) { dx += curveAt(baseIndex + whole + 1) * CURVE_SCALE * k * frac; x += dx * frac; }
   return x;
 }
 
-function projY(camZ, H) { return H / 2 + (CAM_DEPTH / camZ) * CAM_H * (H / 2); }
-function projW(camZ, W) { return (CAM_DEPTH / camZ) * ROAD_W * (W / 2); }
+// Driver's-POV portrait camera: on a portrait stage the horizon RISES (more road, less
+// sky) and the projection widens/enlarges, so the scene reads from behind the wheel
+// instead of a distant landscape crop. Landscape keeps the original H/2 + 1× tuning.
+export function horizonYFor(W, H) { return H > W ? Math.round(H * 0.36) : H / 2; }
+export function viewScaleFor(W, H) { return H > W ? 1.3 : 1; }
+
+function projY(camZ, W, H) {
+  const hy = horizonYFor(W, H);
+  return hy + (CAM_DEPTH / camZ) * CAM_H * (H - hy);
+}
+function projW(camZ, W, H) { return (CAM_DEPTH / camZ) * ROAD_W * (W / 2) * viewScaleFor(W, H); }
 
 export function renderRoad(ctx, road, palette, position, W, H) {
+  const hy = horizonYFor(W, H);
   ctx.fillStyle = palette.sky;
-  ctx.fillRect(0, 0, W, H / 2);
+  ctx.fillRect(0, 0, W, hy);
   ctx.fillStyle = palette.hill;
-  ctx.fillRect(0, H / 2 - H * 0.05, W, H * 0.05);
+  ctx.fillRect(0, hy - hy * 0.1, W, hy * 0.1);
   ctx.fillStyle = palette.ground;
-  ctx.fillRect(0, H / 2, W, H / 2);
+  ctx.fillRect(0, hy, W, H - hy);
 
   const baseIndex = Math.floor(position / SEG);
   const offset = position - baseIndex * SEG;
   const marl = palette.shoulder || '#b3a07f';
   const asph = palette.road;
+  const k = (W * viewScaleFor(W, H)) / 960;   // bend px scale — must match curveOffsetAt
 
   // accumulate curvature near→far, collect band geometry, draw far→near (painter's)
   const bands = [];
   let dx = 0, xc = 0;
   for (let n = 1; n <= DRAW; n++) {
-    dx += curveAt(baseIndex + n) * CURVE_SCALE;
+    dx += curveAt(baseIndex + n) * CURVE_SCALE * k;
     xc += dx;
     const camZ = n * SEG - offset;
     if (camZ <= 1) continue;
@@ -80,9 +94,9 @@ export function renderRoad(ctx, road, palette, position, W, H) {
   for (let i = bands.length - 1; i >= 0; i--) {
     const b = bands[i];
     const camZ = b.camZ, camZfar = camZ + SEG;
-    const yNear = projY(camZ, H), yFar = projY(camZfar, H);
+    const yNear = projY(camZ, W, H), yFar = projY(camZfar, W, H);
     if (yNear - yFar < 0.7) continue;
-    const wNear = projW(camZ, W), wFar = projW(camZfar, W);
+    const wNear = projW(camZ, W, H), wFar = projW(camZfar, W, H);
     const cxN = W / 2 + b.xc;
     const cxF = W / 2 + (bands[i + 1] ? bands[i + 1].xc : b.xc);
     const idx = baseIndex + b.n;
@@ -142,10 +156,11 @@ function shade(hex, amt) {
 export function projectEntity(normX, camZ, W = VIRTUAL.width, H = VIRTUAL.height) {
   if (camZ <= 1) return { x: W / 2, y: H, size: 0, visible: false };
   const s = CAM_DEPTH / camZ;
+  const vs = viewScaleFor(W, H);
   return {
-    x: W / 2 + s * (normX * ROAD_W * ROAD_DRAW) * (W / 2),
-    y: H / 2 + s * CAM_H * (H / 2),
-    size: s * ROAD_W * (W / 2) * 0.34,
+    x: W / 2 + s * (normX * ROAD_W * ROAD_DRAW) * (W / 2) * vs,
+    y: projY(camZ, W, H),
+    size: s * ROAD_W * (W / 2) * 0.34 * vs,
     visible: true
   };
 }

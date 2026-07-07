@@ -1,4 +1,4 @@
-import { projectEntity, curveOffsetAt } from './road.js';
+import { projectEntity, curveOffsetAt, horizonYFor } from './road.js';
 import { roadsideFeature, drawSpeedLimit, drawSafetyBillboard } from './signs.js';
 import { LIGHT } from './constants.js';
 
@@ -35,7 +35,7 @@ function drawRoadside(ctx, kind, normX, camZ, position, W, H, rowIdx, limit) {
   const fade = signFade(camZ);
   if (fade <= 0) return;                       // skip the glitchy close-up balloon/swing
   const p = projectEntity(normX, camZ, W, H);
-  if (!p.visible || p.y < H * 0.5 || p.size < 2) return;
+  if (!p.visible || p.y < horizonYFor(W, H) || p.size < 2) return;
   p.x += curveOffsetAt(position, camZ);
   ctx.save();
   ctx.globalAlpha *= fade;                     // smooth fade-out as it nears
@@ -190,32 +190,35 @@ function ridgePath(ctx, baseY, amp, position, parallax, phase, W) {
 }
 
 function drawHorizon(ctx, stage, position, W, H) {
-  const horizon = H * 0.5;
+  // Everything in this band is proportioned to the horizon height (== H*0.5 on the
+  // landscape stage, exactly as tuned) so the raised portrait horizon keeps the sky
+  // composed: sun, ridges and light wash all ride with the vanishing point.
+  const horizon = horizonYFor(W, H);
   const m = MOUNT[stage.scenery] || MOUNT.fern;
   // tropical sun — soft warm glow + bright core (drawn first so the mountains occlude it)
-  const sx = W * LIGHT.sunXf, sy = H * LIGHT.sunYf;
+  const sx = W * LIGHT.sunXf, sy = horizon * (LIGHT.sunYf / 0.5);
   for (let i = 4; i >= 1; i--) {
     ctx.fillStyle = `rgba(255,240,200,${(0.06 * i).toFixed(3)})`;
-    ctx.beginPath(); ctx.arc(sx, sy, H * 0.02 * (i + 1.5), 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(sx, sy, horizon * 0.04 * (i + 1.5), 0, Math.PI * 2); ctx.fill();
   }
-  ctx.fillStyle = '#fff4d2'; ctx.beginPath(); ctx.arc(sx, sy, H * 0.032, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#fff4d2'; ctx.beginPath(); ctx.arc(sx, sy, horizon * 0.064, 0, Math.PI * 2); ctx.fill();
   // far range (hazy, taller, slow parallax) then near range (darker, a touch more parallax)
-  ridgePath(ctx, horizon, H * 0.17, position, 0.0008, 0.0, W); ctx.fillStyle = m.back;  ctx.fill();
-  ridgePath(ctx, horizon, H * 0.11, position, 0.0016, 5.3, W); ctx.fillStyle = m.front; ctx.fill();
+  ridgePath(ctx, horizon, horizon * 0.34, position, 0.0008, 0.0, W); ctx.fillStyle = m.back;  ctx.fill();
+  ridgePath(ctx, horizon, horizon * 0.22, position, 0.0016, 5.3, W); ctx.fillStyle = m.front; ctx.fill();
   // directional light from the one sun: warm wash on the sun-facing slopes, cool shade on
   // the far side — clipped to the mountains so the lighting reads from a single source.
   ctx.save();
-  ridgePath(ctx, horizon, H * 0.17, position, 0.0008, 0.0, W); ctx.clip();
+  ridgePath(ctx, horizon, horizon * 0.34, position, 0.0008, 0.0, W); ctx.clip();
   const lit = LIGHT.sunXf > 0.5;   // sun on the right → light the right slopes
-  ctx.fillStyle = 'rgba(255,236,188,0.16)'; ctx.fillRect(lit ? W * 0.45 : 0, horizon - H * 0.2, W * 0.55, H * 0.2);
-  ctx.fillStyle = 'rgba(30,40,70,0.18)';    ctx.fillRect(lit ? 0 : W * 0.55, horizon - H * 0.2, W * 0.45, H * 0.2);
+  ctx.fillStyle = 'rgba(255,236,188,0.16)'; ctx.fillRect(lit ? W * 0.45 : 0, horizon * 0.6, W * 0.55, horizon * 0.4);
+  ctx.fillStyle = 'rgba(30,40,70,0.18)';    ctx.fillRect(lit ? 0 : W * 0.55, horizon * 0.6, W * 0.45, horizon * 0.4);
   ctx.restore();
 }
 
 // ─── New Kingston distant skyline ─────────────────────────────────────────────
 // Drawn once per frame behind everything else; fixed haze layer + tower blocks.
 function drawNKSkyline(ctx, W, H) {
-  const horizon = H * 0.48; // just above the vanishing-point horizon
+  const horizon = horizonYFor(W, H) - H * 0.02; // just above the vanishing-point horizon
   // Sky haze gradient — dusty urban amber/grey
   const grad = ctx.createLinearGradient(0, horizon - H * 0.12, 0, horizon);
   grad.addColorStop(0, 'rgba(210,190,160,0.0)');
@@ -252,7 +255,7 @@ function drawNKSkyline(ctx, W, H) {
 // Draw a receding back-layer fern clump, tinted darker to sell depth.
 function drawFernBack(ctx, normX, camZ, position, W, H) {
   const p = projectEntity(normX, camZ, W, H);
-  if (!p.visible || p.y < H * 0.5 || p.size < 2) return;
+  if (!p.visible || p.y < horizonYFor(W, H) || p.size < 2) return;
   p.x += curveOffsetAt(position, camZ);
   const lean = normX < 0 ? 1 : -1;
   ctx.save();
@@ -263,7 +266,7 @@ function drawFernBack(ctx, normX, camZ, position, W, H) {
 
 function drawProp(ctx, kind, normX, camZ, position, W, H, rowIdx = 0) {
   const p = projectEntity(normX, camZ, W, H);
-  if (!p.visible || p.y < H * 0.5 || p.size < 2) return; // cull above horizon / too tiny
+  if (!p.visible || p.y < horizonYFor(W, H) || p.size < 2) return; // cull above horizon / too tiny
   p.x += curveOffsetAt(position, camZ);
   const lean = normX < 0 ? 1 : -1; // lean toward the road centre
   switch (kind) {
@@ -773,7 +776,7 @@ function drawPowerLines(ctx, position, W, H, side = 1) {
     const camZ = n * GP - off;
     if (camZ <= 1) { prev = null; continue; }
     const p = projectEntity(nx, camZ, W, H);
-    if (!p.visible || p.y < H * 0.5 || p.size < 2) { prev = null; continue; }
+    if (!p.visible || p.y < horizonYFor(W, H) || p.size < 2) { prev = null; continue; }
     const px = p.x + curveOffsetAt(position, camZ);
     const top = p.y - p.size * 3.0;
     const arm = top + p.size * 0.5;
@@ -793,15 +796,19 @@ function drawPowerLines(ctx, position, W, H, side = 1) {
 
 // ─── Fern Gully forest canopy overhead, sun peeking through ────────────────────
 function drawFernCanopy(ctx, W, H, position) {
-  const g = ctx.createLinearGradient(0, 0, 0, H * 0.34);
+  // Proportioned to the horizon (hy == H*0.5 in landscape, exactly as tuned) so the
+  // canopy hugs the raised portrait horizon instead of floating above an empty band,
+  // and the god-rays converge on the actual vanishing point.
+  const hy = horizonYFor(W, H);
+  const g = ctx.createLinearGradient(0, 0, 0, hy * 0.68);
   g.addColorStop(0, 'rgba(8,26,12,0.85)');
   g.addColorStop(1, 'rgba(8,26,12,0)');
-  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H * 0.34);
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, hy * 0.68);
   // scalloped leaf underside
   ctx.fillStyle = 'rgba(10,32,16,0.8)';
   const r = W * 0.05;
   ctx.beginPath(); ctx.moveTo(0, 0);
-  for (let x = -r; x <= W + r; x += r) { ctx.lineTo(x, H * 0.13); ctx.quadraticCurveTo(x + r * 0.5, H * 0.20, x + r, H * 0.13); }
+  for (let x = -r; x <= W + r; x += r) { ctx.lineTo(x, hy * 0.26); ctx.quadraticCurveTo(x + r * 0.5, hy * 0.40, x + r, hy * 0.26); }
   ctx.lineTo(W, 0); ctx.closePath(); ctx.fill();
   // shafts of sunlight filtering through the gaps
   const drift = (position * 0.02) % W;
@@ -810,8 +817,8 @@ function drawFernCanopy(ctx, W, H, position) {
     const sx = ((i * W * 0.34) + drift) % W;
     ctx.fillStyle = 'rgba(255,244,200,0.06)';
     ctx.beginPath();
-    ctx.moveTo(sx, H * 0.10); ctx.lineTo(sx + W * 0.04, H * 0.10);
-    ctx.lineTo(sx + W * 0.15, H * 0.5); ctx.lineTo(sx + W * 0.07, H * 0.5);
+    ctx.moveTo(sx, hy * 0.20); ctx.lineTo(sx + W * 0.04, hy * 0.20);
+    ctx.lineTo(sx + W * 0.15, hy); ctx.lineTo(sx + W * 0.07, hy);
     ctx.closePath(); ctx.fill();
   }
   ctx.restore();
@@ -886,7 +893,7 @@ function dricksCafe(ctx, x, y, s) {
 // churches on the LEFT, Drick's Café on the far West End cliff, inland power lines. ──
 function renderNegril(ctx, stage, position, W, H) {
   drawHorizon(ctx, stage, position, W, H);
-  const horizon = H * 0.5;
+  const horizon = horizonYFor(W, H);
   // turquoise sea band on the right, glinting under the low western sun
   ctx.fillStyle = '#1fb6c8'; ctx.fillRect(W * 0.5, horizon, W * 0.5, H * 0.10);
   ctx.fillStyle = '#2fd0dc'; ctx.fillRect(W * 0.5, horizon, W * 0.5, H * 0.03);
@@ -960,7 +967,7 @@ function bankRock(ctx, x, y, s) {
 // spanning the Rio Cobre; the raft floats UNDER it.
 function drawFlatBridge(ctx, camZ, position, W, H) {
   const l = projectEntity(-1.4, camZ, W, H), r = projectEntity(1.4, camZ, W, H);
-  if (!l.visible || !r.visible || l.y < H * 0.5) return;
+  if (!l.visible || !r.visible || l.y < horizonYFor(W, H)) return;
   const o = curveOffsetAt(position, camZ);
   const lx = l.x + o, rx = r.x + o, by = l.y, h = Math.max(4, l.size * 1.1);
   ctx.fillStyle = 'rgba(0,0,0,0.28)'; ctx.fillRect(lx, by, rx - lx, h * 0.4);          // shadow on the water

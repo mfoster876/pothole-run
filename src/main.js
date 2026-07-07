@@ -49,9 +49,11 @@ function resize() {
   // each), so a taller/narrower stage renders a valid, if differently-framed, scene.
   const aspect = cssW / cssH;
   if (aspect < 1) {
+    // 430 wide ≈ the same physical text size as the landscape stage on the same phone
+    // (960→~0.85× vs 430→~0.87×). At 540 everything rendered ~30% smaller — unreadable.
     const a = Math.max(0.46, aspect);          // clamp absurdly thin stages
-    VIRTUAL.width  = 540;
-    VIRTUAL.height = Math.min(1200, Math.round(540 / a));
+    VIRTUAL.width  = 430;
+    VIRTUAL.height = Math.min(1200, Math.round(430 / a));
   } else {
     VIRTUAL.width  = 960;
     VIRTUAL.height = 540;

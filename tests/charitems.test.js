@@ -72,3 +72,28 @@ test('every ITEM is eligible for exactly the character it is gated to', () => {
     assert.ok(canUseItem({ id: it.char }, id), `${id} usable by ${it.char}`);
   }
 });
+
+// ---- Di Principal — authority perks ----
+
+test('di Principal school bell steadies her AND clears the road (pickney scatter)', () => {
+  const fx = createEffects();
+  const cart = { condition: { value: 50, max: 100 }, tipsy: 0 };
+  applyItem(fx, cart, 'schoolbell');
+  assert.ok(effectActive(fx, 'steady'), 'steadier hands');
+  assert.ok((fx.clearRoads || 0) > 0, 'road clears while di pickney scatter');
+  assert.ok(cart.condition.value > 50, 'a small heal');
+});
+
+test('extra-lessons fees pay fixed side money', () => {
+  const fx = createEffects();
+  const cart = { condition: { value: 80, max: 100 }, tipsy: 0 };
+  const run = { coins: 100 };
+  applyItem(fx, cart, 'extralessons', run);
+  assert.equal(run.coins, 900, 'the $800 fee lands');
+});
+
+test('principal items are gated to the principal only', () => {
+  assert.ok(canUseItem(getCharacter('principal'), 'schoolbell'));
+  assert.equal(canUseItem(yute, 'schoolbell'), false);
+  assert.equal(canUseItem(getCharacter('principal'), 'books'), false);
+});

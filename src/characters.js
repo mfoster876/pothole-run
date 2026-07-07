@@ -32,14 +32,16 @@ export const CHARACTERS = [
   // hard-to-collect cash. Police trouble him more than most.
   { id: 'taximan', name: 'Taxi Man', topSpeed: 1.28, handling: 1.45, toughness: 0.6, coinDraw: 0.85, scoreMult: 1.3, sway: 1.8, cashFind: 0.6, billBias: 1, policeMult: 1.4, locked: true },
 
-  // ── Women of Jamaica — playable from the start (student + nurse), so women and girls
-  // see themselves on the roster. Diverse, respectful, non-stereotyped archetypes. ──
+  // ── Women of Jamaica — playable from the start (student + principal), so women and
+  // girls see themselves on the roster. Diverse, respectful archetypes. ──
   // The Uni Girl: a young woman working her way through university — nimble, level-headed,
   // and (like the School Yute) DEBT-PROOF: a student is protected from going in the red.
   { id: 'student', name: 'Uni Girl', topSpeed: 1.0, handling: 1.18, toughness: 0.98, coinDraw: 1.1, scoreMult: 1.05, sway: 0.9, cashFind: 1.05, billBias: 0, debtProof: true, locked: false },
-  // The Nurse: a calm, tough professional who keeps her head under pressure — steadiest
-  // hands on the roster, hard to rattle, but not the fastest. A caring, admirable driver.
-  { id: 'nurse', name: 'Nurse', topSpeed: 0.96, handling: 1.2, toughness: 1.35, coinDraw: 1.15, scoreMult: 1.0, sway: 0.65, cashFind: 1.1, billBias: 0, locked: false },
+  // Di Principal: a commanding school head — steadiest hands on the roster, hard to
+  // rattle, not the fastest. Her school bell scatters pickney (clears the road), extra-
+  // lessons fees pay steady side money, and the placement-bribe envelope is her
+  // temptation: quick cash, but the scandal follows (social commentary, deliberate).
+  { id: 'principal', name: 'Di Principal', topSpeed: 0.96, handling: 1.2, toughness: 1.35, coinDraw: 1.15, scoreMult: 1.0, sway: 0.65, cashFind: 1.1, billBias: 0, locked: false },
   // Di Higgler: an iconic Jamaican market woman — a shrewd entrepreneur with the best
   // nose for money on the road (huge coin draw + frequent finds), tough and unhurried.
   // Unlocked with a little banked cash (she respects a hustler). A proud, dignified figure.

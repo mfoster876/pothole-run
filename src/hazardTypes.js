@@ -83,6 +83,9 @@ export const HAZARD_TYPES = {
   // Politician perks — private-sector bribe (cash) + lady of di night (boost, drains cash)
   privatebribe: { damage: 0, collectible: true, powerup: 'charitem', item: 'privatebribe', depth: 3, color: '#1f9a4c', label: 'Private-Sector Bribe' },
   ladynight:    { damage: 0, collectible: true, powerup: 'charitem', item: 'ladynight',    depth: 3, color: '#c0306a', label: 'Lady of di Night' },
+  // Di Principal's authority perks — the bell clears the road, extra lessons pay
+  schoolbell:   { damage: 0, collectible: true, powerup: 'charitem', item: 'schoolbell',   depth: 3, color: '#d8a020', label: 'School Bell' },
+  extralessons: { damage: 0, collectible: true, powerup: 'charitem', item: 'extralessons', depth: 3, color: '#3f9a5f', label: 'Extra Lessons Fees' },
   books:      { damage: 0, collectible: true, powerup: 'charitem', item: 'books',      depth: 3, color: '#c0451f', label: 'Books' },
   stationery: { damage: 0, collectible: true, powerup: 'charitem', item: 'stationery', depth: 3, color: '#1f9ad9', label: 'Stationery' },
   bagjuice:   { damage: 0, collectible: true, powerup: 'charitem', item: 'bagjuice',   depth: 3, color: '#e23f7a', label: 'Bag Juice' },

@@ -49,8 +49,9 @@ import { stationAt, stationCount } from './radio.js';
 // on phones (see main.js), and the whole renderer is parameterised by these W/H.
 let W = VIRTUAL.width, H = VIRTUAL.height;
 // Menu / pause / game-over content lays out inside a vertical band no taller than
-// ~1.15×W, centred in the stage. In landscape the band IS the stage (unchanged); on a
+// ~1.55×W, centred in the stage. In landscape the band IS the stage (unchanged); on a
 // tall portrait stage it keeps rows together instead of stretching them screen-height.
+// (1.55 leaves just enough row spacing for the fixed-height arrows/buttons at W=430.)
 let MH = VIRTUAL.height, MY0 = 0;
 const my = (f) => MY0 + MH * f;
 const GENRE_LABEL = { reggae: 'Reggae', ska: 'Ska', dancehall: 'Dancehall', hiphop: 'Hip-Hop', mymusic: 'My Music', radio: 'JA Radio' };
@@ -63,7 +64,7 @@ let BTN = null, PAUSE = null;
 function syncViewport() {
   if (BTN && W === VIRTUAL.width && H === VIRTUAL.height) return;
   W = VIRTUAL.width; H = VIRTUAL.height;
-  MH = Math.min(H, Math.round(W * 1.15));
+  MH = Math.min(H, Math.round(W * 1.55));
   MY0 = Math.round((H - MH) / 2);
   const arrow = (xf, yf) => ({ x: W * xf, y: my(yf) - 24, w: 48, h: 48 });
   BTN = {
@@ -500,7 +501,7 @@ export function createGame(audio) {
     // cart so the ride plows over the body.
     if (gore) {
       const gp = projectEntity(gore.x, CART_Z, W, H);
-      drawRoadkill(ctx, gp.x + curveOffsetAt(camZ, CART_Z), gp.y + 6, cp.size * 0.9, gore.variation, gore.cat, gore.t);
+      drawRoadkill(ctx, gp.x + curveOffsetAt(camZ, CART_Z), gp.y + 6, cp.size * 0.9, gore.variation, gore.cat, gore.t, gore.type);
     }
     drawCart(ctx, cart, cp.x + cartCurve + jitX, cp.y + 6 + bobPx, cp.size * 0.9);
     renderTouchZones(ctx, W, H);
@@ -1047,7 +1048,7 @@ export function createGame(audio) {
     button(ctx, BTN.start, 'START');
     ctx.fillStyle = '#9fb8a3'; ctx.font = '500 15px "Courier New", monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('wallet: ' + formatMoney(save.wallet) + '   ·   ↑/↓ throttle  ·  P pause  ·  M mute', W / 2, H * 0.97);
+    ctx.fillText('wallet: ' + formatMoney(save.wallet) + '   ·   ↑/↓ throttle  ·  P pause  ·  M mute', W / 2, H * 0.97, W * 0.94);
 
     if (state.popup) renderPopup(ctx, state.popup);
   }

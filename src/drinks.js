@@ -24,7 +24,7 @@ const ELIGIBLE = {
   politician: ['henny', 'rose', 'whitewine', 'champagne'],   // top-shelf only
   // The women keep it clean — refreshing sodas, no alcohol on the road.
   student:   ['ting', 'boom'],
-  nurse:     ['ting', 'boom'],
+  principal: ['ting', 'boom'],
   higgler:   ['ting', 'boom'],
 };
 

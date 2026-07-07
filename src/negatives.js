@@ -38,6 +38,13 @@ export const NEGATIVES = {
   toothpaste:  { id: 'toothpaste',  label: 'Toothpaste',   char: 'conductor', damage: 6,  cashBurn: 800,  bleach: true, color: '#e8f2f5' },
   sunlight:    { id: 'sunlight',    label: 'Sunlight',     char: 'conductor', damage: 12, bleach: true, color: '#f0c020' },
 
+  // ── Di Principal — the compromises of the office (social commentary, deliberate) ──
+  // placementbribe: the brown envelope for a school placement — quick cash NOW
+  //   (cashGain), but scandal follows yuh: sloppy steering while eyes deh pon yuh.
+  // ptameeting: a PTA meeting flags yuh down — drains time & a slice of the take.
+  placementbribe: { id: 'placementbribe', label: 'Placement Bribe', char: 'principal', cashGain: 2500, impair: 0.6, color: '#c8a050' },
+  ptameeting:     { id: 'ptameeting',     label: 'PTA Meeting',     char: 'principal', drainPct: 0.06, impair: 0.35, color: '#7a5a9a' },
+
   // ── Politician — "responsibilities" that cost RIDICULOUS fixed sums (he earns huge,
   //    so doing his job bleeds huge — these can plunge him into deep debt). ──
   roadfix:      { id: 'roadfix',      label: 'Road Repairs',   char: 'politician', cashBurn: 500000, color: '#e8821e' },
@@ -54,6 +61,7 @@ const ELIGIBLE = {
   rasta:      ['obeah', 'pork', 'jw'],
   politician: ['roadfix', 'constituent', 'lightpole', 'hustlerlunch', 'voter', 'contractor'],
   conductor:  ['cakesoap', 'currypowder', 'toothpaste', 'sunlight'],   // vanity + sun he must dodge
+  principal:  ['placementbribe', 'ptameeting'],
 };
 
 // Spawn rarity weights. Yute/Rasta temptations stay an occasional risk; the
@@ -63,6 +71,7 @@ const WEIGHTS = {
   obeah: 0.4, pork: 0.5, jw: 0.4,
   cakesoap: 0.6, currypowder: 0.6, toothpaste: 0.6, sunlight: 0.8,
   roadfix: 1.2, constituent: 1.4, lightpole: 0.9, hustlerlunch: 1.0, voter: 1.2, contractor: 0.8,
+  placementbribe: 0.5, ptameeting: 0.5,
 };
 
 /** True if `id` names a negative in this framework. */
@@ -104,6 +113,11 @@ export function applyNegative(effects, cart, run, id) {
     // A flat cost — drives most drivers into debt, but floors at zero for the debt-proof
     // (the Politician's responsibilities eat his take to nothing, never into the red).
     chargeRun(run, cart, n.cashBurn);
+  }
+  if (typeof n.cashGain === 'number') {
+    // A DIRTY windfall (the Principal's placement bribe): the money lands, but the hit
+    // still reads as a negative — combo resets in run.js and the impair below bites.
+    run.coins += n.cashGain;
   }
   if (typeof n.impair === 'number') {
     cart.tipsy   = Math.max(cart.tipsy || 0, n.impair);

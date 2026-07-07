@@ -16,7 +16,7 @@
 // The portrait (frame + bust) is drawn fully within the size×size box centred on
 // (cx, cy).  Unknown ids fall back to a neutral silhouette.
 
-export const PORTRAITS = new Set(['yute', 'rasta', 'conductor', 'politician', 'taximan', 'student', 'nurse', 'higgler']);
+export const PORTRAITS = new Set(['yute', 'rasta', 'conductor', 'politician', 'taximan', 'student', 'principal', 'higgler']);
 
 // ─── public entry point ──────────────────────────────────────────────────────
 export function renderPortrait(ctx, characterId, cx, cy, size, opts) {
@@ -34,7 +34,7 @@ export function renderPortrait(ctx, characterId, cx, cy, size, opts) {
     case 'politician':_drawPolitician(ctx, size); break;
     case 'taximan':   _drawTaxi(ctx, size);       break;
     case 'student':   _drawStudent(ctx, size);    break;
-    case 'nurse':     _drawNurse(ctx, size);      break;
+    case 'principal': _drawPrincipal(ctx, size);  break;
     case 'higgler':   _drawHiggler(ctx, size);    break;
     default:          _drawSilhouette(ctx, size); break;
   }
@@ -118,10 +118,6 @@ const P = {
   wigShadow:     '#c8c4b8',
 
   // women of Jamaica — clothing / accessories (respectful, culturally grounded)
-  scrubTeal:     '#2aa79b',   // nurse scrubs
-  scrubTealDk:   '#1c7a70',
-  nurseWhite:    '#f2f4f5',   // nurse cap (plain — deliberately NO red cross emblem)
-  nurseBand:     '#2aa79b',
   studentTop:    '#e05a8a',   // bright fuchsia campus tee
   studentTopDk:  '#a83862',
   studentBand:   '#f0c020',   // hair-tie / accessory pop
@@ -324,6 +320,7 @@ function _drawYute(ctx, size) {
 
   // frame: warm dark green background, gold border
   _frame(ctx, s, '#122010', P.frameGold, P.frameGoldDim);
+  _clipPanel(ctx, s);   // keep the bust inside the frame — the shoulders spill otherwise
 
   // ── body / uniform ──
   const neckBaseY = s * 0.88;
@@ -1311,6 +1308,7 @@ function _label(ctx, s, top, bottom, topCol, botCol) {
 function _drawStudent(ctx, size) {
   const s = size, cx = s * 0.50;
   _frame(ctx, s, '#17212a', P.frameGold, P.frameGoldDim);
+  _clipPanel(ctx, s);
   const neckBaseY = s * 0.88, neckW = s * 0.14, neckH = s * 0.085;
   _shoulders(ctx, cx, neckBaseY, neckW, neckH, s * 0.70, P.studentTop, P.studentTopDk, s);
   // bright campus-tee neckline
@@ -1340,46 +1338,51 @@ function _drawStudent(ctx, size) {
   _label(ctx, s, 'UNI', 'GIRL', P.frameGold, '#dfe7cf');
 }
 
-// ─── NURSE — calm professional, cap (deliberately no red-cross emblem) ────────
-function _drawNurse(ctx, size) {
+// ─── DI PRINCIPAL — commanding school head: blazer, bun, spectacles ───────────
+function _drawPrincipal(ctx, size) {
   const s = size, cx = s * 0.50;
+  const blazer = '#5a2340', blazerDk = '#3f1830', blouse = '#f2ead8';
   _frame(ctx, s, '#122420', P.frameGreen, P.frameGreenDim);
+  _clipPanel(ctx, s);
   const neckBaseY = s * 0.88, neckW = s * 0.14, neckH = s * 0.085;
-  _shoulders(ctx, cx, neckBaseY, neckW, neckH, s * 0.72, P.scrubTeal, P.scrubTealDk, s);
-  // white scrub V-collar
-  ctx.fillStyle = P.nurseWhite;
+  // tailored blazer over a cream blouse
+  _shoulders(ctx, cx, neckBaseY, neckW, neckH, s * 0.74, blazer, blazerDk, s);
+  ctx.fillStyle = blouse;
   ctx.beginPath();
   ctx.moveTo(cx - neckW * 0.55, neckBaseY);
-  ctx.lineTo(cx, neckBaseY + neckH * 0.9);
+  ctx.lineTo(cx, neckBaseY + neckH * 1.1);
   ctx.lineTo(cx + neckW * 0.55, neckBaseY);
   ctx.closePath(); ctx.fill();
   ctx.strokeStyle = P.outline; ctx.lineWidth = Math.max(1, s * 0.014); ctx.stroke();
+  // lapels
+  ctx.strokeStyle = blazerDk; ctx.lineWidth = Math.max(1.5, s * 0.02);
+  ctx.beginPath(); ctx.moveTo(cx - neckW * 0.55, neckBaseY); ctx.lineTo(cx - neckW * 1.15, neckBaseY + neckH * 1.6); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx + neckW * 0.55, neckBaseY); ctx.lineTo(cx + neckW * 1.15, neckBaseY + neckH * 1.6); ctx.stroke();
   // neck skin (deep brown for diversity)
   ctx.fillStyle = P.skinDark; ctx.fillRect(cx - neckW * 0.5, neckBaseY - neckH, neckW, neckH);
   ctx.strokeStyle = P.outline; ctx.lineWidth = Math.max(1, s * 0.016); ctx.strokeRect(cx - neckW * 0.5, neckBaseY - neckH, neckW, neckH);
   const headCY = s * 0.53, headRX = s * 0.185, headRY = s * 0.210;
-  // hair pulled back, low — dark, framing the face
+  // hair pulled back into a neat high bun
   ctx.fillStyle = P.hairBlack;
   ellipse(ctx, cx, headCY - headRY * 0.30, headRX * 1.05, headRY * 0.85); ctx.fill();
+  ellipse(ctx, cx, headCY - headRY * 1.18, headRX * 0.34, headRY * 0.28); ctx.fill();
   _headBase(ctx, s, cx, headCY, headRX, headRY, P.skinDark, P.skinMid);
-  // neat nurse cap — a white folded cap with a teal band, NO cross emblem
-  ctx.fillStyle = P.nurseWhite;
-  ctx.beginPath();
-  ctx.moveTo(cx - headRX * 0.85, headCY - headRY * 0.62);
-  ctx.lineTo(cx + headRX * 0.85, headCY - headRY * 0.62);
-  ctx.lineTo(cx + headRX * 0.62, headCY - headRY * 1.05);
-  ctx.lineTo(cx - headRX * 0.62, headCY - headRY * 1.05);
-  ctx.closePath(); ctx.fill();
-  ctx.strokeStyle = P.outline; ctx.lineWidth = Math.max(1, s * 0.016); ctx.stroke();
-  ctx.fillStyle = P.nurseBand; ctx.fillRect(cx - headRX * 0.85, headCY - headRY * 0.72, headRX * 1.7, headRY * 0.12);
+  _hoops(ctx, s, cx, headCY, headRX, headRY);
   _face(ctx, s, cx, headCY, headRX, headRY, '#3a2410', s * 0.016);
-  _label(ctx, s, 'NURSE', '', P.frameGreen, '#dfe7cf');
+  // spectacles — the look that quiets a whole assembly hall
+  ctx.strokeStyle = '#d8c8a0'; ctx.lineWidth = Math.max(1, s * 0.014);
+  const eyeY = headCY - headRY * 0.06, eyeDX = headRX * 0.42, lensR = headRX * 0.30;
+  ctx.beginPath(); ctx.arc(cx - eyeDX, eyeY, lensR, 0, Math.PI * 2); ctx.stroke();
+  ctx.beginPath(); ctx.arc(cx + eyeDX, eyeY, lensR, 0, Math.PI * 2); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx - eyeDX + lensR, eyeY); ctx.lineTo(cx + eyeDX - lensR, eyeY); ctx.stroke();
+  _label(ctx, s, 'DI', 'PRINCIPAL', P.frameGreen, '#dfe7cf');
 }
 
 // ─── DI HIGGLER — market entrepreneur, tie-up headwrap + apron ────────────────
 function _drawHiggler(ctx, size) {
   const s = size, cx = s * 0.50;
   _frame(ctx, s, '#241a12', P.higglerWrapY, P.frameGoldDim);
+  _clipPanel(ctx, s);
   const neckBaseY = s * 0.88, neckW = s * 0.145, neckH = s * 0.085;
   // warm blouse
   _shoulders(ctx, cx, neckBaseY, neckW, neckH, s * 0.74, P.higglerBlouse, '#b78a2c', s);
@@ -1425,6 +1428,7 @@ function _drawSilhouette(ctx, size) {
   const cx = s * 0.50;
 
   _frame(ctx, s, '#111a12', '#5a5a5a', '#3a3a3a');
+  _clipPanel(ctx, s);
 
   // Grey bust silhouette
   const neckBaseY = s * 0.88;

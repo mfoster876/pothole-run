@@ -34,7 +34,10 @@ export function renderHud(ctx, { stageName, coins, distance, condition, effects 
   ctx.fillStyle = '#cbe7cf';
   ctx.fillText(Math.floor(distance) + ' m', W - 24, 28, W / 2 - moneyHalf - 36);
 
-  const mw = 220, mx = W - mw - 24, my = 64;
+  // On the narrow portrait stage the CART bar drops to a second row (right-aligned)
+  // so it can't collide with the SPD gauge on the first row.
+  const compact = W < 700;
+  const mw = compact ? 200 : 220, mx = W - mw - (compact ? 16 : 24), my = compact ? 90 : 64;
   ctx.fillStyle = '#1c1c1c';
   ctx.fillRect(mx, my, mw, 16);
   const tier = conditionTier(condition);
@@ -87,8 +90,8 @@ export function renderHud(ctx, { stageName, coins, distance, condition, effects 
   if (combo > 0 && superT <= 0 && tipsyT <= 0 && burnT <= 0) {
     ctx.fillStyle = '#8fd0a0'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.font = '700 16px "Courier New", monospace';
-    // On the narrow portrait stage the SPD/CART gauges reach the centre — sit below them.
-    ctx.fillText('✦ NEAR-MISS COMBO  +' + Math.round(combo * COMBO.bonusPer * 100) + '% CASH', W / 2, W < 700 ? 112 : 74);
+    // On the narrow portrait stage the SPD/CART gauges own the first two rows — sit below.
+    ctx.fillText('✦ NEAR-MISS COMBO  +' + Math.round(combo * COMBO.bonusPer * 100) + '% CASH', W / 2, W < 700 ? 126 : 74);
   }
 
   // Once the boost ends the impairment lingers (sloppy steering) — warn the player

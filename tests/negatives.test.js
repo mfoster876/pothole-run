@@ -34,7 +34,7 @@ test('eligibility is gated to the right driver', () => {
 });
 
 test('every negative belongs to exactly one eligible driver', () => {
-  const drivers = ['yute', 'rasta', 'politician', 'conductor'];
+  const drivers = ['yute', 'rasta', 'politician', 'conductor', 'principal'];
   for (const id of Object.keys(NEGATIVES)) {
     const owners = drivers.filter(d => negativesFor(getCharacter(d)).some(n => n.type === id));
     assert.equal(owners.length, 1, `${id} owned by exactly one driver`);
@@ -111,4 +111,23 @@ test('applyNegative on an unknown id is a harmless no-op', () => {
   assert.equal(applyNegative(effects, cart, run, 'nope'), null);
   assert.equal(run.coins, 1000);
   assert.equal(cart.condition.value, 100);
+});
+
+// ---- Di Principal — the office's compromises ----
+
+test('the placement bribe PAYS (dirty money lands) but the scandal impairs steering', () => {
+  const { effects, cart, run } = fxCart(1000);
+  const label = applyNegative(effects, cart, run, 'placementbribe');
+  assert.equal(label, 'Placement Bribe');
+  assert.ok(run.coins > 1000, 'the brown envelope lands — coins go UP');
+  assert.ok((cart.tipsy || 0) > 0, 'scandal follows — sloppy steering');
+  assert.ok((effects.tipsy || 0) > 0, 'the impairment runs on a timer');
+});
+
+test('a PTA meeting drains a slice of the take and rattles the driver', () => {
+  const { effects, cart, run } = fxCart(1000);
+  const label = applyNegative(effects, cart, run, 'ptameeting');
+  assert.equal(label, 'PTA Meeting');
+  assert.ok(run.coins < 1000, 'time is money — some of the take gone');
+  assert.ok((cart.tipsy || 0) > 0, 'meeting stress wobbles the hands');
 });

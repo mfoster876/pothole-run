@@ -10,17 +10,17 @@ test('every character has the required stat fields', () => {
     }
   }
 });
-test('roster: original five + three women (student, nurse, higgler)', () => {
+test('roster: original five + three women (student, principal, higgler)', () => {
   const ids = CHARACTERS.map(c => c.id);
-  assert.deepEqual(ids, ['yute', 'rasta', 'conductor', 'politician', 'taximan', 'student', 'nurse', 'higgler']);
+  assert.deepEqual(ids, ['yute', 'rasta', 'conductor', 'politician', 'taximan', 'student', 'principal', 'higgler']);
   // the elite drivers are locked behind progression
   for (const id of ['conductor', 'politician', 'taximan', 'higgler']) {
     assert.equal(getCharacter(id).locked, true, `${id} is locked`);
   }
 });
-test('two women (student + nurse) are playable from the very start', () => {
+test('two women (student + principal) are playable from the very start', () => {
   assert.equal(getCharacter('student').locked, false);
-  assert.equal(getCharacter('nurse').locked, false);
+  assert.equal(getCharacter('principal').locked, false);
   // the Uni Girl, like the School Yute, is protected from debt
   assert.equal(getCharacter('student').debtProof, true);
 });

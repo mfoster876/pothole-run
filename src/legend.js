@@ -22,7 +22,7 @@ const NOTE = {
   politician: 'Untouchable & filthy rich — but dodge yuh responsibilities.',
   taximan:    'Most reckless, most dexterous. Whip through gaps — but fragile.',
   student:    'Nimble & level-headed. Protected from debt — study items help.',
-  nurse:      'Steadiest hands, tough under pressure — but not the fastest.',
+  principal:  'Steadiest hands, full authority — but di office carries temptations.',
   higgler:    'Best nose for money pon di road — tough, but unhurried.',
 };
 
@@ -34,7 +34,7 @@ const PEOPLE = {
   politician: ['Police — but dem wave yuh through (immune)', 'Reckless coaster bus'],
   taximan:    ['Police — dem trouble yuh more (1.4×)', 'Reckless coaster bus'],
   student:    ['Police — big fines', 'Reckless coaster bus'],
-  nurse:      ['Police — big fines', 'Reckless coaster bus'],
+  principal:  ['Police — big fines', 'Reckless coaster bus'],
   higgler:    ['Police — big fines', 'Reckless coaster bus'],
 };
 
@@ -66,9 +66,9 @@ const TRAITS = {
     perks: ['Never go inna debt — protected', 'Nimble, level-headed handling', 'Study items steady yuh'],
     cons:  ['Modest top speed', 'No hazard immunities', 'Face every temptation pon di road'],
   },
-  nurse: {
-    perks: ['Toughest but di Politician — soaks up hits', 'Steadiest hands, barely sway', 'Good money draw'],
-    cons:  ['Slower top speed', 'No immunities — every hazard bites', 'Can still go inna debt'],
+  principal: {
+    perks: ['Toughest but di Politician — soaks up hits', 'Steadiest hands, barely sway', 'School bell scatters di pickney — road clears', 'Extra-lessons fees pay pon di side'],
+    cons:  ['Slower top speed', 'No immunities — every hazard bites', 'Placement bribe pays now, scandal after', 'PTA meetings drain yuh time & take'],
   },
   higgler: {
     perks: ['Best money draw pon di roster', 'Frequent money finds — she spot it', 'Tough, hard to rattle'],

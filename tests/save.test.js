@@ -15,7 +15,7 @@ function memStore(initial) {
 test('loadSave returns defaults when empty', () => {
   const s = loadSave(fakeStorage());
   assert.equal(s.coins, 0);
-  assert.deepEqual(s.unlocks.characters, ['yute', 'rasta', 'student', 'nurse']);
+  assert.deepEqual(s.unlocks.characters, ['yute', 'rasta', 'student', 'principal']);
   assert.deepEqual(s.unlocks.stages, ['fern-gully']);
 });
 test('loadSave falls back to defaults on corrupt JSON', () => {
