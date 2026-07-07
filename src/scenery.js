@@ -159,7 +159,8 @@ export function renderScenery(ctx, stage, position, W, H) {
     drawRoadside(ctx, kind, -EDGE, camZ, position, W, H, rowIdx, limit);
     drawRoadside(ctx, kind, EDGE, camZ, position, W, H, rowIdx + FAR_PHASE, limit, FAR_MSG_SHIFT);
   }
-  // Overhead power lines + wooden light posts follow every road EXCEPT the Fern Gully canopy.
+  // Overhead power lines + wooden light posts follow every road EXCEPT the canopied/gorge
+  // stages that set poles: false (Fern Gully, Holland Bamboo arch, Bog Walk river).
   if (stage.poles !== false) drawPowerLines(ctx, position, W, H);
 }
 

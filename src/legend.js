@@ -10,6 +10,7 @@ import { eligibleNegatives } from './negatives.js';
 const SHARED_GOOD = [
   { id: 'water',  label: 'Water — supercharge' },
   { id: 'tools',  label: 'Hardware Tools — repair' },
+  { id: 'rope',   label: 'Rope Lashing — raft repair (river)' },
   { id: 'coffee', label: 'Blue Mountain Coffee — cash window' },
   { id: 'fruit',  label: 'Vendor Fruit — strength (costs a lil)' },
 ];

@@ -29,6 +29,7 @@ export const STAGES = [
     // The real Holland Bamboo is a ~2.5-mile DEAD-STRAIGHT bamboo-arched avenue — gentlest bends.
     curveMult: 0.55,
     rural: true,        // country road — roast breadfruit joins the food pool
+    poles: false,       // no light posts — the bamboo arch IS the canopy, nothing overhead
     // livestock (goat/cattle) is rural-only — kept out of new-kingston/negril
     hazardWeights: [
       { type: 'pothole', weight: 4 }, { type: 'coin', weight: 4 },
@@ -92,7 +93,8 @@ export const STAGES = [
       { type: 'swimmer', weight: 2.5 },                           // people swimming the river — DON'T run them down
       { type: 'tyreswing', weight: 0.6 },                         // somewhat rare: tyre-swing divers off the branches
       { type: 'rivermumma', weight: 0.5 },                        // rare, dangerous folklore siren
-      { type: 'tools', weight: 3 }, { type: 'water', weight: 1 }
+      // rope lashing, not hardware tools — the raft repair pickup on the water
+      { type: 'rope', weight: 3 }, { type: 'water', weight: 1 }
     ]
   }
 ];

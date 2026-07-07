@@ -30,6 +30,7 @@ export function drawEntity(ctx, type, sx, sy, size, seed = 0.137, value = 1) {
     case 'stall': drawStall(ctx, sx, sy, s); break;
     case 'water':  waterBottle(ctx, sx, sy, s); break;
     case 'tools':  hardwareTools(ctx, sx, sy, s, seed); break;
+    case 'rope':   ropeLashing(ctx, sx, sy, s); break;   // the raft's repair pickup
     case 'coffee': coffeeBag(ctx, sx, sy, s); break;
     case 'fruit':  drawFruit(ctx, sx, sy, s); break;
     // Jamaican street food — national ackee + the beef/veggie patty
@@ -520,59 +521,80 @@ function drawCattle(ctx, x, y, r) {
   ctx.stroke();
 }
 
-// Dog: medium brown, floppy ear, wagging tail, four legs, alert head
+// Dog: a JAMAICAN MONGREL ("pothound" / Caribbean potcake) — lean and rangy with a
+// smooth short tan coat, cocked upright ears, a long face, a white chest bib, and a
+// thin tail carried up in a curl. (See the Caribbean potcake type: smooth coat,
+// cocked ears, long face.)
 function drawDog(ctx, x, y, r) {
-  const mid = '#9a7a4a', shadow = '#5a3c20', hi = '#c8a870', nose = '#2a1a0a';
-  const by = y - r * 0.16;
+  const mid = '#b08a52', shadow = '#6a4a26', hi = '#d2b382', bib = '#e8e0d0', nose = '#2a1a0a';
+  const by = y - r * 0.30;   // body carried high — long legs under a lean frame
 
-  // legs
-  ctx.strokeStyle = shadow; ctx.lineWidth = Math.max(1.5, r * 0.19); ctx.lineCap = 'round';
+  // long thin legs — the rangy street-dog stance
+  ctx.strokeStyle = shadow; ctx.lineWidth = Math.max(1.5, r * 0.13); ctx.lineCap = 'round';
   ctx.beginPath();
-  ctx.moveTo(x - r * 0.4, by + r * 0.26); ctx.lineTo(x - r * 0.38, y + r * 0.06);
-  ctx.moveTo(x - r * 0.12, by + r * 0.28); ctx.lineTo(x - r * 0.1, y + r * 0.06);
-  ctx.moveTo(x + r * 0.12, by + r * 0.26); ctx.lineTo(x + r * 0.14, y + r * 0.06);
-  ctx.moveTo(x + r * 0.38, by + r * 0.26); ctx.lineTo(x + r * 0.4, y + r * 0.06);
+  ctx.moveTo(x - r * 0.40, by + r * 0.20); ctx.lineTo(x - r * 0.42, y + r * 0.06);
+  ctx.moveTo(x - r * 0.16, by + r * 0.22); ctx.lineTo(x - r * 0.14, y + r * 0.06);
+  ctx.moveTo(x + r * 0.16, by + r * 0.20); ctx.lineTo(x + r * 0.20, y + r * 0.06);
+  ctx.moveTo(x + r * 0.40, by + r * 0.20); ctx.lineTo(x + r * 0.46, y + r * 0.06);
   ctx.stroke();
 
-  // body
-  ctx.beginPath(); ctx.ellipse(x, by, r * 0.58, r * 0.34, 0, 0, Math.PI * 2);
-  ctx.fillStyle = mid; ctx.fill();
-  // belly shadow
-  ctx.beginPath(); ctx.ellipse(x, by + r * 0.12, r * 0.5, r * 0.16, 0, 0, Math.PI * 2);
-  ctx.fillStyle = shadow; ctx.fill();
-  // back highlight
-  ctx.beginPath(); ctx.ellipse(x - r * 0.08, by - r * 0.1, r * 0.3, r * 0.1, -0.2, 0, Math.PI * 2);
-  ctx.fillStyle = hi; ctx.fill();
-
-  // tail (curled upward to the right)
-  ctx.strokeStyle = mid; ctx.lineWidth = Math.max(1.5, r * 0.14); ctx.lineCap = 'round';
-  ctx.beginPath(); ctx.moveTo(x + r * 0.56, by - r * 0.06);
-  ctx.quadraticCurveTo(x + r * 0.84, by - r * 0.3, x + r * 0.72, by - r * 0.56); ctx.stroke();
-
-  // head
-  const hx = x - r * 0.5, hy = by - r * 0.48;
-  ctx.beginPath(); ctx.arc(hx, hy, r * 0.26, 0, Math.PI * 2);
-  ctx.fillStyle = mid; ctx.fill();
-  // head shadow side
-  ctx.beginPath(); ctx.arc(hx + r * 0.06, hy + r * 0.06, r * 0.16, 0, Math.PI * 2);
-  ctx.fillStyle = shadow; ctx.fill();
-  // head highlight
-  ctx.beginPath(); ctx.arc(hx - r * 0.1, hy - r * 0.1, r * 0.1, 0, Math.PI * 2);
-  ctx.fillStyle = hi; ctx.fill();
-  // floppy ear
+  // lean body: deep chest tapering to a tucked-up waist (not a barrel)
+  ctx.fillStyle = mid;
   ctx.beginPath();
-  ctx.ellipse(hx + r * 0.14, hy + r * 0.14, r * 0.13, r * 0.22, 0.5, 0, Math.PI * 2);
-  ctx.fillStyle = shadow; ctx.fill();
-  // muzzle / snout
-  ctx.beginPath(); ctx.ellipse(hx - r * 0.18, hy + r * 0.06, r * 0.15, r * 0.1, 0, 0, Math.PI * 2);
-  ctx.fillStyle = '#7a5a30'; ctx.fill();
+  ctx.moveTo(x - r * 0.56, by - r * 0.18);
+  ctx.quadraticCurveTo(x - r * 0.62, by + r * 0.16, x - r * 0.34, by + r * 0.24);   // chest drops low
+  ctx.quadraticCurveTo(x + r * 0.10, by + r * 0.26, x + r * 0.34, by + r * 0.10);   // belly tucks UP
+  ctx.quadraticCurveTo(x + r * 0.56, by + r * 0.02, x + r * 0.54, by - r * 0.16);   // slim hindquarter
+  ctx.quadraticCurveTo(x, by - r * 0.36, x - r * 0.56, by - r * 0.18);              // straight back
+  ctx.closePath(); ctx.fill();
+  // back highlight (smooth short coat sheen)
+  ctx.beginPath(); ctx.ellipse(x - r * 0.06, by - r * 0.16, r * 0.32, r * 0.08, -0.1, 0, Math.PI * 2);
+  ctx.fillStyle = hi; ctx.fill();
+  // a hint of rib shading on the lean flank
+  ctx.strokeStyle = 'rgba(90,60,32,0.35)'; ctx.lineWidth = Math.max(1, r * 0.03);
+  for (const dx of [-0.16, -0.05, 0.06]) {
+    ctx.beginPath(); ctx.moveTo(x + r * dx, by - r * 0.02);
+    ctx.quadraticCurveTo(x + r * (dx + 0.03), by + r * 0.08, x + r * dx, by + r * 0.16); ctx.stroke();
+  }
+
+  // thin tail carried UP in a curl over the back
+  ctx.strokeStyle = mid; ctx.lineWidth = Math.max(1.5, r * 0.09); ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(x + r * 0.52, by - r * 0.12);
+  ctx.quadraticCurveTo(x + r * 0.78, by - r * 0.44, x + r * 0.56, by - r * 0.58); ctx.stroke();
+
+  // head on a longer neck, alert
+  const hx = x - r * 0.56, hy = by - r * 0.52;
+  ctx.strokeStyle = mid; ctx.lineWidth = Math.max(2, r * 0.20);
+  ctx.beginPath(); ctx.moveTo(x - r * 0.44, by - r * 0.16); ctx.lineTo(hx + r * 0.08, hy + r * 0.12); ctx.stroke();
+  ctx.fillStyle = mid;
+  ctx.beginPath(); ctx.arc(hx, hy, r * 0.22, 0, Math.PI * 2); ctx.fill();
+  // cocked upright ears — the pothound tell (one pricked, one half-flopped at the tip)
+  ctx.beginPath();
+  ctx.moveTo(hx + r * 0.02, hy - r * 0.14);
+  ctx.lineTo(hx + r * 0.10, hy - r * 0.42); ctx.lineTo(hx + r * 0.20, hy - r * 0.12);
+  ctx.closePath(); ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(hx - r * 0.20, hy - r * 0.10);
+  ctx.lineTo(hx - r * 0.30, hy - r * 0.34); ctx.lineTo(hx - r * 0.34, hy - r * 0.26);  // tip kinks over
+  ctx.lineTo(hx - r * 0.26, hy - r * 0.30); ctx.lineTo(hx - r * 0.08, hy - r * 0.16);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = shadow;
+  ctx.beginPath();
+  ctx.moveTo(hx + r * 0.06, hy - r * 0.15); ctx.lineTo(hx + r * 0.10, hy - r * 0.34);
+  ctx.lineTo(hx + r * 0.15, hy - r * 0.13); ctx.closePath(); ctx.fill();
+  // long face: muzzle reaching well forward
+  ctx.fillStyle = mid;
+  ctx.beginPath(); ctx.ellipse(hx - r * 0.22, hy + r * 0.05, r * 0.20, r * 0.10, 0.08, 0, Math.PI * 2); ctx.fill();
+  // white chest bib running up the throat (classic mongrel marking)
+  ctx.fillStyle = bib;
+  ctx.beginPath(); ctx.ellipse(x - r * 0.44, by + r * 0.04, r * 0.10, r * 0.17, 0.35, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(hx + r * 0.02, hy + r * 0.19, r * 0.07, r * 0.10, 0.2, 0, Math.PI * 2); ctx.fill();
   // nose
-  ctx.beginPath(); ctx.arc(hx - r * 0.24, hy + r * 0.02, Math.max(1.5, r * 0.07), 0, Math.PI * 2);
-  ctx.fillStyle = nose; ctx.fill();
+  ctx.fillStyle = nose;
+  ctx.beginPath(); ctx.arc(hx - r * 0.40, hy + r * 0.03, Math.max(1.5, r * 0.06), 0, Math.PI * 2); ctx.fill();
   // eye
-  ctx.beginPath(); ctx.arc(hx - r * 0.1, hy - r * 0.1, Math.max(1.5, r * 0.07), 0, Math.PI * 2);
-  ctx.fillStyle = nose; ctx.fill();
-  ctx.beginPath(); ctx.arc(hx - r * 0.12, hy - r * 0.12, Math.max(0.5, r * 0.03), 0, Math.PI * 2);
+  ctx.beginPath(); ctx.arc(hx - r * 0.08, hy - r * 0.05, Math.max(1.5, r * 0.06), 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(hx - r * 0.10, hy - r * 0.07, Math.max(0.5, r * 0.025), 0, Math.PI * 2);
   ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.fill();
 }
 
@@ -1049,6 +1071,40 @@ function hardwareTools(ctx, x, y, s, seed) {
   ctx.beginPath(); ctx.moveTo(x - s * 0.2, hy + s * 0.18); ctx.lineTo(x + s * 0.14, hy - s * 0.16); ctx.stroke();
 }
 
+// ---- rope lashing: the raft repair pickup — a coiled sisal rope over a fresh bamboo
+// slat (you re-lash the raft's poles, you don't spanner them) ----
+function ropeLashing(ctx, x, y, s) {
+  // drop shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.22)'; ellipsePath(ctx, x + s * 0.04, y + s * 0.06, s * 0.55, s * 0.1); ctx.fill();
+  const cy = y - s * 0.45;
+  // fresh bamboo slat lying behind the coil, node ring visible
+  ctx.strokeStyle = '#9aa84a'; ctx.lineWidth = Math.max(2.5, s * 0.16); ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(x - s * 0.58, cy + s * 0.34); ctx.lineTo(x + s * 0.58, cy + s * 0.22); ctx.stroke();
+  ctx.strokeStyle = '#6f7c30'; ctx.lineWidth = Math.max(1, s * 0.04);
+  ctx.beginPath(); ctx.moveTo(x + s * 0.14, cy + s * 0.20); ctx.lineTo(x + s * 0.14, cy + s * 0.36); ctx.stroke();
+  // sisal coil face-on: a fat ring with an open centre (unmistakably a coil of rope)
+  ctx.strokeStyle = '#c8a86a'; ctx.lineWidth = Math.max(3, s * 0.22); ctx.lineCap = 'butt';
+  ctx.beginPath(); ctx.arc(x, cy, s * 0.26, 0, Math.PI * 2); ctx.stroke();
+  // rim shading top and bottom of the band so it reads round
+  ctx.strokeStyle = '#a5854c'; ctx.lineWidth = Math.max(1, s * 0.05);
+  ctx.beginPath(); ctx.arc(x, cy, s * 0.36, 0, Math.PI * 2); ctx.stroke();
+  ctx.beginPath(); ctx.arc(x, cy, s * 0.16, 0, Math.PI * 2); ctx.stroke();
+  // radial twist strands across the band — the rope's lay
+  ctx.strokeStyle = '#8a6f3d'; ctx.lineWidth = Math.max(1, s * 0.04);
+  for (let i = 0; i < 10; i++) {
+    const a = i * (Math.PI / 5) + 0.2;
+    ctx.beginPath();
+    ctx.moveTo(x + Math.cos(a) * s * 0.165, cy + Math.sin(a) * s * 0.165);
+    ctx.lineTo(x + Math.cos(a + 0.3) * s * 0.355, cy + Math.sin(a + 0.3) * s * 0.355);
+    ctx.stroke();
+  }
+  // loose working end trailing off the coil onto the slat
+  ctx.strokeStyle = '#c8a86a'; ctx.lineWidth = Math.max(1.5, s * 0.09); ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(x + s * 0.24, cy + s * 0.20);
+  ctx.quadraticCurveTo(x + s * 0.52, cy + s * 0.30, x + s * 0.46, cy + s * 0.44); ctx.stroke();
+  ctx.lineCap = 'butt';
+}
+
 // ---- Blue Mountain coffee bag: dark brown sack with "BM" label ----
 function coffeeBag(ctx, x, y, s) {
   const bw = s * 0.82, bh = s * 1.05, bx = x - bw * 0.5, by = y - bh;
@@ -1212,11 +1268,10 @@ function drawAckee(ctx, x, y, s) {
   }
 }
 
-// ---- unripe ackee: the SAME fruit at its dangerous stage — a hard, still-CLOSED pod.
-// No split, no cream arils, no glossy black seeds (those only show once it ripens open and
-// safe). A hard unripe green flushing to a warning red, three lobes sealed by deep seams,
-// with a couple of dark blemishes — it reads as "ackee, but shut" so the player learns the
-// rule: if the pod no open, no eat it. ----
+// ---- unripe ackee: the SAME fruit at its dangerous stage — the full RED shell, but still
+// CLOSED all around. No split, no cream arils on show; at most the black seed tips barely
+// poke through the sealed seams. It reads as "ackee, but shut" so the player learns the
+// rule: if the pod no open (no arils showing), no eat it. ----
 function drawUnripeAckee(ctx, x, y, s) {
   ctx.fillStyle = 'rgba(0,0,0,0.20)'; ellipsePath(ctx, x, y + s * 0.06, s * 0.44, s * 0.1); ctx.fill();
   const cy = y - s * 0.24;                        // pod centre
@@ -1226,15 +1281,15 @@ function drawUnripeAckee(ctx, x, y, s) {
   ctx.lineCap = 'butt';
   ctx.fillStyle = '#3f7d3a';
   ctx.beginPath(); ctx.ellipse(x + s * 0.30, cy - s * 0.58, s * 0.17, s * 0.07, -0.5, 0, Math.PI * 2); ctx.fill();
-  // the sealed pod body: a rounded three-lobe teardrop, unripe green
-  ctx.fillStyle = '#4e7b34';
+  // the sealed pod body: a rounded three-lobe teardrop in the full ripe-shell red
+  ctx.fillStyle = '#c23a24';
   ctx.beginPath(); ctx.ellipse(x, cy + s * 0.04, s * 0.34, s * 0.40, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.strokeStyle = '#33531f'; ctx.lineWidth = Math.max(1, s * 0.03); ctx.stroke();
-  // a warning red blush ripening in from the top (unripe ackee reddens BEFORE it splits)
-  ctx.fillStyle = 'rgba(178,50,30,0.55)';
-  ctx.beginPath(); ctx.ellipse(x, cy - s * 0.14, s * 0.28, s * 0.20, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = '#7d1d10'; ctx.lineWidth = Math.max(1, s * 0.03); ctx.stroke();
+  // deeper red shading low on the pod for roundness
+  ctx.fillStyle = 'rgba(125,29,16,0.35)';
+  ctx.beginPath(); ctx.ellipse(x + s * 0.06, cy + s * 0.20, s * 0.24, s * 0.20, 0.2, 0, Math.PI * 2); ctx.fill();
   // deep seams marking the three lobes still fused shut (NO opening — that's the tell)
-  ctx.strokeStyle = '#2b471a'; ctx.lineWidth = Math.max(1.2, s * 0.035); ctx.lineCap = 'round';
+  ctx.strokeStyle = '#6b150c'; ctx.lineWidth = Math.max(1.2, s * 0.035); ctx.lineCap = 'round';
   for (const dx of [-0.15, 0.0, 0.15]) {
     ctx.beginPath();
     ctx.moveTo(x + s * dx * 0.4, cy - s * 0.30);
@@ -1242,13 +1297,18 @@ function drawUnripeAckee(ctx, x, y, s) {
     ctx.stroke();
   }
   ctx.lineCap = 'butt';
-  // matte sheen down one side (hard, not glossy like the ripe arils)
-  ctx.fillStyle = 'rgba(200,225,170,0.30)';
+  // black seed tips BARELY poking through the base of each sealed seam — the only hint of
+  // what's inside; no cream aril shows (that's what says "not open, not safe")
+  for (const dx of [-0.15, 0.0, 0.15]) {
+    const tx = x + s * dx * 0.9, ty = cy + s * 0.34;
+    ctx.fillStyle = '#17110e';
+    ctx.beginPath(); ctx.ellipse(tx, ty, s * 0.035, s * 0.045, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.45)';   // tiny gloss dot so the tip reads as seed
+    ctx.beginPath(); ctx.arc(tx - s * 0.012, ty - s * 0.015, s * 0.012, 0, Math.PI * 2); ctx.fill();
+  }
+  // waxy sheen down one side of the shell
+  ctx.fillStyle = 'rgba(255,215,190,0.30)';
   ctx.beginPath(); ctx.ellipse(x - s * 0.13, cy - s * 0.02, s * 0.07, s * 0.20, -0.15, 0, Math.PI * 2); ctx.fill();
-  // dark blemishes — the sickly cue that this one is not for eating
-  ctx.fillStyle = 'rgba(30,44,18,0.6)';
-  ctx.beginPath(); ctx.arc(x + s * 0.10, cy + s * 0.16, s * 0.045, 0, Math.PI * 2); ctx.fill();
-  ctx.beginPath(); ctx.arc(x - s * 0.06, cy + s * 0.26, s * 0.03, 0, Math.PI * 2); ctx.fill();
 }
 
 // ---- patty: a golden, flaky, half-moon Jamaican patty with a crimped edge. The beef
@@ -1803,27 +1863,42 @@ function tightPants(ctx, x, y, s) {
 
 // ---- weed: a small green herb bud (clustered leaflets) ----
 function weedBud(ctx, x, y, s) {
+  // A growing GANJA PLANT, not a vague bud: a central stalk carrying tiers of the
+  // unmistakable serrated fan leaves — long centre finger, shorter fingers splayed
+  // either side — darker below, brighter at the crown, like the real plant.
   const col = '#3f7a3a', dark = '#256020', hi = '#5fa050';
-  const cy = y - s * 0.4, r = s * 0.42;
-  ctx.fillStyle = 'rgba(0,0,0,0.18)'; ellipsePath(ctx, x + s * 0.03, y + s * 0.03, r * 0.7, s * 0.06); ctx.fill();
-  // stem
-  ctx.strokeStyle = dark; ctx.lineWidth = Math.max(1.5, s * 0.08); ctx.lineCap = 'round';
-  ctx.beginPath(); ctx.moveTo(x, cy); ctx.lineTo(x, y); ctx.stroke();
-  // a fan of pointed leaflets radiating up
-  for (const a of [-1.3, -0.9, -0.5, -1.05, -0.7]) {
-    const ex = x + Math.cos(a) * r, ey = cy + Math.sin(a) * r;
-    ctx.fillStyle = col;
-    ctx.beginPath();
-    ctx.moveTo(x, cy);
-    ctx.quadraticCurveTo(x + Math.cos(a) * r * 0.4 - s * 0.06, cy + Math.sin(a) * r * 0.5, ex, ey);
-    ctx.quadraticCurveTo(x + Math.cos(a) * r * 0.4 + s * 0.06, cy + Math.sin(a) * r * 0.5, x, cy);
+  ctx.fillStyle = 'rgba(0,0,0,0.18)'; ellipsePath(ctx, x + s * 0.03, y + s * 0.03, s * 0.34, s * 0.06); ctx.fill();
+  // one slim serrated leaflet (a cannabis leaf "finger"): pointed, edges notched
+  const finger = (bx, by, a, len, w) => {
+    const tx = bx + Math.cos(a) * len, ty = by + Math.sin(a) * len;
+    const px = -Math.sin(a), py = Math.cos(a);            // perpendicular for width/serration
+    ctx.beginPath(); ctx.moveTo(bx, by);
+    for (const [f, ww] of [[0.3, 1], [0.45, 0.55], [0.62, 0.9], [0.78, 0.45], [1, 0]]) {
+      ctx.lineTo(bx + (tx - bx) * f + px * w * ww, by + (ty - by) * f + py * w * ww);
+    }
+    for (const [f, ww] of [[0.78, 0.45], [0.62, 0.9], [0.45, 0.55], [0.3, 1]]) {
+      ctx.lineTo(bx + (tx - bx) * f - px * w * ww, by + (ty - by) * f - py * w * ww);
+    }
     ctx.closePath(); ctx.fill();
-  }
-  // central bud cluster
-  ctx.fillStyle = hi;
-  ctx.beginPath(); ctx.arc(x, cy - s * 0.04, r * 0.3, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = dark;
-  ctx.beginPath(); ctx.arc(x + s * 0.04, cy + s * 0.02, r * 0.16, 0, Math.PI * 2); ctx.fill();
+  };
+  // one fan leaf at (lx,ly) pointing along `up`: 7 fingers, centre longest
+  const fanLeaf = (lx, ly, up, size, colr) => {
+    ctx.fillStyle = colr;
+    for (const [da, lf] of [[0, 1], [-0.5, 0.82], [0.5, 0.82], [-1.0, 0.6], [1.0, 0.6], [-1.5, 0.38], [1.5, 0.38]]) {
+      finger(lx, ly, up + da, size * lf, size * 0.09);
+    }
+  };
+  // stalk
+  ctx.strokeStyle = dark; ctx.lineWidth = Math.max(1.5, s * 0.07); ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(x, y); ctx.quadraticCurveTo(x + s * 0.03, y - s * 0.5, x, y - s * 0.92); ctx.stroke();
+  // lower tier: two side leaves drooping outward (older, darker)
+  fanLeaf(x - s * 0.04, y - s * 0.34, Math.PI * 1.12, s * 0.34, dark);
+  fanLeaf(x + s * 0.04, y - s * 0.34, -Math.PI * 0.12, s * 0.34, dark);
+  // mid tier: two leaves angled up at 45° either side
+  fanLeaf(x - s * 0.02, y - s * 0.58, -Math.PI * 0.75, s * 0.38, col);
+  fanLeaf(x + s * 0.02, y - s * 0.58, -Math.PI * 0.25, s * 0.38, col);
+  // crown: the classic upright fan leaf (brightest — the icon silhouette)
+  fanLeaf(x, y - s * 0.9, -Math.PI / 2, s * 0.46, hi);
 }
 
 // ---- molly: a couple of loose magenta capsules / pills ----
@@ -1931,25 +2006,39 @@ const ROADKILL_LOOK = {
   broomman:  { shirt: '#3a6a3a', brooms: true, tam: true },
   wiper:     { shirt: '#b8b83a' },
   goat:   { body: '#cfc0a0', legs: '#9a8a66', horns: true },
-  dog:    { body: '#8a5a30', legs: '#5a3820' },
+  dog:    { body: '#b08a52', legs: '#6a4a26' },   // matches the live mongrel's tan coat
   cat:    { body: '#8a8a92', legs: '#5a5a62', scale: 0.75 },
   cattle: { body: '#5a3c28', legs: '#3a2418', scale: 1.3, horns: true },
   croc:   { body: '#4a7a3a', legs: '#2f5a26', scale: 1.2 },
 };
 
-export function drawRoadkill(ctx, x, y, s, variation, cat, t, type) {
+export function drawRoadkill(ctx, x, y, s, variation, cat, t, type, water) {
   const prog = Math.max(0, Math.min(1, 1 - (t || 0) / 0.7));
   const v = ((variation % 4) + 4) % 4;
   const look = ROADKILL_LOOK[type] || {};
   ctx.save();
-  // impact dust puff — a soft tan/grey cloud that expands and fades (no blood)
+  // impact burst — a tan dust puff on the road, a white splash on the river
+  // (dust rising off water would break the scene)
   const puff = s * (0.3 + 0.5 * prog);
   ctx.save();
   ctx.globalAlpha = 0.5 * (1 - prog * 0.7);
-  ctx.fillStyle = '#b6ac96';
-  for (let i = 0; i < 4; i++) {
-    const a = i * 1.6 + v;
-    ctx.beginPath(); ctx.arc(x + Math.cos(a) * puff * 0.7, y + s * 0.06 + Math.sin(a) * puff * 0.3, puff * (0.36 + 0.14 * i), 0, Math.PI * 2); ctx.fill();
+  if (water) {
+    // expanding foam rings + droplets thrown up
+    ctx.strokeStyle = '#e8f4f2'; ctx.lineWidth = Math.max(1.5, s * 0.07);
+    for (let i = 0; i < 3; i++) {
+      ctx.beginPath(); ctx.ellipse(x, y + s * 0.06, puff * (0.5 + 0.3 * i), puff * (0.2 + 0.12 * i), 0, 0, Math.PI * 2); ctx.stroke();
+    }
+    ctx.fillStyle = '#dff0ee';
+    for (let i = 0; i < 5; i++) {
+      const a = i * 1.25 + v;
+      ctx.beginPath(); ctx.arc(x + Math.cos(a) * puff * 0.6, y - puff * (0.3 + 0.25 * Math.sin(a * 2)), s * 0.045, 0, Math.PI * 2); ctx.fill();
+    }
+  } else {
+    ctx.fillStyle = '#b6ac96';
+    for (let i = 0; i < 4; i++) {
+      const a = i * 1.6 + v;
+      ctx.beginPath(); ctx.arc(x + Math.cos(a) * puff * 0.7, y + s * 0.06 + Math.sin(a) * puff * 0.3, puff * (0.36 + 0.14 * i), 0, Math.PI * 2); ctx.fill();
+    }
   }
   ctx.restore();
 

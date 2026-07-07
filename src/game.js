@@ -193,11 +193,15 @@ export function createGame(audio) {
       .concat(itemWeightsFor(ch))      // character-specific bleach / wholesome items
       .concat(negativesFor(ch))        // character-gated temptations / responsibilities
       .concat(universalNegatives())    // unripe-ackee poison trap — bites every driver
-      .concat([{ type: 'fruit', weight: FRUIT.weight * (stage.fruitMult || 1) }])   // paid street fruit — open to all (rarer in town)
-      .concat(foodWeightsFor(ch, stage))  // Ackee/Patty/Plantain (+ rural roast breadfruit)
+      // Street vendors and hot street food don't trade mid-river — no fruit stands or
+      // roast breadfruit floating down the Rio Cobre. (Drinks/negatives stay: bottles
+      // and temptations float downstream like the rest of the litter.)
+      .concat(stage.river ? [] : [{ type: 'fruit', weight: FRUIT.weight * (stage.fruitMult || 1) }])   // paid street fruit — open to all (rarer in town)
+      .concat(stage.river ? [] : foodWeightsFor(ch, stage))  // Ackee/Patty/Plantain (+ rural roast breadfruit)
       .map(w => {
-        // Repair tools are the in-run lifeline — spawn them 20% more often.
-        if (w.type === 'tools') return { type: 'tools', weight: w.weight * SPAWN_TUNE.toolMult };
+        // Repair pickups are the in-run lifeline — spawn them 20% more often.
+        // (tools on the road, rope lashing on the river — same lifeline, same tune.)
+        if (w.type === 'tools' || w.type === 'rope') return { type: w.type, weight: w.weight * SPAWN_TUNE.toolMult };
         // cashFind dials how OFTEN money appears (reckless drivers see it rarely).
         if (w.type === 'coin') return { type: 'coin', weight: w.weight * (ch.cashFind || 1) };
         // Politician's paved roads thin out potholes/manholes (still full damage on hit).
@@ -570,10 +574,31 @@ export function createGame(audio) {
     // cart so the ride plows over the body.
     if (gore) {
       const gp = projectEntity(gore.x, CART_Z, W, H);
-      drawRoadkill(ctx, gp.x + curveOffsetAt(camZ, CART_Z), gp.y + 6, cp.size * 0.9, gore.variation, gore.cat, gore.t, gore.type);
+      drawRoadkill(ctx, gp.x + curveOffsetAt(camZ, CART_Z), gp.y + 6, cp.size * 0.9, gore.variation, gore.cat, gore.t, gore.type, !!(stage && stage.river));
     }
     // River mode: the ride floats the Rio Cobre on a bamboo raft (drawn under it).
     if (stage.river) drawRaft(ctx, cp.x + cartCurve + jitX, cp.y + 6 + bobPx, cp.size * 0.9);
+    // Supercharge shield: a pulsing golden aura wraps driver + ride while invincible,
+    // blinking fast in the final second so the player feels the shield about to drop.
+    if (effectActive(effects, 'super')) {
+      const gx = cp.x + cartCurve + jitX, gs = cp.size * 0.9, gy = cp.y + 6 + bobPx - gs * 0.55;
+      const pulse = 0.85 + 0.15 * Math.sin(nowMs() / 130);
+      const ending = (effects.super || 0) < 1.2;
+      const blink = ending ? (Math.sin(nowMs() / 55) > 0 ? 1 : 0.25) : 1;
+      const gr = gs * 1.25 * pulse;
+      const halo = ctx.createRadialGradient(gx, gy, gr * 0.25, gx, gy, gr);
+      halo.addColorStop(0, 'rgba(255,225,110,0.42)');
+      halo.addColorStop(0.7, 'rgba(255,205,60,0.20)');
+      halo.addColorStop(1, 'rgba(255,205,60,0)');
+      ctx.save();
+      ctx.globalAlpha = blink;
+      ctx.fillStyle = halo;
+      ctx.beginPath(); ctx.arc(gx, gy, gr, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = 'rgba(255,235,140,' + (0.55 * blink) + ')';
+      ctx.lineWidth = Math.max(1.5, gs * 0.05);
+      ctx.beginPath(); ctx.ellipse(gx, gy, gr * 0.78, gr * 0.88, 0, 0, Math.PI * 2); ctx.stroke();
+      ctx.restore();
+    }
     drawCart(ctx, cart, cp.x + cartCurve + jitX, cp.y + 6 + bobPx, cp.size * 0.9);
     renderTouchZones(ctx, W, H);
     renderHud(ctx, { stageName: stage.name, coins: run.coins, distance: run.distance, condition: cart.condition, effects, lite, speed: cart.speed, throttle: throttleInput, combo: race ? 0 : run.combo }, W, H);

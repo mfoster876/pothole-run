@@ -52,7 +52,11 @@ export const NEGATIVES = {
   //    so doing his job bleeds huge — these can plunge him into deep debt). ──
   roadfix:      { id: 'roadfix',      label: 'Road Repairs',   char: 'politician', cashBurn: 500000, color: '#e8821e' },
   contractor:   { id: 'contractor',   label: 'Contractor',     char: 'politician', cashBurn: 750000, color: '#e8c84a' },
-  lightpole:    { id: 'lightpole',    label: 'Fallen Pole',    char: 'politician', cashBurn: 400000, color: '#8a8f96' },
+  // roadOnly / riverOnly scope a responsibility to where it makes sense: poles fall on
+  // roads; the river serves its own injustices to fix (see negativesFor).
+  lightpole:    { id: 'lightpole',    label: 'Fallen Pole',    char: 'politician', cashBurn: 400000, color: '#8a8f96', roadOnly: true },
+  wastewater:   { id: 'wastewater',   label: 'Waste-Water Dump', char: 'politician', cashBurn: 350000, color: '#7a8578', riverOnly: true },
+  protest:      { id: 'protest',      label: 'Beach Rights Protest', char: 'politician', cashBurn: 200000, color: '#c8b03a', riverOnly: true },
   constituent:  { id: 'constituent',  label: 'Constituent',    char: 'politician', cashBurn: 250000, color: '#b04a3c' },
   voter:        { id: 'voter',        label: 'Bribe a Voter',  char: 'politician', cashBurn: 150000, color: '#2a7f7f' },
   hustlerlunch: { id: 'hustlerlunch', label: 'Buy a Lunch',    char: 'politician', cashBurn: 100000, color: '#d06a30' },
@@ -62,14 +66,14 @@ export const NEGATIVES = {
   // carries hypoglycin A and brings on "Jamaican Vomiting Sickness" — violent nausea, a
   // hypoglycaemic crash, dizziness. It looks like the good ackee, so you must read the pod:
   // if it no open, no eat it. `poison` = a heavy condition hit + a long, dizzy steering haze.
-  unripeackee: { id: 'unripeackee', label: 'Unripe Ackee', universal: true, poison: true, damage: 20, impair: 0.9, color: '#4e7b34' },
+  unripeackee: { id: 'unripeackee', label: 'Unripe Ackee', universal: true, poison: true, damage: 20, impair: 0.9, color: '#c23a24' },
 };
 
 // Which negatives spawn for which driver (in display/spawn order).
 const ELIGIBLE = {
   yute:       ['bleaching', 'tightpants', 'weed', 'molly', 'teensex'],
   rasta:      ['obeah', 'pork', 'jw'],
-  politician: ['roadfix', 'constituent', 'lightpole', 'hustlerlunch', 'voter', 'contractor'],
+  politician: ['roadfix', 'constituent', 'lightpole', 'hustlerlunch', 'voter', 'contractor', 'wastewater', 'protest'],
   conductor:  ['cakesoap', 'blchmix', 'blchtub', 'sunlight'],   // vanity + sun he must dodge
   principal:  ['placementbribe', 'ptameeting'],
 };
@@ -86,6 +90,7 @@ const WEIGHTS = {
   obeah: 0.4, pork: 0.5, jw: 0.4,
   cakesoap: 0.6, blchmix: 0.6, blchtub: 0.6, sunlight: 0.8,
   roadfix: 1.2, constituent: 1.4, lightpole: 0.9, hustlerlunch: 1.0, voter: 1.2, contractor: 0.8,
+  wastewater: 0.9, protest: 0.7,
   placementbribe: 0.5, ptameeting: 0.5,
   unripeackee: 0.4,
 };

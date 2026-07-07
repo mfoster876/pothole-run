@@ -69,6 +69,9 @@ export const HAZARD_TYPES = {
   // Power-up collectibles — fully heal, boost, or open a money window
   water:    { damage: 0, collectible: true, powerup: 'water',  depth: 3, color: '#8fd3ff', label: 'water' },
   tools:    { damage: 0, collectible: true, powerup: 'tools',  depth: 3, color: '#c9c9c9', label: 'hardware tools' },
+  // The river's repair pickup — a spanner can't fix a bamboo raft. Rope lashing (sisal
+  // coil + fresh bamboo slat) heals the raft exactly like tools heal a road vehicle.
+  rope:     { damage: 0, collectible: true, powerup: 'tools',  depth: 3, color: '#c8a86a', label: 'rope lashing' },
   coffee:   { damage: 0, collectible: true, powerup: 'coffee', depth: 3, color: '#5b3a1a', label: 'Blue Mountain coffee' },
   // Street-vendor fruit — a PAID pickup (any driver): costs a little cash, gives a quick
   // strength top-up (condition heal) + short dash. Routed to applyPowerup via powerup:'fruit'.

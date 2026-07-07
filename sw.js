@@ -1,4 +1,4 @@
-const CACHE = 'pothole-run-v46';
+const CACHE = 'pothole-run-v47';
 const ASSETS = [
   './', './index.html', './styles.css', './manifest.webmanifest',
   './src/main.js', './src/constants.js', './src/game.js', './src/road.js',
