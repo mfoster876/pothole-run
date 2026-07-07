@@ -63,6 +63,24 @@ test('a rival advances, and a stumble slows it', () => {
   assert.ok((r.dist - d1) > slowGain, 'stumbling rival gains less ground than a clean one');
 });
 
+test('apex grand-prix tier escalates stakes and is gated high', () => {
+  const gp = tierById('grandprix');
+  assert.ok(gp, 'the apex tier exists');
+  assert.ok(gp.purse >= gp.buyIn * 10, 'apex pays big');
+  assert.ok(gp.distance > tierById('championship').distance, 'apex is the longest race');
+  assert.ok(gp.rivalPace > tierById('championship').rivalPace, 'apex rivals are the fastest');
+  // still gated: not available until a big career bank
+  assert.ok(!availableTiers(saveWith(100000, 0)).some(t => t.id === 'grandprix'));
+  assert.ok(availableTiers(saveWith(500000, 0)).some(t => t.id === 'grandprix'));
+});
+test('every race carries exactly one named GRUDGE nemesis to chase', () => {
+  const rivals = makeRivals(tierById('corner'), mulberry32(3));
+  const grudges = rivals.filter(r => r.grudge);
+  assert.equal(grudges.length, 1, 'one grudge rival');
+  assert.ok(grudges[0].pace > tierById('corner').rivalPace * 0.9, 'the nemesis paces hard');
+  assert.ok(typeof grudges[0].name === 'string' && grudges[0].name.length > 0);
+});
+
 test('placement = 1 when leading, grows as rivals get ahead', () => {
   const rivals = [{ dist: 50 }, { dist: 120 }, { dist: 30 }];
   assert.equal(placement(200, rivals), 1, 'player ahead of all → 1st');

@@ -109,6 +109,15 @@ export function resolveHits(run, cart, field, effects = cart._effects || {}, sav
         dmg *= (1 - Math.min(0.9, resist));      // blessing makes the cart more resilient
         cart.condition = applyDamage(cart.condition, dmg);
         run.combo = 0;
+        // Believable pothole/road jolt: the ride BUCKS (suspension bounce + screen shake,
+        // consumed in game.js) and gets knocked sideways toward the nearer shoulder, so
+        // hitting a crater genuinely rattles your line. A steadier ride soaks up the knock.
+        if (info.jolt) {
+          cart.jolted = info.jolt;
+          if (info.splash) cart.splashed = info.jolt;
+          const dir = cart.x >= 0 ? 1 : -1;      // knocked outward, toward the shoulder
+          applyGust(cart, dir, GUST.push * info.jolt * 0.7);
+        }
         // windscreen youth: forced "wash" skims coins off your fare — a greedier ask the
         // deeper you are and the flashier the ride. Debt-capable (floored only for the
         // debt-proof drivers — Politician / School Yute).

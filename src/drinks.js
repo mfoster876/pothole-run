@@ -22,6 +22,10 @@ const ELIGIBLE = {
   conductor: ['ting', 'boom', 'redstripe', 'whiterum'],
   rasta:     ['ting', 'boom', 'redstripe', 'whiterum', 'spirulina', 'rootstonic'],
   politician: ['henny', 'rose', 'whitewine', 'champagne'],   // top-shelf only
+  // The women keep it clean — refreshing sodas, no alcohol on the road.
+  student:   ['ting', 'boom'],
+  nurse:     ['ting', 'boom'],
+  higgler:   ['ting', 'boom'],
 };
 
 // Spawn rarity weights per drink id. Kept deliberately low so a drink boost is an

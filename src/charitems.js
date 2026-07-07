@@ -35,6 +35,10 @@ const ELIGIBLE = {
   conductor:  [],
   rasta:      ['ladynight'],
   taximan:    ['ladynight'],
+  // The Uni Girl is a student too — she picks up the same wholesome study items.
+  student:    ['books', 'stationery', 'bagjuice', 'lasco'],
+  nurse:      [],
+  higgler:    [],
 };
 
 // Spawn rarity weights. Kept modest so these stay a treat, not a constant crutch.

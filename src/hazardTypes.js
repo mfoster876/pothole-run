@@ -6,8 +6,10 @@ import { NEGATIVES } from './negatives.js';
 // vz = extra closing speed (world units/s) for traffic that overtakes the cart.
 // gust = blows the cart sideways when it passes in a neighbouring lane.
 export const HAZARD_TYPES = {
-  pothole:  { damage: DAMAGE.pothole, collectible: false, depth: 3, color: '#1c1c1c', label: 'crater', category: 'road' },
-  manhole:  { damage: DAMAGE.manhole, collectible: false, depth: 3, color: '#000000', label: 'open manhole', category: 'road' },
+  // `jolt` (0..1+) = how hard the ride bucks on impact (suspension bounce + screen shake
+  //  + a sideways knock toward the shoulder). `splash` = throws a water plume (wet holes).
+  pothole:  { damage: DAMAGE.pothole, collectible: false, depth: 3, color: '#1c1c1c', label: 'crater', category: 'road', jolt: 0.9 },
+  manhole:  { damage: DAMAGE.manhole, collectible: false, depth: 3, color: '#000000', label: 'open manhole', category: 'road', jolt: 1.2 },
   coin:     { damage: 0,              collectible: true,  depth: 3, color: '#f0c020', label: 'coin' },
   goat:     { damage: DAMAGE.animal,  collectible: false, depth: 4, color: '#d8c7b0', label: 'goat', category: 'animal' },
   taxi:     { damage: DAMAGE.traffic, collectible: false, depth: 5, color: '#c0382c', label: 'route taxi', vz: 420, gust: 'fromTaxi', category: 'traffic' },
@@ -22,9 +24,9 @@ export const HAZARD_TYPES = {
   // Roadside broom-selling rasta — walks across the road like the other street vendors.
   broomman:  { damage: DAMAGE.animal,  collectible: false, depth: 3, color: '#3a6a3a', label: 'broom seller', category: 'pedestrian', walk: true },
   stall:    { damage: DAMAGE.traffic, collectible: false, depth: 4, color: '#7a4a22', label: 'vendor stall' },
-  slick:    { damage: DAMAGE.bump,    collectible: false, depth: 3, color: '#3a4a6a', label: 'wet slick' },
+  slick:    { damage: DAMAGE.bump,    collectible: false, depth: 3, color: '#3a4a6a', label: 'wet slick', jolt: 0.5, splash: true },
   bump:     { damage: DAMAGE.bump,    collectible: false, depth: 2, color: '#8a8a8a', label: 'sleeping policeman' },
-  flood:    { damage: DAMAGE.bump,    collectible: false, depth: 4, color: '#5a705a', label: 'flooded patch' },
+  flood:    { damage: DAMAGE.bump,    collectible: false, depth: 4, color: '#5a705a', label: 'flooded patch', jolt: 0.6, splash: true },
   dog:      { damage: DAMAGE.animal,  collectible: false, depth: 3, color: '#9a7a4a', label: 'street dog', vz: 120, category: 'animal' },
   cat:      { damage: DAMAGE.animal,  collectible: false, depth: 2, color: '#5a5a5a', label: 'cat', vz: 160, category: 'animal' },
   cattle:   { damage: DAMAGE.traffic, collectible: false, depth: 5, color: '#5a4636', label: 'stray cattle', category: 'animal' },
@@ -37,6 +39,19 @@ export const HAZARD_TYPES = {
   // Police — urban-frequent road obstacle (weighted per stage). Traffic-tier damage
   // PLUS a cash fine on contact (run.js). The Politician is immune.
   police:   { damage: DAMAGE.traffic, collectible: false, depth: 4, color: '#27407a', label: 'police', category: 'police', fine: true },
+  // ── Bog Walk Gorge RIVER MODE obstacles — float the Rio Cobre on a bamboo raft ──
+  // Stylised floating LITTER (generic bottle, no brand) + a drifting plastic bag: light
+  // knocks that splash. Crocodiles close in (vz) and bite. Burnt-out & floating car wrecks
+  // are heavy. Limestone boulders jut from the water. River Mumma is the folklore siren you
+  // must NOT touch — contact drags the raft under (near-wreck). All category 'river' unless
+  // noted so no driver is immune to them.
+  floatbottle: { damage: DAMAGE.bump,    collectible: false, depth: 3, color: '#7aa0b0', label: 'floating bottle', category: 'river', jolt: 0.4, splash: true },
+  plasticbag:  { damage: DAMAGE.bump,    collectible: false, depth: 2, color: '#cfe0e6', label: 'plastic bag', category: 'river', jolt: 0.3, splash: true },
+  croc:        { damage: DAMAGE.animal,  collectible: false, depth: 4, color: '#3a5a34', label: 'crocodile', category: 'animal', vz: 110, jolt: 0.6 },
+  burntcar:    { damage: DAMAGE.traffic, collectible: false, depth: 5, color: '#2a2622', label: 'burnt-out car', category: 'river', jolt: 0.9, splash: true },
+  floatcar:    { damage: DAMAGE.traffic, collectible: false, depth: 5, color: '#6a6f66', label: 'floating car', category: 'river', vz: 70, jolt: 0.8, splash: true },
+  limerock:    { damage: DAMAGE.traffic, collectible: false, depth: 4, color: '#cbb98a', label: 'limestone rock', category: 'river', jolt: 1.0 },
+  rivermumma:  { damage: 60,             collectible: false, depth: 6, color: '#2f7d7a', label: 'River Mumma', category: 'folklore', jolt: 1.1, splash: true },
   // Power-up collectibles — fully heal, boost, or open a money window
   water:    { damage: 0, collectible: true, powerup: 'water',  depth: 3, color: '#8fd3ff', label: 'water' },
   tools:    { damage: 0, collectible: true, powerup: 'tools',  depth: 3, color: '#c9c9c9', label: 'hardware tools' },
@@ -44,6 +59,12 @@ export const HAZARD_TYPES = {
   // Street-vendor fruit — a PAID pickup (any driver): costs a little cash, gives a quick
   // strength top-up (condition heal) + short dash. Routed to applyPowerup via powerup:'fruit'.
   fruit:    { damage: 0, collectible: true, powerup: 'fruit',  depth: 3, color: '#f4a020', label: 'Vendor Fruit' },
+  // Jamaican street food (open to all; the Rasta gets the ital VEGGIE patty, not beef).
+  // Ackee = national fruit: heal + steadiness. Patty = a dash + heal + pocket change.
+  // Routed to applyPowerup via powerup:'food' → applyFood (see foods.js).
+  ackee:       { damage: 0, collectible: true, powerup: 'food', food: 'ackee',       depth: 3, color: '#f2a33a', label: 'Ackee' },
+  patty:       { damage: 0, collectible: true, powerup: 'food', food: 'patty',       depth: 3, color: '#e8b23a', label: 'Beef Patty' },
+  veggiepatty: { damage: 0, collectible: true, powerup: 'food', food: 'veggiepatty', depth: 3, color: '#7bbf4a', label: 'Veggie Patty' },
   // Drink collectibles — character-gated; routed to applyDrink via powerup:'drink'
   ting:       { damage: 0, collectible: true, powerup: 'drink', drink: 'ting',       depth: 3, color: '#7ec850', label: 'Ting' },
   boom:       { damage: 0, collectible: true, powerup: 'drink', drink: 'boom',       depth: 3, color: '#141414', label: 'Boom' },

@@ -2,6 +2,7 @@ import { VIRTUAL, SHOULDER, SUPERCHARGE, IMPAIR, SPAWN_TUNE, POLICE, POLITICIAN,
 import { setLetterboxColors, setDprCap } from './main.js';
 import { drinkWeightsFor } from './drinks.js';
 import { itemWeightsFor } from './charitems.js';
+import { foodWeightsFor } from './foods.js';
 import { negativesFor } from './negatives.js';
 import { makeRoad, renderRoad, projectEntity, curveOffsetAt, curvatureAt, setCurveScale, CART_Z } from './road.js';
 import { createCart, steer, updateCart, onShoulder, tipShoulder } from './cart.js';
@@ -44,7 +45,10 @@ import * as help from './screens/help.js';
 import { count as countMusic } from './usermusic.js';
 import { stationAt, stationCount } from './radio.js';
 
-const W = VIRTUAL.width, H = VIRTUAL.height;
+// Read per-frame (not cached) — the virtual stage flips to a taller/narrower portrait size
+// on phones (see main.js), and the whole renderer is parameterised by these W/H.
+let W = VIRTUAL.width, H = VIRTUAL.height;
+function syncViewport() { W = VIRTUAL.width; H = VIRTUAL.height; }
 const GENRE_LABEL = { reggae: 'Reggae', ska: 'Ska', dancehall: 'Dancehall', hiphop: 'Hip-Hop', mymusic: 'My Music', radio: 'JA Radio' };
 
 // Menu hit-regions (virtual coords). One row each for driver, ride, stage, genre.
@@ -151,6 +155,7 @@ export function createGame(audio) {
       .concat(itemWeightsFor(ch))      // character-specific bleach / wholesome items
       .concat(negativesFor(ch))        // character-gated temptations / responsibilities
       .concat([{ type: 'fruit', weight: FRUIT.weight }])   // paid street fruit — open to all
+      .concat(foodWeightsFor(ch))      // Ackee + Patty (Rasta gets the ital veggie patty)
       .map(w => {
         // Repair tools are the in-run lifeline — spawn them 20% more often.
         if (w.type === 'tools') return { type: 'tools', weight: w.weight * SPAWN_TUNE.toolMult };
@@ -265,6 +270,10 @@ export function createGame(audio) {
     if (run.distance >= 400 && stage.id === 'holland-bamboo' && !u.stages.includes('negril')) u.stages.push('negril');
     // New Kingston (where the JUTC buses run) opens once you've banked a little
     if (save.coins >= 500 && !u.stages.includes('new-kingston')) u.stages.push('new-kingston');
+    // Bog Walk Gorge river mode — a change of pace, opens once you've banked a little more.
+    if (save.coins >= 1000 && !u.stages.includes('bog-walk')) u.stages.push('bog-walk');
+    // Di Higgler — an early, attainable unlock (she respects a little banked hustle).
+    if (save.coins >= 3000 && !u.characters.includes('higgler')) u.characters.push('higgler');
     if (save.coins >= 2500 && !u.characters.includes('conductor')) u.characters.push('conductor');
     // The Taxi Man — a mid-tier unlock between the Conductor and the Politician.
     if (save.coins >= 50000 && !u.characters.includes('taximan')) u.characters.push('taximan');
@@ -273,6 +282,7 @@ export function createGame(audio) {
   }
 
   function update(dt) {
+    syncViewport();
     if (goldToast > 0) goldToast--;
     // Soft-shoulder topple: play the roll-over animation (world frozen), then game over.
     if (state.mode === 'toppling') {
@@ -356,7 +366,7 @@ export function createGame(audio) {
     const coinsBefore = run.coins, condBefore = cart.condition.value;
     cart.gusted = false; cart.washed = false; cart.pickupValue = 0; cart.nearMiss = false;
     cart.pickupLabel = null; cart.hitNegative = null; cart.fined = false; cart.washCharge = 0; cart.bribed = false;
-    cart.roadkill = null;
+    cart.roadkill = null; cart.jolted = 0; cart.splashed = 0;
     resolveHits(run, cart, field, effects, save);
     // Graphic run-over: a fresh impact spawns the injury reaction at the cart plane and a
     // heavy thud — the consequence of plowing through, even when the driver shrugs it off.
@@ -370,7 +380,12 @@ export function createGame(audio) {
       cart.rattle = Math.min(0.5, cart.rattle + rattleGain);
     }
     if (cart.washed) { audio && audio.sfx('wash'); hitShake = Math.max(hitShake, 0.4); }
-    else if (cart.condition.value < condBefore) { audio && audio.sfx('hit'); hitShake = 1; }
+    else if (cart.condition.value < condBefore) {
+      audio && audio.sfx('hit');
+      // A pothole/manhole jolt bucks the ride harder than an ordinary scrape. Bounded
+      // (and it decays fast) as a motion-comfort measure — a jolt, not a lurching camera.
+      hitShake = Math.max(hitShake, cart.jolted ? Math.min(1.7, 1 + 0.9 * cart.jolted) : 1);
+    }
     if (cart.gusted) { audio && audio.sfx('whoosh'); hitShake = Math.max(hitShake, 0.55); }
     // Name the exact pick-up / negative / fine for the HUD toast — clear feedback, not
     // a vague "irie boost". A fresh event overrides whatever toast is fading.
@@ -396,8 +411,10 @@ export function createGame(audio) {
       }
     }
     // Soft-shoulder tipping: lean grows while out there, recovers back on the road.
-    // Tip too far for too long and the cart topples — an instant wreck.
-    if (tipShoulder(cart, shoulder, dt)) {
+    // Tip too far for too long and the cart topples — an instant wreck. In gorges with
+    // no real shoulder (Fern Gully), the walls press to the edge: it bleeds & tips FAST.
+    const edgePenalty = (stage && stage.noShoulder) ? 2.4 : 1;
+    if (tipShoulder(cart, shoulder, shoulder ? dt * edgePenalty : dt)) {
       cart.toppled = true;
       // In a race a topple is just a DNF; in a normal run, play the visible roll-over
       // death (vehicle turns over, driver falls out) before the game-over card.
@@ -406,7 +423,7 @@ export function createGame(audio) {
       audio && audio.sfx('creak');
       return;
     }
-    if (shoulder) cart.condition = applyDamage(cart.condition, SHOULDER.drainPerSec * dt);
+    if (shoulder) cart.condition = applyDamage(cart.condition, SHOULDER.drainPerSec * edgePenalty * dt);
     // The reel lean deepens with the tilt so the player can see how close to over it is.
     const reelTarget = shoulder ? (cart.laneIndex === 0 ? -1 : 1) * (0.17 + 0.55 * (cart.tilt || 0) + Math.sin(camZ * 0.06) * 0.05) : 0;
     cart.reel = (cart.reel || 0) + (reelTarget - (cart.reel || 0)) * (1 - Math.exp(-9 * dt));
@@ -434,6 +451,7 @@ export function createGame(audio) {
   }
 
   function render(ctx) {
+    syncViewport();
     if (state.mode === 'menu') return renderMenu(ctx);
     if (state.mode === 'gameover') return renderGameOver(ctx);
     renderRoad(ctx, road, stage.palette, camZ, W, H);

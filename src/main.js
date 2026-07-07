@@ -1,5 +1,4 @@
 import { VIRTUAL, MAX_DPR } from './constants.js';
-import { renderRotatePrompt } from './screens/rotatePrompt.js';
 import { clientToVirtual } from './coords.js';
 
 const canvas = document.getElementById('game');
@@ -43,7 +42,22 @@ function resize() {
   canvas.style.width  = cssW + 'px';
   canvas.style.height = cssH + 'px';
 
-  // Contain-fit: scale to fit entirely within the viewport (letterbox).
+  // PHONE-FIRST: portrait uses a FULL-BLEED portrait virtual stage that matches the device
+  // aspect (so the game fills the whole phone screen, no letterbox and no "rotate" wall).
+  // Landscape keeps the tuned 960×540 stage exactly as before (letterboxed on odd ratios).
+  // The whole renderer is parameterised by W/H (road projection scales independently with
+  // each), so a taller/narrower stage renders a valid, if differently-framed, scene.
+  const aspect = cssW / cssH;
+  if (aspect < 1) {
+    const a = Math.max(0.46, aspect);          // clamp absurdly thin stages
+    VIRTUAL.width  = 540;
+    VIRTUAL.height = Math.min(1200, Math.round(540 / a));
+  } else {
+    VIRTUAL.width  = 960;
+    VIRTUAL.height = 540;
+  }
+
+  // Contain-fit: scale to fit entirely within the viewport (letterbox where needed).
   const scaleX = canvas.width  / VIRTUAL.width;
   const scaleY = canvas.height / VIRTUAL.height;
   viewport.scale   = Math.min(scaleX, scaleY);
@@ -68,22 +82,17 @@ let renderFn = (ctx) => {
 export function setUpdate(fn) { updateFn = fn; }
 export function setRender(fn) { renderFn = fn; }
 
-// Portrait detection — true when phone is held upright.
-function isPortrait() { return window.innerHeight > window.innerWidth; }
-
-// Game-pause flag: while portrait, the update loop does not advance.
+// Phone-first: the game now PLAYS in portrait (full-bleed portrait stage), so we no longer
+// freeze the loop or throw up a "rotate to landscape" wall. `paused` is retained only as a
+// hook (kept false) so the tap handler's guard still reads cleanly.
 let paused = false;
 
 const STEP = 1 / 60;
 let last = 0, acc = 0, startTime = performance.now();
 function frame(now) {
   if (!last) last = now;
-  const portrait = isPortrait();
-  paused = portrait;
-  if (!paused) {
-    acc += Math.min(0.25, (now - last) / 1000);
-    while (acc >= STEP) { updateFn(STEP); acc -= STEP; }
-  }
+  acc += Math.min(0.25, (now - last) / 1000);
+  while (acc >= STEP) { updateFn(STEP); acc -= STEP; }
   last = now;
 
   // Fill letterbox bars with sky (top half) and ground (bottom half) instead of
@@ -99,11 +108,6 @@ function frame(now) {
   // Render the game into the centred virtual-stage region.
   ctx.setTransform(viewport.scale, 0, 0, viewport.scale, viewport.offsetX, viewport.offsetY);
   renderFn(ctx);
-
-  // Portrait overlay drawn on top in raw physical pixels.
-  if (portrait) {
-    renderRotatePrompt(ctx, canvas.width, canvas.height, now - startTime);
-  }
 
   requestAnimationFrame(frame);
 }

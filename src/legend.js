@@ -3,6 +3,7 @@
 // chase and which temptations to dodge based on who's driving.
 import { eligibleDrinks } from './drinks.js';
 import { eligibleItems } from './charitems.js';
+import { eligibleFoods } from './foods.js';
 import { eligibleNegatives } from './negatives.js';
 
 // Pick-ups every driver benefits from (shared across the roster).
@@ -20,6 +21,9 @@ const NOTE = {
   conductor:  'Reckless! Cash is rare, big & hard to grab — huge upside.',
   politician: 'Untouchable & filthy rich — but dodge yuh responsibilities.',
   taximan:    'Most reckless, most dexterous. Whip through gaps — but fragile.',
+  student:    'Nimble & level-headed. Protected from debt — study items help.',
+  nurse:      'Steadiest hands, tough under pressure — but not the fastest.',
+  higgler:    'Best nose for money pon di road — tough, but unhurried.',
 };
 
 // People / road characters this driver should watch for (beyond the negatives above).
@@ -29,6 +33,9 @@ const PEOPLE = {
   conductor:  ['Police — big fines', 'Reckless coaster bus'],
   politician: ['Police — but dem wave yuh through (immune)', 'Reckless coaster bus'],
   taximan:    ['Police — dem trouble yuh more (1.4×)', 'Reckless coaster bus'],
+  student:    ['Police — big fines', 'Reckless coaster bus'],
+  nurse:      ['Police — big fines', 'Reckless coaster bus'],
+  higgler:    ['Police — big fines', 'Reckless coaster bus'],
 };
 
 // The heart of each driver: their UNFAIR EDGE (perks the others don't get) and their
@@ -55,6 +62,18 @@ const TRAITS = {
     perks: ['Most dexterous — top handling', 'Fast, high score ceiling', 'Bigger notes'],
     cons:  ['Most fragile cart', 'Wildest sway — reckless', 'Police trouble yuh (1.4×)', 'Cash rare & hard to grab', 'Lady of di Night drains cash & blessing'],
   },
+  student: {
+    perks: ['Never go inna debt — protected', 'Nimble, level-headed handling', 'Study items steady yuh'],
+    cons:  ['Modest top speed', 'No hazard immunities', 'Face every temptation pon di road'],
+  },
+  nurse: {
+    perks: ['Toughest but di Politician — soaks up hits', 'Steadiest hands, barely sway', 'Good money draw'],
+    cons:  ['Slower top speed', 'No immunities — every hazard bites', 'Can still go inna debt'],
+  },
+  higgler: {
+    perks: ['Best money draw pon di roster', 'Frequent money finds — she spot it', 'Tough, hard to rattle'],
+    cons:  ['Slowest top speed', 'No immunities', 'Can still go inna debt'],
+  },
 };
 
 /**
@@ -65,6 +84,7 @@ const TRAITS = {
  */
 export function legendFor(character) {
   const good = SHARED_GOOD
+    .concat(eligibleFoods(character))     // Ackee + the driver's patty (ital veggie for Rasta)
     .concat(eligibleDrinks(character))
     .concat(eligibleItems(character));
   const bad = eligibleNegatives(character);

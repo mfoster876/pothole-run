@@ -32,6 +32,18 @@ export function drawEntity(ctx, type, sx, sy, size, seed = 0.137, value = 1) {
     case 'tools':  hardwareTools(ctx, sx, sy, s, seed); break;
     case 'coffee': coffeeBag(ctx, sx, sy, s); break;
     case 'fruit':  drawFruit(ctx, sx, sy, s); break;
+    // Jamaican street food — national ackee + the beef/veggie patty
+    case 'ackee':       drawAckee(ctx, sx, sy, s); break;
+    case 'patty':       drawPatty(ctx, sx, sy, s, false); break;
+    case 'veggiepatty': drawPatty(ctx, sx, sy, s, true); break;
+    // Bog Walk river-mode obstacles
+    case 'floatbottle': floatBottle(ctx, sx, sy, s); break;
+    case 'plasticbag':  plasticBag(ctx, sx, sy, s); break;
+    case 'croc':        crocodile(ctx, sx, sy, s, seed); break;
+    case 'burntcar':    riverCar(ctx, sx, sy, s, true); break;
+    case 'floatcar':    riverCar(ctx, sx, sy, s, false); break;
+    case 'limerock':    limestoneRock(ctx, sx, sy, s, seed); break;
+    case 'rivermumma':  riverMumma(ctx, sx, sy, s); break;
     // Drink pickups — soda cans vs spirit bottles by alcohol content
     case 'ting':       drinkCan(ctx, sx, sy, s, '#7ec850', '#5a9e30', 'T'); break;
     case 'boom':       drinkCan(ctx, sx, sy, s, '#161616', '#000000', 'B'); break;
@@ -81,7 +93,13 @@ export function drawEntity(ctx, type, sx, sy, size, seed = 0.137, value = 1) {
 // limestone-marl floor (what sits under Jamaican asphalt), damp shadowed depression.
 function crater(ctx, x, y, size, seed) {
   const base = Math.floor((seed || 0.137) * 2147483647);
-  const rx = size * 0.95, ry = size * 0.36;
+  const vr = mulberry32(base ^ 0xA71C);
+  // Seed-driven VARIETY: craters differ in apparent size, depth, and whether they've
+  // filled with water — so a road never reads as a row of identical holes.
+  const scale = 0.78 + vr() * 0.58;          // 0.78 … 1.36 apparent size
+  const depth = 0.55 + vr() * 0.9;           // shallow scrape … deep crater
+  const wet   = vr() < 0.34;                  // ~1 in 3 are water-filled
+  const rx = size * 0.95 * scale, ry = size * 0.36 * scale;
   // dark torn edge of the blacktop around the hole
   jaggedPath(ctx, x, y, rx * 1.14, ry * 1.16, 15, mulberry32(base ^ 0x9e37), 0.2);
   ctx.fillStyle = '#23201b'; ctx.fill();
@@ -95,17 +113,28 @@ function crater(ctx, x, y, size, seed) {
     const a = sp() * Math.PI * 2, rr = sp() * 0.6;
     ctx.fillRect(x + Math.cos(a) * rx * rr, y + Math.sin(a) * ry * rr, Math.max(1, size * 0.05), Math.max(1, size * 0.04));
   }
-  // damp, shadowed depression toward the far lip (depth without floating)
-  jaggedPath(ctx, x, y + ry * 0.2, rx * 0.62, ry * 0.58, 13, mulberry32(base ^ 0x7777), 0.18);
-  ctx.fillStyle = '#9b8c6b'; ctx.fill();
+  // damp, shadowed depression toward the far lip — DEEPER holes read darker/lower
+  jaggedPath(ctx, x, y + ry * 0.22 * depth, rx * 0.64, ry * (0.5 + 0.28 * depth), 13, mulberry32(base ^ 0x7777), 0.18);
+  ctx.fillStyle = `rgba(50,44,34,${0.5 + 0.35 * depth})`; ctx.fill();
+  if (wet) {
+    // muddy rain-water pool sitting in the hole — a flat sheen with a sky-tint and a
+    // bright specular streak (this is what throws the splash when you hit it).
+    jaggedPath(ctx, x, y + ry * 0.10, rx * 0.82, ry * 0.72, 14, mulberry32(base ^ 0x2b1a), 0.10);
+    ctx.fillStyle = 'rgba(70,96,110,0.72)'; ctx.fill();
+    ctx.fillStyle = 'rgba(150,180,195,0.55)';
+    ellipsePath(ctx, x - rx * 0.16, y - ry * 0.02, rx * 0.34, ry * 0.16); ctx.fill();
+    ctx.strokeStyle = 'rgba(200,220,230,0.5)'; ctx.lineWidth = Math.max(1, size * 0.02);
+    ctx.beginPath(); ctx.ellipse(x, y + ry * 0.06, rx * 0.5, ry * 0.4, 0, 0.1 * Math.PI, 0.9 * Math.PI); ctx.stroke();
+  }
   // lit asphalt rim on the near edge (catches the light)
   ctx.strokeStyle = 'rgba(150,150,150,0.4)';
   ctx.lineWidth = Math.max(1, size * 0.045);
   ctx.beginPath(); ctx.ellipse(x, y - ry * 0.02, rx * 1.06, ry * 1.06, 0, Math.PI * 1.1, Math.PI * 1.9); ctx.stroke();
-  // cracks radiating into the surrounding asphalt
+  // cracks radiating into the surrounding asphalt (more on the bigger craters)
   ctx.strokeStyle = 'rgba(10,10,10,0.45)'; ctx.lineWidth = Math.max(1, size * 0.022);
   const cr = mulberry32(base ^ 0x13af);
-  for (let i = 0; i < 4; i++) {
+  const nCracks = 3 + Math.round(scale * 2);
+  for (let i = 0; i < nCracks; i++) {
     const a = cr() * Math.PI * 2;
     const ox = Math.cos(a) * rx * 1.1, oy = Math.sin(a) * ry;
     const len = 0.3 + cr() * 0.45;
@@ -1025,6 +1054,63 @@ function drawFruit(ctx, x, y, s) {
   ctx.beginPath(); ctx.moveTo(x + s * 0.06, y - s * 0.5); ctx.lineTo(x + s * 0.12, y - s * 0.62); ctx.stroke();
   ctx.fillStyle = '#4a9a34';
   ctx.beginPath(); ctx.ellipse(x + s * 0.2, y - s * 0.64, s * 0.12, s * 0.06, 0.5, 0, Math.PI * 2); ctx.fill();
+}
+
+// ---- ackee: Jamaica's national fruit — a split red-pink pod opening to reveal the
+// glossy yellow arils and their shiny black seeds (only ripe, open ackee is safe). ----
+function drawAckee(ctx, x, y, s) {
+  ctx.fillStyle = 'rgba(0,0,0,0.20)'; ellipsePath(ctx, x, y + s * 0.06, s * 0.5, s * 0.1); ctx.fill();
+  // the leathery pod, split into three lobes (red → pink where it has ripened open)
+  const lobes = [[-0.26, 0.02, 0.9], [0.24, 0.0, 0.95], [0.0, -0.28, 0.85]];
+  for (const [dx, dy, sc] of lobes) {
+    ctx.fillStyle = '#c4361f';
+    ctx.beginPath(); ctx.ellipse(x + s * dx, y - s * 0.22 + s * dy, s * 0.30 * sc, s * 0.34 * sc, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#7f1c10'; ctx.lineWidth = Math.max(1, s * 0.03); ctx.stroke();
+    // the pod is open at the top — a pinkish inner rim
+    ctx.fillStyle = '#e6836f';
+    ctx.beginPath(); ctx.ellipse(x + s * dx, y - s * 0.30 + s * dy, s * 0.18 * sc, s * 0.12 * sc, 0, 0, Math.PI * 2); ctx.fill();
+    // the buttery yellow aril nestled inside
+    ctx.fillStyle = '#f4c033';
+    ctx.beginPath(); ctx.ellipse(x + s * dx, y - s * 0.31 + s * dy, s * 0.12 * sc, s * 0.11 * sc, 0, 0, Math.PI * 2); ctx.fill();
+    // the shiny black seed
+    ctx.fillStyle = '#161616';
+    ctx.beginPath(); ctx.ellipse(x + s * dx + s * 0.03, y - s * 0.31 + s * dy, s * 0.045 * sc, s * 0.05 * sc, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.beginPath(); ctx.ellipse(x + s * dx + s * 0.06, y - s * 0.35 + s * dy, s * 0.02, s * 0.02, 0, 0, Math.PI * 2); ctx.fill();
+  }
+}
+
+// ---- patty: a golden, flaky, half-moon Jamaican patty with a crimped edge. The beef
+// version glows turmeric-gold with a warm meaty peek; the ital VEGGIE version carries a
+// green callaloo filling + a little leaf mark so the Rasta's ital patty reads at a glance.
+function drawPatty(ctx, x, y, s, veggie) {
+  ctx.fillStyle = 'rgba(0,0,0,0.20)'; ellipsePath(ctx, x, y + s * 0.06, s * 0.55, s * 0.1); ctx.fill();
+  const crust = veggie ? '#e6c24a' : '#e8b23a', crustDk = veggie ? '#b79228' : '#b6821f';
+  // pastry half-moon (flat side down)
+  ctx.fillStyle = crust;
+  ctx.beginPath();
+  ctx.ellipse(x, y - s * 0.10, s * 0.5, s * 0.42, 0, Math.PI, Math.PI * 2);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = crustDk; ctx.lineWidth = Math.max(1, s * 0.04); ctx.stroke();
+  // baked sheen across the top
+  ctx.fillStyle = 'rgba(255,240,200,0.45)';
+  ctx.beginPath(); ctx.ellipse(x - s * 0.12, y - s * 0.30, s * 0.22, s * 0.08, -0.2, 0, Math.PI * 2); ctx.fill();
+  // crimped edge along the straight (top) side
+  ctx.strokeStyle = crustDk; ctx.lineWidth = Math.max(1, s * 0.05); ctx.lineCap = 'round';
+  for (let i = -4; i <= 4; i++) {
+    const px = x + i * s * 0.10;
+    ctx.beginPath(); ctx.moveTo(px, y - s * 0.12); ctx.lineTo(px, y - s * 0.03); ctx.stroke();
+  }
+  // filling peeking through a split — meaty brown, or ital callaloo green
+  ctx.fillStyle = veggie ? '#2f7d34' : '#7a3b1a';
+  ctx.beginPath(); ctx.ellipse(x, y - s * 0.16, s * 0.16, s * 0.08, 0, 0, Math.PI * 2); ctx.fill();
+  if (veggie) {
+    // a small green leaf badge so the ital patty is unmistakable
+    ctx.fillStyle = '#3fa845';
+    ctx.beginPath(); ctx.ellipse(x + s * 0.30, y - s * 0.34, s * 0.12, s * 0.06, -0.6, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#1f6a26'; ctx.lineWidth = Math.max(1, s * 0.02);
+    ctx.beginPath(); ctx.moveTo(x + s * 0.22, y - s * 0.30); ctx.lineTo(x + s * 0.38, y - s * 0.38); ctx.stroke();
+  }
 }
 
 // ============================================================================
@@ -2440,4 +2526,110 @@ function drawLadyNight(ctx, x, y, s) {
   ctx.quadraticCurveTo(x - s * 0.2, y - s * 1.02, x - s * 0.12, y - s * 0.86);
   ctx.quadraticCurveTo(x - s * 0.05, y - s * 1.0, x - s * 0.04, y - s * 1.18);
   ctx.closePath(); ctx.fill();
+}
+
+// ============================================================================
+// Bog Walk river-mode obstacles (Rio Cobre) — all sit on a little water ripple
+// ============================================================================
+function ripple(ctx, x, y, s) {
+  ctx.strokeStyle = 'rgba(220,235,240,0.45)'; ctx.lineWidth = Math.max(1, s * 0.05);
+  ctx.beginPath(); ctx.ellipse(x, y + s * 0.1, s * 0.7, s * 0.16, 0, 0, Math.PI * 2); ctx.stroke();
+  ctx.beginPath(); ctx.ellipse(x, y + s * 0.1, s * 0.95, s * 0.22, 0, 0, Math.PI * 2); ctx.stroke();
+}
+// generic floating bottle — NO brand/logo (stylised litter, "Red Stripe"-safe)
+function floatBottle(ctx, x, y, s) {
+  ripple(ctx, x, y, s);
+  ctx.save(); ctx.translate(x, y - s * 0.08); ctx.rotate(-0.35);
+  ctx.fillStyle = '#cf3b2c';                                   // generic brown/red glass
+  rrectSprite(ctx, -s * 0.5, -s * 0.16, s * 1.0, s * 0.32, s * 0.12); ctx.fill();
+  ctx.fillStyle = '#8a1f14'; rrectSprite(ctx, s * 0.34, -s * 0.09, s * 0.22, s * 0.18, s * 0.05); ctx.fill(); // neck
+  ctx.fillStyle = 'rgba(255,255,255,0.35)'; rrectSprite(ctx, -s * 0.42, -s * 0.12, s * 0.7, s * 0.06, s * 0.03); ctx.fill();
+  ctx.restore();
+}
+function plasticBag(ctx, x, y, s) {
+  ripple(ctx, x, y, s);
+  ctx.fillStyle = 'rgba(210,228,234,0.75)';
+  ctx.beginPath();
+  ctx.moveTo(x - s * 0.4, y);
+  ctx.quadraticCurveTo(x - s * 0.55, y - s * 0.5, x - s * 0.1, y - s * 0.42);
+  ctx.quadraticCurveTo(x + s * 0.2, y - s * 0.6, x + s * 0.45, y - s * 0.3);
+  ctx.quadraticCurveTo(x + s * 0.55, y - s * 0.02, x + s * 0.3, y);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = 'rgba(160,185,195,0.8)'; ctx.lineWidth = Math.max(1, s * 0.03); ctx.stroke();
+}
+function crocodile(ctx, x, y, s, seed) {
+  ripple(ctx, x, y, s);
+  const g = ['#2f4f2c', '#3a5f36', '#264726'];
+  // low body ridge just above the water
+  ctx.fillStyle = g[0];
+  ctx.beginPath(); ctx.ellipse(x, y - s * 0.05, s * 0.85, s * 0.2, 0, Math.PI, Math.PI * 2); ctx.fill();
+  // snout
+  ctx.fillStyle = g[1]; rrectSprite(ctx, x + s * 0.4, y - s * 0.16, s * 0.6, s * 0.16, s * 0.05); ctx.fill();
+  // dorsal scutes
+  ctx.fillStyle = g[2];
+  for (let i = -3; i <= 2; i++) { ctx.beginPath(); ctx.moveTo(x + i * s * 0.22, y - s * 0.12); ctx.lineTo(x + i * s * 0.22 + s * 0.08, y - s * 0.32); ctx.lineTo(x + i * s * 0.22 + s * 0.16, y - s * 0.12); ctx.closePath(); ctx.fill(); }
+  // eyes above the waterline
+  ctx.fillStyle = '#e8d24a'; ellipsePath(ctx, x + s * 0.2, y - s * 0.22, s * 0.07, s * 0.07); ctx.fill();
+  ellipsePath(ctx, x + s * 0.02, y - s * 0.22, s * 0.07, s * 0.07); ctx.fill();
+  ctx.fillStyle = '#101008'; ellipsePath(ctx, x + s * 0.2, y - s * 0.22, s * 0.03, s * 0.05); ctx.fill();
+  ellipsePath(ctx, x + s * 0.02, y - s * 0.22, s * 0.03, s * 0.05); ctx.fill();
+  // teeth on the snout
+  ctx.fillStyle = '#f0efe0';
+  for (let i = 0; i < 5; i++) { ctx.fillRect(x + s * 0.44 + i * s * 0.11, y - s * 0.02, s * 0.03, s * 0.05); }
+}
+// half-submerged car wreck — burnt (charred) or a rusted floating hulk
+function riverCar(ctx, x, y, s, burnt) {
+  ripple(ctx, x, y, s);
+  const body = burnt ? '#241f1c' : '#6a6f66', roof = burnt ? '#120f0d' : '#4c5048';
+  ctx.fillStyle = body; rrectSprite(ctx, x - s * 0.7, y - s * 0.28, s * 1.4, s * 0.34, s * 0.08); ctx.fill();
+  ctx.fillStyle = roof;
+  ctx.beginPath(); ctx.moveTo(x - s * 0.4, y - s * 0.28); ctx.lineTo(x + s * 0.35, y - s * 0.28); ctx.lineTo(x + s * 0.2, y - s * 0.6); ctx.lineTo(x - s * 0.25, y - s * 0.6); ctx.closePath(); ctx.fill();
+  if (burnt) {
+    // scorched windows + a curl of smoke
+    ctx.fillStyle = '#0a0806'; ctx.fillRect(x - s * 0.22, y - s * 0.56, s * 0.4, s * 0.24);
+    ctx.strokeStyle = 'rgba(120,120,120,0.5)'; ctx.lineWidth = Math.max(1, s * 0.05);
+    ctx.beginPath(); ctx.moveTo(x, y - s * 0.6); ctx.quadraticCurveTo(x + s * 0.14, y - s * 0.85, x - s * 0.04, y - s * 1.05); ctx.stroke();
+  } else {
+    ctx.fillStyle = '#8aa6b0'; ctx.fillRect(x - s * 0.22, y - s * 0.56, s * 0.4, s * 0.22); // glass
+    ctx.fillStyle = 'rgba(120,90,50,0.5)'; ctx.fillRect(x - s * 0.7, y - s * 0.1, s * 1.4, s * 0.08); // rust waterline
+  }
+}
+// jutting limestone boulder (also used along the banks in scenery)
+function limestoneRock(ctx, x, y, s, seed) {
+  ripple(ctx, x, y, s);
+  const base = Math.floor((seed || 0.3) * 2147483647);
+  jaggedPath(ctx, x, y - s * 0.25, s * 0.8, s * 0.6, 11, mulberry32(base ^ 0x5b17), 0.22);
+  ctx.fillStyle = '#c9b78a'; ctx.fill();
+  ctx.strokeStyle = '#9a8656'; ctx.lineWidth = Math.max(1, s * 0.04); ctx.stroke();
+  // shaded clefts + sunlit top
+  ctx.fillStyle = 'rgba(255,250,225,0.4)'; jaggedPath(ctx, x - s * 0.12, y - s * 0.5, s * 0.4, s * 0.22, 9, mulberry32(base ^ 0x1a2b), 0.2); ctx.fill();
+  ctx.strokeStyle = 'rgba(90,74,44,0.6)'; ctx.lineWidth = Math.max(1, s * 0.03);
+  ctx.beginPath(); ctx.moveTo(x - s * 0.1, y - s * 0.55); ctx.lineTo(x - s * 0.02, y - s * 0.1); ctx.stroke();
+}
+// River Mumma — the folklore siren on a rock: long dark hair, ethereal teal glow, a fish
+// tail. Tasteful silhouette (no explicit detail); her danger reads as an eerie shimmer.
+function riverMumma(ctx, x, y, s) {
+  ripple(ctx, x, y, s);
+  ctx.save();
+  ctx.fillStyle = 'rgba(70,200,190,0.18)'; ellipsePath(ctx, x, y - s * 0.5, s * 0.9, s * 0.9); ctx.fill(); // aura
+  // rock she sits on
+  ctx.fillStyle = '#9a8a66'; ctx.beginPath(); ctx.ellipse(x, y, s * 0.5, s * 0.18, 0, 0, Math.PI * 2); ctx.fill();
+  // tail curving into the water
+  ctx.fillStyle = '#2f8f86';
+  ctx.beginPath(); ctx.moveTo(x + s * 0.1, y - s * 0.2); ctx.quadraticCurveTo(x + s * 0.7, y - s * 0.1, x + s * 0.6, y + s * 0.25);
+  ctx.quadraticCurveTo(x + s * 0.4, y + s * 0.1, x + s * 0.1, y - s * 0.05); ctx.closePath(); ctx.fill();
+  // torso silhouette
+  ctx.fillStyle = '#4a6b62';
+  ctx.beginPath(); ctx.ellipse(x - s * 0.05, y - s * 0.5, s * 0.2, s * 0.34, 0, 0, Math.PI * 2); ctx.fill();
+  // head
+  ctx.fillStyle = '#6b4a34'; ellipsePath(ctx, x - s * 0.05, y - s * 0.86, s * 0.15, s * 0.16); ctx.fill();
+  // long flowing dark hair (the detail the folklore emphasises — she combs it on the rocks)
+  ctx.strokeStyle = '#15100a'; ctx.lineWidth = Math.max(1, s * 0.06); ctx.lineCap = 'round';
+  for (let i = -2; i <= 2; i++) {
+    ctx.beginPath(); ctx.moveTo(x - s * 0.05 + i * s * 0.06, y - s * 0.92);
+    ctx.quadraticCurveTo(x - s * 0.35 + i * s * 0.05, y - s * 0.5, x - s * 0.28 + i * s * 0.05, y - s * 0.1);
+    ctx.stroke();
+  }
+  ctx.lineCap = 'butt';
+  ctx.restore();
 }

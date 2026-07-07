@@ -109,11 +109,19 @@ export function renderScenery(ctx, stage, position, W, H) {
       const camZ = n * FERN_GAP - offMain;
       if (camZ <= 1) continue;
       const rowIdx = Math.floor((position + n * FERN_GAP - offMain) / FERN_GAP);
-      drawRoadside(ctx, kind, -FERN_EDGE, camZ, position, W, H, rowIdx, fLimit);
+      // Roadside craft vendor (wood carvings) tucked into the LEFT bank every so often —
+      // the real Fern Gully's carvers (e.g. the famous "Ready Freddie" figure).
+      if ((((rowIdx % 6) + 6) % 6) === 0) drawProp(ctx, 'craftvendor', -FERN_EDGE, camZ, position, W, H, rowIdx);
+      else drawRoadside(ctx, kind, -FERN_EDGE, camZ, position, W, H, rowIdx, fLimit);
       drawRoadside(ctx, kind, FERN_EDGE,  camZ, position, W, H, rowIdx + FAR_PHASE, fLimit);
     }
+    // Dense forest canopy vaulting overhead with sunlight peeking through (no power lines here).
+    drawFernCanopy(ctx, W, H, position);
     return;
   }
+
+  if (stage.id === 'negril') { renderNegril(ctx, stage, position, W, H); return; }
+  if (kind === 'river') { renderRiver(ctx, stage, position, W, H); return; }
 
   if (kind === 'zinc') {
     // New Kingston — draw a distant city back-layer first (tallest buildings
@@ -134,6 +142,7 @@ export function renderScenery(ctx, stage, position, W, H) {
       drawRoadside(ctx, nearKind, -EDGE, camZ, position, W, H, rowIdx, nkLimit);
       drawRoadside(ctx, farKind,   EDGE, camZ, position, W, H, farIdx, nkLimit);
     }
+    drawPowerLines(ctx, position, W, H);   // overhead lines + wooden light posts (city)
     return;
   }
 
@@ -147,6 +156,8 @@ export function renderScenery(ctx, stage, position, W, H) {
     drawRoadside(ctx, kind, -EDGE, camZ, position, W, H, rowIdx, limit);
     drawRoadside(ctx, kind, EDGE, camZ, position, W, H, rowIdx + FAR_PHASE, limit);
   }
+  // Overhead power lines + wooden light posts follow every road EXCEPT the Fern Gully canopy.
+  if (stage.poles !== false) drawPowerLines(ctx, position, W, H);
 }
 
 // ─── Sun + distant mountain ranges ────────────────────────────────────────────
@@ -261,6 +272,17 @@ function drawProp(ctx, kind, normX, camZ, position, W, H, rowIdx = 0) {
     case 'palm':           palm(ctx, p.x, p.y, p.size, lean); break;
     case 'zinc':           zinc(ctx, p.x, p.y, p.size); break;
     case 'neon':           neonPost(ctx, p.x, p.y, p.size); break;
+    // Fern Gully craft vendor + Negril coastal props
+    case 'craftvendor':    craftVendor(ctx, p.x, p.y, p.size); break;
+    case 'seagrape':       seaGrape(ctx, p.x, p.y, p.size); break;
+    case 'beachbar':       beachBar(ctx, p.x, p.y, p.size); break;
+    case 'church':         church(ctx, p.x, p.y, p.size); break;
+    case 'dricks':         dricksCafe(ctx, p.x, p.y, p.size); break;
+    // Bog Walk river banks
+    case 'riverbush':      fernTree(ctx, p.x, p.y, p.size, lean); break;
+    case 'bankrock':       bankRock(ctx, p.x, p.y, p.size); break;
+    case 'washer':         washerWoman(ctx, p.x, p.y, p.size); break;
+    case 'pumrock':        pumRock(ctx, p.x, p.y, p.size); break;
     // New Kingston landmarks
     case 'nk_emancipation': nkEmancipation(ctx, p.x, p.y, p.size); break;
     case 'nk_island_grill': nkIslandGrill(ctx, p.x, p.y, p.size); break;
@@ -737,4 +759,227 @@ function nkRecordShop(ctx, x, y, s) {
   // Doorway
   ctx.fillStyle = '#100808';
   ctx.fillRect(x + bw * 0.14, y - bh * 0.38, bw * 0.22, bh * 0.38);
+}
+
+// ─── Overhead power lines + wooden light posts ────────────────────────────────
+// Follow every road EXCEPT the Fern Gully canopy. Receding wooden poles with a
+// cross-arm and two sagging catenary cables — that unmistakable Jamaican roadside.
+function drawPowerLines(ctx, position, W, H, side = 1) {
+  const GP = 760;
+  const off = ((position % GP) + GP) % GP;
+  const nx = 1.5 * side;
+  let prev = null;
+  for (let n = 16; n >= 1; n--) {
+    const camZ = n * GP - off;
+    if (camZ <= 1) { prev = null; continue; }
+    const p = projectEntity(nx, camZ, W, H);
+    if (!p.visible || p.y < H * 0.5 || p.size < 2) { prev = null; continue; }
+    const px = p.x + curveOffsetAt(position, camZ);
+    const top = p.y - p.size * 3.0;
+    const arm = top + p.size * 0.5;
+    ctx.strokeStyle = '#5a4630'; ctx.lineWidth = Math.max(1, p.size * 0.16);
+    ctx.beginPath(); ctx.moveTo(px, p.y); ctx.lineTo(px, top); ctx.stroke();
+    ctx.lineWidth = Math.max(1, p.size * 0.09);
+    ctx.beginPath(); ctx.moveTo(px - p.size * 0.55, arm); ctx.lineTo(px + p.size * 0.55, arm); ctx.stroke();
+    if (prev) {
+      const midx = (px + prev.x) / 2, sag = Math.min(H * 0.05, p.size * 0.9);
+      ctx.strokeStyle = 'rgba(15,15,15,0.5)'; ctx.lineWidth = Math.max(1, p.size * 0.04);
+      ctx.beginPath(); ctx.moveTo(px, arm); ctx.quadraticCurveTo(midx, (arm + prev.arm) / 2 + sag, prev.x, prev.arm); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(px, arm + p.size * 0.2); ctx.quadraticCurveTo(midx, (arm + prev.arm) / 2 + sag + p.size * 0.2, prev.x, prev.arm + prev.size * 0.2); ctx.stroke();
+    }
+    prev = { x: px, arm, size: p.size };
+  }
+}
+
+// ─── Fern Gully forest canopy overhead, sun peeking through ────────────────────
+function drawFernCanopy(ctx, W, H, position) {
+  const g = ctx.createLinearGradient(0, 0, 0, H * 0.34);
+  g.addColorStop(0, 'rgba(8,26,12,0.85)');
+  g.addColorStop(1, 'rgba(8,26,12,0)');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H * 0.34);
+  // scalloped leaf underside
+  ctx.fillStyle = 'rgba(10,32,16,0.8)';
+  const r = W * 0.05;
+  ctx.beginPath(); ctx.moveTo(0, 0);
+  for (let x = -r; x <= W + r; x += r) { ctx.lineTo(x, H * 0.13); ctx.quadraticCurveTo(x + r * 0.5, H * 0.20, x + r, H * 0.13); }
+  ctx.lineTo(W, 0); ctx.closePath(); ctx.fill();
+  // shafts of sunlight filtering through the gaps
+  const drift = (position * 0.02) % W;
+  ctx.save();
+  for (let i = 0; i < 3; i++) {
+    const sx = ((i * W * 0.34) + drift) % W;
+    ctx.fillStyle = 'rgba(255,244,200,0.06)';
+    ctx.beginPath();
+    ctx.moveTo(sx, H * 0.10); ctx.lineTo(sx + W * 0.04, H * 0.10);
+    ctx.lineTo(sx + W * 0.15, H * 0.5); ctx.lineTo(sx + W * 0.07, H * 0.5);
+    ctx.closePath(); ctx.fill();
+  }
+  ctx.restore();
+}
+
+// ─── Fern Gully craft vendor — a tarp stall of carved wood figures ────────────
+function craftVendor(ctx, x, y, s) {
+  ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.beginPath(); ctx.ellipse(x, y, s * 0.9, s * 0.22, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#6b4a26'; ctx.fillRect(x - s * 0.7, y - s * 0.5, s * 1.4, s * 0.5);
+  ctx.fillStyle = '#2f7d4f';
+  ctx.beginPath(); ctx.moveTo(x - s * 0.9, y - s * 0.5); ctx.lineTo(x + s * 0.9, y - s * 0.5); ctx.lineTo(x + s * 0.7, y - s * 0.9); ctx.lineTo(x - s * 0.7, y - s * 0.9); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = '#4a3316'; ctx.lineWidth = Math.max(1, s * 0.06);
+  ctx.beginPath(); ctx.moveTo(x - s * 0.7, y - s * 0.5); ctx.lineTo(x - s * 0.7, y); ctx.moveTo(x + s * 0.7, y - s * 0.5); ctx.lineTo(x + s * 0.7, y); ctx.stroke();
+  // tall carved figure (Ready-Freddie style) + two small carvings on the table
+  ctx.fillStyle = '#7a4a1e'; ctx.fillRect(x - s * 0.1, y - s * 1.15, s * 0.2, s * 0.7);
+  ctx.beginPath(); ctx.arc(x, y - s * 1.2, s * 0.12, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#8a5a26'; ctx.fillRect(x - s * 0.5, y - s * 0.72, s * 0.14, s * 0.24); ctx.fillRect(x + s * 0.36, y - s * 0.72, s * 0.14, s * 0.24);
+  const cols = ['#d0241a', '#f0c020', '#1f9a44'];
+  for (let i = 0; i < 3; i++) { ctx.fillStyle = cols[i]; ctx.fillRect(x - s * 0.6 + i * s * 0.42, y - s * 0.86, s * 0.06, s * 0.22); }
+}
+
+// ─── Negril coastal props ──────────────────────────────────────────────────────
+// sea-grape bush (Coccoloba uvifera) — the real dune plant that holds the sand
+function seaGrape(ctx, x, y, s) {
+  ctx.fillStyle = 'rgba(0,0,0,0.22)'; ctx.beginPath(); ctx.ellipse(x, y, s * 0.8, s * 0.2, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#6b5330'; ctx.fillRect(x - s * 0.08, y - s * 0.5, s * 0.16, s * 0.5);
+  const greens = ['#2f7d34', '#3fa845', '#256b2c'];
+  for (let i = 0; i < 9; i++) { const a = i / 9 * Math.PI * 2; ctx.fillStyle = greens[i % 3]; ctx.beginPath(); ctx.arc(x + Math.cos(a) * s * 0.5, y - s * 0.7 + Math.sin(a) * s * 0.4, s * 0.32, 0, Math.PI * 2); ctx.fill(); }
+  ctx.fillStyle = '#3fa845'; ctx.beginPath(); ctx.arc(x, y - s * 0.7, s * 0.42, 0, Math.PI * 2); ctx.fill();
+}
+// thatch-roof beach bar / rum shack
+function beachBar(ctx, x, y, s) {
+  ctx.fillStyle = 'rgba(0,0,0,0.22)'; ctx.beginPath(); ctx.ellipse(x, y, s, s * 0.22, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#e0663a'; ctx.fillRect(x - s * 0.7, y - s * 0.7, s * 1.4, s * 0.7);
+  ctx.fillStyle = '#1f8a7a'; ctx.fillRect(x - s * 0.7, y - s * 0.34, s * 1.4, s * 0.12);
+  ctx.fillStyle = '#b78a3a'; ctx.beginPath(); ctx.moveTo(x - s * 0.95, y - s * 0.7); ctx.lineTo(x + s * 0.95, y - s * 0.7); ctx.lineTo(x + s * 0.5, y - s * 1.15); ctx.lineTo(x - s * 0.5, y - s * 1.15); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = 'rgba(90,60,20,0.6)'; ctx.lineWidth = Math.max(1, s * 0.03);
+  for (let i = -3; i <= 3; i++) { ctx.beginPath(); ctx.moveTo(x + i * s * 0.2, y - s * 0.72); ctx.lineTo(x + i * s * 0.14, y - s * 1.1); ctx.stroke(); }
+  ctx.fillStyle = '#100808'; ctx.fillRect(x - s * 0.14, y - s * 0.5, s * 0.28, s * 0.5);
+}
+// small country church with a steeple + cross
+function church(ctx, x, y, s) {
+  ctx.fillStyle = 'rgba(0,0,0,0.22)'; ctx.beginPath(); ctx.ellipse(x, y, s * 0.8, s * 0.2, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#e8e2d2'; ctx.fillRect(x - s * 0.55, y - s * 0.85, s * 1.1, s * 0.85);
+  ctx.fillStyle = '#7a4a2a'; ctx.beginPath(); ctx.moveTo(x - s * 0.6, y - s * 0.85); ctx.lineTo(x + s * 0.6, y - s * 0.85); ctx.lineTo(x, y - s * 1.2); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#ded7c4'; ctx.fillRect(x - s * 0.75, y - s * 1.25, s * 0.3, s * 1.25);
+  ctx.fillStyle = '#7a4a2a'; ctx.beginPath(); ctx.moveTo(x - s * 0.8, y - s * 1.25); ctx.lineTo(x - s * 0.4, y - s * 1.25); ctx.lineTo(x - s * 0.6, y - s * 1.6); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = '#3a2a18'; ctx.lineWidth = Math.max(1, s * 0.05);
+  ctx.beginPath(); ctx.moveTo(x - s * 0.6, y - s * 1.6); ctx.lineTo(x - s * 0.6, y - s * 1.78); ctx.moveTo(x - s * 0.69, y - s * 1.71); ctx.lineTo(x - s * 0.51, y - s * 1.71); ctx.stroke();
+  ctx.fillStyle = '#4a3a6a'; ctx.fillRect(x - s * 0.12, y - s * 0.5, s * 0.24, s * 0.5);
+  ctx.fillStyle = '#6a86c0'; ctx.fillRect(x + s * 0.2, y - s * 0.68, s * 0.16, s * 0.24);
+}
+// "Drick's Café" — a cliff-top sunset bar on the West End limestone headland (a parody
+// of the real Rick's Café; name changed, no logo).
+function dricksCafe(ctx, x, y, s) {
+  ctx.fillStyle = '#cbb98a'; ctx.beginPath(); ctx.moveTo(x - s * 0.9, y); ctx.lineTo(x + s * 0.9, y); ctx.lineTo(x + s * 0.7, y + s * 0.9); ctx.lineTo(x - s * 0.8, y + s * 0.9); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = 'rgba(0,0,0,0.12)'; ctx.fillRect(x - s * 0.8, y + s * 0.4, s * 1.5, s * 0.5);
+  ctx.fillStyle = '#8a5a2e'; ctx.fillRect(x - s * 0.8, y - s * 0.12, s * 1.6, s * 0.14);
+  ctx.fillStyle = '#d94f5a'; ctx.fillRect(x - s * 0.55, y - s * 0.7, s * 1.0, s * 0.6);
+  ctx.fillStyle = '#f2c94c'; ctx.beginPath(); ctx.moveTo(x - s * 0.62, y - s * 0.7); ctx.lineTo(x + s * 0.5, y - s * 0.7); ctx.lineTo(x + s * 0.35, y - s * 0.98); ctx.lineTo(x - s * 0.47, y - s * 0.98); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#101018'; ctx.fillRect(x - s * 0.5, y - s * 1.25, s * 1.0, s * 0.28);
+  ctx.fillStyle = '#ffd34d';
+  ctx.font = `700 ${Math.max(6, Math.round(s * 0.24))}px "Courier New", monospace`;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText("DRICK'S", x, y - s * 1.11);
+  // a beach umbrella on the deck
+  ctx.fillStyle = '#1f9a8a'; ctx.beginPath(); ctx.moveTo(x + s * 0.62, y - s * 0.12); ctx.lineTo(x + s * 0.95, y - s * 0.12); ctx.lineTo(x + s * 0.78, y - s * 0.4); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = '#3a2a18'; ctx.lineWidth = Math.max(1, s * 0.03); ctx.beginPath(); ctx.moveTo(x + s * 0.78, y - s * 0.12); ctx.lineTo(x + s * 0.78, y - s * 0.36); ctx.stroke();
+}
+
+// ─── Negril scene — Seven Mile Beach + turquoise sea on the RIGHT, bars / flora /
+// churches on the LEFT, Drick's Café on the far West End cliff, inland power lines. ──
+function renderNegril(ctx, stage, position, W, H) {
+  drawHorizon(ctx, stage, position, W, H);
+  const horizon = H * 0.5;
+  // turquoise sea band on the right, glinting under the low western sun
+  ctx.fillStyle = '#1fb6c8'; ctx.fillRect(W * 0.5, horizon, W * 0.5, H * 0.10);
+  ctx.fillStyle = '#2fd0dc'; ctx.fillRect(W * 0.5, horizon, W * 0.5, H * 0.03);
+  ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.fillRect(W * 0.5, horizon + H * 0.095, W * 0.5, H * 0.012);
+  ctx.fillStyle = 'rgba(255,240,200,0.35)';
+  ctx.beginPath(); ctx.ellipse(W * LIGHT.sunXf, horizon + H * 0.05, W * 0.06, H * 0.03, 0, 0, Math.PI * 2); ctx.fill();
+  const off = ((position % GAP) + GAP) % GAP;
+  const limit = limitForStage(stage);
+  const LEFT = ['church', 'beachbar', 'palm', 'seagrape'];
+  const RIGHT = ['palm', 'seagrape', 'beachbar', 'palm'];
+  for (let n = COUNT; n >= 1; n--) {
+    const camZ = n * GAP - off;
+    if (camZ <= 1) continue;
+    const rowIdx = Math.floor((position + n * GAP - off) / GAP);
+    const li = (((rowIdx % LEFT.length) + LEFT.length) % LEFT.length);
+    const ri = ((((rowIdx + FAR_PHASE) % RIGHT.length) + RIGHT.length) % RIGHT.length);
+    // Drick's Café perched on the far West End cliff — a rare landmark on the sea side.
+    const rightKind = ((((rowIdx % 9) + 9) % 9) === 0) ? 'dricks' : RIGHT[ri];
+    drawRoadside(ctx, LEFT[li], -EDGE, camZ, position, W, H, rowIdx, limit);
+    drawProp(ctx, rightKind, EDGE, camZ, position, W, H, rowIdx + FAR_PHASE);
+  }
+  drawPowerLines(ctx, position, W, H, -1);   // poles run on the inland (left) side
+}
+
+// ─── Bog Walk Gorge river scene — steep limestone gorge banks either side, dense
+// vegetation, women washing on the near bank, the single-lane Flat Bridge crossing the
+// Rio Cobre, and a very rare, unnamed cleft-rock sighting. (No power lines in the gorge.) ──
+function riverBankKind(i, right) {
+  const m = ((i % 13) + 13) % 13;
+  if (right && ((((i % 41) + 41) % 41) === 0)) return 'pumrock';   // the rare cleft-rock landmark (visual only, no name)
+  if (right && (m === 4 || m === 9)) return 'washer';              // women washing clothes on the near bank
+  if (m === 1 || m === 6 || m === 10) return 'bankrock';           // jutting limestone
+  return 'riverbush';                                             // dense gorge vegetation
+}
+function renderRiver(ctx, stage, position, W, H) {
+  drawHorizon(ctx, stage, position, W, H);
+  const off = ((position % GAP) + GAP) % GAP;
+  for (let n = COUNT; n >= 1; n--) {
+    const camZ = n * GAP - off;
+    if (camZ <= 1) continue;
+    const rowIdx = Math.floor((position + n * GAP - off) / GAP);
+    drawProp(ctx, riverBankKind(rowIdx, false), -1.7, camZ, position, W, H, rowIdx);
+    drawProp(ctx, riverBankKind(rowIdx + FAR_PHASE, true), 1.7, camZ, position, W, H, rowIdx + FAR_PHASE);
+    // the historic single-lane Flat Bridge spans the gorge every so often (float UNDER it)
+    if ((((rowIdx % 11) + 11) % 11) === 0) drawFlatBridge(ctx, camZ, position, W, H);
+  }
+}
+// women washing clothes in bright plastic buckets — dignified everyday riverside life
+function washerWoman(ctx, x, y, s) {
+  const buckets = ['#e0542a', '#1f9ad9'];
+  for (let i = 0; i < 2; i++) {
+    ctx.fillStyle = buckets[i]; ctx.beginPath(); ctx.ellipse(x - s * 0.55 + i * s * 1.0, y, s * 0.28, s * 0.16, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.beginPath(); ctx.ellipse(x - s * 0.55 + i * s * 1.0, y - s * 0.03, s * 0.2, s * 0.09, 0, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.fillStyle = '#7a3e18'; ctx.beginPath(); ctx.arc(x, y - s * 0.7, s * 0.14, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#d0451f'; ctx.beginPath(); ctx.arc(x, y - s * 0.74, s * 0.15, Math.PI * 1.05, Math.PI * 1.95); ctx.fill();
+  ctx.fillStyle = '#2f7d4f'; ctx.beginPath(); ctx.moveTo(x - s * 0.22, y); ctx.quadraticCurveTo(x, y - s * 0.62, x + s * 0.22, y); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = '#7a3e18'; ctx.lineWidth = Math.max(1, s * 0.08); ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(x + s * 0.1, y - s * 0.4); ctx.lineTo(x + s * 0.42, y - s * 0.06); ctx.stroke(); ctx.lineCap = 'butt';
+  ctx.fillStyle = '#e8d24a'; ctx.fillRect(x - s * 0.95, y - s * 0.06, s * 0.34, s * 0.1);   // cloth drying on a rock
+}
+// a jutting limestone boulder on the bank
+function bankRock(ctx, x, y, s) {
+  ctx.fillStyle = 'rgba(0,0,0,0.2)'; ctx.beginPath(); ctx.ellipse(x, y, s * 0.8, s * 0.2, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#c9b78a';
+  ctx.beginPath(); ctx.moveTo(x - s * 0.8, y); ctx.lineTo(x - s * 0.5, y - s * 0.75); ctx.lineTo(x - s * 0.05, y - s * 0.55); ctx.lineTo(x + s * 0.4, y - s * 0.9); ctx.lineTo(x + s * 0.8, y - s * 0.2); ctx.lineTo(x + s * 0.7, y); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = '#9a8656'; ctx.lineWidth = Math.max(1, s * 0.04); ctx.stroke();
+  ctx.fillStyle = 'rgba(255,250,225,0.35)'; ctx.beginPath(); ctx.moveTo(x - s * 0.5, y - s * 0.75); ctx.lineTo(x - s * 0.05, y - s * 0.55); ctx.lineTo(x + s * 0.4, y - s * 0.9); ctx.lineTo(x + s * 0.1, y - s * 0.6); ctx.closePath(); ctx.fill();
+}
+// the single-lane Flat Bridge — low stone deck, NO railings (only stone hemispheres),
+// spanning the Rio Cobre; the raft floats UNDER it.
+function drawFlatBridge(ctx, camZ, position, W, H) {
+  const l = projectEntity(-1.4, camZ, W, H), r = projectEntity(1.4, camZ, W, H);
+  if (!l.visible || !r.visible || l.y < H * 0.5) return;
+  const o = curveOffsetAt(position, camZ);
+  const lx = l.x + o, rx = r.x + o, by = l.y, h = Math.max(4, l.size * 1.1);
+  ctx.fillStyle = 'rgba(0,0,0,0.28)'; ctx.fillRect(lx, by, rx - lx, h * 0.4);          // shadow on the water
+  ctx.fillStyle = '#8a8478'; ctx.fillRect(lx, by - h, rx - lx, h);                     // stone deck
+  ctx.fillStyle = '#6e685c'; ctx.fillRect(lx, by - h, rx - lx, h * 0.28);
+  ctx.fillStyle = '#5a5346'; ctx.fillRect((lx + rx) / 2 - h * 0.2, by, h * 0.4, h * 0.7);   // pier
+  ctx.fillStyle = '#b8b2a2';
+  const n = 8;
+  for (let i = 0; i <= n; i++) { const x = lx + (rx - lx) * i / n; ctx.beginPath(); ctx.arc(x, by - h, Math.max(2, h * 0.18), Math.PI, 0); ctx.fill(); }
+}
+// A very rare, unnamed limestone formation with a natural vertical cleft — the real
+// Bog Walk landmark, rendered purely as the rock as it appears. No name/label anywhere.
+function pumRock(ctx, x, y, s) {
+  ctx.fillStyle = 'rgba(0,0,0,0.22)'; ctx.beginPath(); ctx.ellipse(x, y, s * 1.0, s * 0.24, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#cdbb8e';
+  ctx.beginPath(); ctx.moveTo(x - s * 0.95, y); ctx.quadraticCurveTo(x - s * 1.0, y - s * 1.5, x - s * 0.12, y - s * 1.5); ctx.quadraticCurveTo(x - s * 0.05, y - s * 0.8, x - s * 0.05, y); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(x + s * 0.95, y); ctx.quadraticCurveTo(x + s * 1.0, y - s * 1.5, x + s * 0.12, y - s * 1.5); ctx.quadraticCurveTo(x + s * 0.05, y - s * 0.8, x + s * 0.05, y); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = 'rgba(60,48,28,0.7)'; ctx.fillRect(x - s * 0.05, y - s * 1.45, s * 0.1, s * 1.45);   // central cleft (shadow)
+  ctx.strokeStyle = '#9a8656'; ctx.lineWidth = Math.max(1, s * 0.03);
+  ctx.beginPath(); ctx.moveTo(x - s * 0.6, y - s * 0.9); ctx.lineTo(x - s * 0.3, y - s * 0.4); ctx.stroke();
+  ctx.fillStyle = 'rgba(60,120,60,0.4)'; ctx.beginPath(); ctx.ellipse(x - s * 0.4, y - s * 0.2, s * 0.3, s * 0.1, 0, 0, Math.PI * 2); ctx.fill();
 }

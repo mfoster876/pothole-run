@@ -8,10 +8,20 @@
 export const RACE_TIERS = [
   // unlockBank = career bank (lifetimeEarned) needed; buyIn is a strict bill. Odds are
   // juicy — a win pays ~15× the buy-in (these are "pay to play, WIN BIG" street races).
-  { id: 'corner',       name: 'Corner Hustle',       unlockBank: 0,      buyIn: 100,  purse: 1500,  distance: 1200, rivalPace: 0.92 },
-  { id: 'crosstown',    name: 'Cross-Town Dash',     unlockBank: 5000,   buyIn: 1000, purse: 15000, distance: 1800, rivalPace: 1.00 },
-  { id: 'championship', name: 'Island Championship', unlockBank: 100000, buyIn: 5000, purse: 75000, distance: 2600, rivalPace: 1.08 },
+  // Stakes ESCALATE tier to tier: longer lines, faster rivals, fatter purses — and every
+  // tier carries a named GRUDGE rival to chase (see makeRivals). No predatory mechanics:
+  // fixed in-game buy-ins, no loss-chasing, no real money, no fake "so close, try again".
+  { id: 'corner',       name: 'Corner Hustle',       unlockBank: 0,      buyIn: 100,  purse: 1500,   distance: 1200, rivalPace: 0.92 },
+  { id: 'crosstown',    name: 'Cross-Town Dash',     unlockBank: 5000,   buyIn: 1000, purse: 15000,  distance: 1800, rivalPace: 1.00 },
+  { id: 'championship', name: 'Island Championship', unlockBank: 100000, buyIn: 5000, purse: 75000,  distance: 2600, rivalPace: 1.08 },
+  // The apex: a marathon cross-island grand prix — the tightest, tensest race, fastest
+  // rivals, biggest purse (20× the buy-in). Unlocked only once you've truly made it.
+  { id: 'grandprix',    name: 'Cross-Island GP',     unlockBank: 500000, buyIn: 5000, purse: 100000, distance: 3400, rivalPace: 1.16 },
 ];
+
+// Named nemeses — one grudge rival per race gives you someone specific to beat (tension,
+// not just three anonymous cars). Purely flavour; the grudge rival paces a touch harder.
+const NEMESES = ['Dapper Dan', 'Screechy', 'Bugle Bwoy', 'Ratchet', 'Stone Love'];
 
 export function tierById(id) { return RACE_TIERS.find(t => t.id === id) || null; }
 
@@ -36,13 +46,21 @@ export function makeRivals(tier, rng = Math.random) {
     { name: 'Taxi Man',  lane: 1, sprite: 'taxi' },
     { name: 'Coaster',   lane: 2, sprite: 'coaster' },
   ];
-  return cast.map(({ name, lane, sprite }) => ({
-    name, lane, sprite,
-    dist: 0,
-    pace: tier.rivalPace * (0.90 + 0.20 * rng()),  // ±~10% around the tier baseline
-    stumble: 0,                                     // seconds of pothole slow remaining
-    seed: rng(),                                    // stable sprite seed
-  }));
+  // One rival is the GRUDGE nemesis: a named, slightly faster rival to chase down.
+  const grudgeLane = 1;
+  const nemesis = NEMESES[Math.floor(rng() * NEMESES.length)] || NEMESES[0];
+  return cast.map(({ name, lane, sprite }) => {
+    const grudge = lane === grudgeLane;
+    return {
+      name: grudge ? nemesis : name,
+      lane, sprite, grudge,
+      dist: 0,
+      // ±~10% around the tier baseline; the grudge rival paces a touch harder (the one to beat)
+      pace: tier.rivalPace * (0.90 + 0.20 * rng()) * (grudge ? 1.06 : 1),
+      stumble: 0,                                     // seconds of pothole slow remaining
+      seed: rng(),                                    // stable sprite seed
+    };
+  });
 }
 
 // Pay the buy-in and build the race. Returns the race state the live loop ticks, or

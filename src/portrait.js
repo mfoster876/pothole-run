@@ -16,7 +16,7 @@
 // The portrait (frame + bust) is drawn fully within the size×size box centred on
 // (cx, cy).  Unknown ids fall back to a neutral silhouette.
 
-export const PORTRAITS = new Set(['yute', 'rasta', 'conductor', 'politician', 'taximan']);
+export const PORTRAITS = new Set(['yute', 'rasta', 'conductor', 'politician', 'taximan', 'student', 'nurse', 'higgler']);
 
 // ─── public entry point ──────────────────────────────────────────────────────
 export function renderPortrait(ctx, characterId, cx, cy, size, opts) {
@@ -33,6 +33,9 @@ export function renderPortrait(ctx, characterId, cx, cy, size, opts) {
     case 'conductor': _drawConductor(ctx, size, bleachLevel); break;
     case 'politician':_drawPolitician(ctx, size); break;
     case 'taximan':   _drawTaxi(ctx, size);       break;
+    case 'student':   _drawStudent(ctx, size);    break;
+    case 'nurse':     _drawNurse(ctx, size);      break;
+    case 'higgler':   _drawHiggler(ctx, size);    break;
     default:          _drawSilhouette(ctx, size); break;
   }
 
@@ -113,6 +116,21 @@ const P = {
   poliGreenDim:  '#14622a',
   wigCream:      '#ece9e0',
   wigShadow:     '#c8c4b8',
+
+  // women of Jamaica — clothing / accessories (respectful, culturally grounded)
+  scrubTeal:     '#2aa79b',   // nurse scrubs
+  scrubTealDk:   '#1c7a70',
+  nurseWhite:    '#f2f4f5',   // nurse cap (plain — deliberately NO red cross emblem)
+  nurseBand:     '#2aa79b',
+  studentTop:    '#e05a8a',   // bright fuchsia campus tee
+  studentTopDk:  '#a83862',
+  studentBand:   '#f0c020',   // hair-tie / accessory pop
+  higglerWrap:   '#d83f2f',   // bold red tie-up headwrap
+  higglerWrapY:  '#f0c020',   // gold headwrap accent
+  higglerApron:  '#2f7d4f',   // green market apron
+  higglerBlouse: '#e8b84a',   // warm blouse under the apron
+  hoopGold:      '#f0c020',   // gold hoop earrings
+  lipTint:       '#8a3a2a',
 
   // outline + shadow
   outline:     '#0a0806',
@@ -1237,6 +1255,171 @@ function _drawTaxi(ctx, size) {
 }
 
 // ─── FALLBACK — neutral silhouette ───────────────────────────────────────────
+// ─── shared helpers for the women's portraits ────────────────────────────────
+function _headBase(ctx, s, cx, headCY, headRX, headRY, skin, skinLt) {
+  ctx.fillStyle = 'rgba(0,0,0,0.28)';
+  ellipse(ctx, cx + s * 0.012, headCY + s * 0.014, headRX, headRY); ctx.fill();
+  ctx.fillStyle = skin;
+  ellipse(ctx, cx, headCY, headRX, headRY); ctx.fill();
+  ctx.strokeStyle = P.outline; ctx.lineWidth = Math.max(1.5, s * 0.022); ctx.stroke();
+  ctx.fillStyle = skinLt;
+  ellipse(ctx, cx - headRX * 0.48, headCY + headRY * 0.14, headRX * 0.26, headRY * 0.20); ctx.fill();
+  ellipse(ctx, cx + headRX * 0.48, headCY + headRY * 0.14, headRX * 0.26, headRY * 0.20); ctx.fill();
+  for (const sign of [-1, 1]) {
+    ctx.fillStyle = skin;
+    ellipse(ctx, cx + sign * headRX * 0.96, headCY + headRY * 0.10, headRX * 0.10, headRY * 0.14); ctx.fill();
+    ctx.strokeStyle = P.outline; ctx.lineWidth = Math.max(1, s * 0.015); ctx.stroke();
+  }
+}
+function _hoops(ctx, s, cx, headCY, headRX, headRY) {
+  ctx.strokeStyle = P.hoopGold; ctx.lineWidth = Math.max(1.5, s * 0.02);
+  for (const sign of [-1, 1]) {
+    ctx.beginPath(); ctx.arc(cx + sign * headRX * 0.98, headCY + headRY * 0.30, s * 0.030, 0, Math.PI * 2); ctx.stroke();
+  }
+}
+/** A soft, feminine face on a head already drawn: lashes, warm eyes, nose, lips. */
+function _face(ctx, s, cx, headCY, headRX, headRY, irisCol, curve) {
+  const eyeY = headCY - headRY * 0.04;
+  const eyeSpan = headRX * 0.86;
+  const eyeR = s * 0.042;
+  _eyebrows(ctx, cx, eyeY - eyeR * 1.7, eyeSpan, eyeR * 0.95, P.hairBlack, 0.5);
+  _eyes(ctx, cx, eyeY, eyeSpan, eyeR * 1.05, irisCol);
+  // soft lashes at the outer corners
+  ctx.strokeStyle = P.outline; ctx.lineWidth = Math.max(1, s * 0.012); ctx.lineCap = 'round';
+  for (const sign of [-1, 1]) {
+    const ex = cx + sign * eyeSpan / 2;
+    ctx.beginPath();
+    ctx.moveTo(ex + sign * eyeR * 0.9, eyeY - eyeR * 0.5);
+    ctx.lineTo(ex + sign * eyeR * 1.3, eyeY - eyeR * 0.9);
+    ctx.stroke();
+  }
+  ctx.lineCap = 'butt';
+  _nose(ctx, cx, eyeY + eyeR * 2.1, s);
+  _mouth(ctx, cx, eyeY + eyeR * 3.8, s * 0.185, P.lipTint, curve);
+}
+function _label(ctx, s, top, bottom, topCol, botCol) {
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = topCol;
+  ctx.font = `700 ${Math.round(s * 0.090)}px "Courier New", monospace`;
+  ctx.fillText(top, s * 0.50, s * 0.092);
+  ctx.fillStyle = botCol;
+  ctx.font = `500 ${Math.round(s * 0.076)}px "Courier New", monospace`;
+  ctx.fillText(bottom, s * 0.50, s * 0.150);
+}
+
+// ─── UNI GIRL — a young woman student, natural afro ──────────────────────────
+function _drawStudent(ctx, size) {
+  const s = size, cx = s * 0.50;
+  _frame(ctx, s, '#17212a', P.frameGold, P.frameGoldDim);
+  const neckBaseY = s * 0.88, neckW = s * 0.14, neckH = s * 0.085;
+  _shoulders(ctx, cx, neckBaseY, neckW, neckH, s * 0.70, P.studentTop, P.studentTopDk, s);
+  // bright campus-tee neckline
+  ctx.strokeStyle = P.studentBand; ctx.lineWidth = Math.max(1.5, s * 0.02);
+  ctx.beginPath(); ctx.arc(cx, neckBaseY + neckH * 0.2, neckW * 0.9, 0.15 * Math.PI, 0.85 * Math.PI); ctx.stroke();
+  // neck skin
+  ctx.fillStyle = P.skinMid; ctx.fillRect(cx - neckW * 0.5, neckBaseY - neckH, neckW, neckH);
+  ctx.strokeStyle = P.outline; ctx.lineWidth = Math.max(1, s * 0.016); ctx.strokeRect(cx - neckW * 0.5, neckBaseY - neckH, neckW, neckH);
+  const headCY = s * 0.52, headRX = s * 0.185, headRY = s * 0.210;
+  // natural afro halo — a cloud of dark curls behind and above the head
+  ctx.fillStyle = P.hairBlack;
+  const puffR = headRX * 0.42;
+  for (let a = -1.05; a <= 1.05 + 0.001; a += 0.30) {
+    const px = cx + Math.sin(a) * headRX * 1.12;
+    const py = headCY - Math.cos(a) * headRY * 1.10;
+    ellipse(ctx, px, py, puffR, puffR); ctx.fill();
+  }
+  ellipse(ctx, cx, headCY - headRY * 0.55, headRX * 1.05, headRY * 0.55); ctx.fill();
+  _headBase(ctx, s, cx, headCY, headRX, headRY, P.skinMid, P.skinLight);
+  // a couple of front hairline curls + a bright hair-tie band
+  ctx.fillStyle = P.hairBlack;
+  for (const dx of [-0.6, -0.2, 0.2, 0.6]) { ellipse(ctx, cx + dx * headRX, headCY - headRY * 0.78, headRX * 0.22, headRY * 0.18); ctx.fill(); }
+  ctx.strokeStyle = P.studentBand; ctx.lineWidth = Math.max(2, s * 0.028);
+  ctx.beginPath(); ctx.arc(cx, headCY - headRY * 0.10, headRX * 0.92, 1.15 * Math.PI, 1.85 * Math.PI); ctx.stroke();
+  _hoops(ctx, s, cx, headCY, headRX, headRY);
+  _face(ctx, s, cx, headCY, headRX, headRY, '#5a3212', s * 0.020);
+  _label(ctx, s, 'UNI', 'GIRL', P.frameGold, '#dfe7cf');
+}
+
+// ─── NURSE — calm professional, cap (deliberately no red-cross emblem) ────────
+function _drawNurse(ctx, size) {
+  const s = size, cx = s * 0.50;
+  _frame(ctx, s, '#122420', P.frameGreen, P.frameGreenDim);
+  const neckBaseY = s * 0.88, neckW = s * 0.14, neckH = s * 0.085;
+  _shoulders(ctx, cx, neckBaseY, neckW, neckH, s * 0.72, P.scrubTeal, P.scrubTealDk, s);
+  // white scrub V-collar
+  ctx.fillStyle = P.nurseWhite;
+  ctx.beginPath();
+  ctx.moveTo(cx - neckW * 0.55, neckBaseY);
+  ctx.lineTo(cx, neckBaseY + neckH * 0.9);
+  ctx.lineTo(cx + neckW * 0.55, neckBaseY);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = P.outline; ctx.lineWidth = Math.max(1, s * 0.014); ctx.stroke();
+  // neck skin (deep brown for diversity)
+  ctx.fillStyle = P.skinDark; ctx.fillRect(cx - neckW * 0.5, neckBaseY - neckH, neckW, neckH);
+  ctx.strokeStyle = P.outline; ctx.lineWidth = Math.max(1, s * 0.016); ctx.strokeRect(cx - neckW * 0.5, neckBaseY - neckH, neckW, neckH);
+  const headCY = s * 0.53, headRX = s * 0.185, headRY = s * 0.210;
+  // hair pulled back, low — dark, framing the face
+  ctx.fillStyle = P.hairBlack;
+  ellipse(ctx, cx, headCY - headRY * 0.30, headRX * 1.05, headRY * 0.85); ctx.fill();
+  _headBase(ctx, s, cx, headCY, headRX, headRY, P.skinDark, P.skinMid);
+  // neat nurse cap — a white folded cap with a teal band, NO cross emblem
+  ctx.fillStyle = P.nurseWhite;
+  ctx.beginPath();
+  ctx.moveTo(cx - headRX * 0.85, headCY - headRY * 0.62);
+  ctx.lineTo(cx + headRX * 0.85, headCY - headRY * 0.62);
+  ctx.lineTo(cx + headRX * 0.62, headCY - headRY * 1.05);
+  ctx.lineTo(cx - headRX * 0.62, headCY - headRY * 1.05);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = P.outline; ctx.lineWidth = Math.max(1, s * 0.016); ctx.stroke();
+  ctx.fillStyle = P.nurseBand; ctx.fillRect(cx - headRX * 0.85, headCY - headRY * 0.72, headRX * 1.7, headRY * 0.12);
+  _face(ctx, s, cx, headCY, headRX, headRY, '#3a2410', s * 0.016);
+  _label(ctx, s, 'NURSE', '', P.frameGreen, '#dfe7cf');
+}
+
+// ─── DI HIGGLER — market entrepreneur, tie-up headwrap + apron ────────────────
+function _drawHiggler(ctx, size) {
+  const s = size, cx = s * 0.50;
+  _frame(ctx, s, '#241a12', P.higglerWrapY, P.frameGoldDim);
+  const neckBaseY = s * 0.88, neckW = s * 0.145, neckH = s * 0.085;
+  // warm blouse
+  _shoulders(ctx, cx, neckBaseY, neckW, neckH, s * 0.74, P.higglerBlouse, '#b78a2c', s);
+  // green apron bib + straps
+  ctx.fillStyle = P.higglerApron;
+  ctx.beginPath();
+  ctx.moveTo(cx - neckW * 0.7, neckBaseY + neckH * 0.4);
+  ctx.lineTo(cx + neckW * 0.7, neckBaseY + neckH * 0.4);
+  ctx.lineTo(cx + neckW * 0.95, s * 0.98);
+  ctx.lineTo(cx - neckW * 0.95, s * 0.98);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = '#1f5a38'; ctx.lineWidth = Math.max(1.5, s * 0.02);
+  ctx.beginPath(); ctx.moveTo(cx - neckW * 0.6, neckBaseY + neckH * 0.4); ctx.lineTo(cx - neckW * 0.2, neckBaseY - neckH * 0.4); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx + neckW * 0.6, neckBaseY + neckH * 0.4); ctx.lineTo(cx + neckW * 0.2, neckBaseY - neckH * 0.4); ctx.stroke();
+  // neck skin
+  ctx.fillStyle = P.skinMid; ctx.fillRect(cx - neckW * 0.5, neckBaseY - neckH, neckW, neckH);
+  ctx.strokeStyle = P.outline; ctx.lineWidth = Math.max(1, s * 0.016); ctx.strokeRect(cx - neckW * 0.5, neckBaseY - neckH, neckW, neckH);
+  const headCY = s * 0.54, headRX = s * 0.185, headRY = s * 0.205;
+  _headBase(ctx, s, cx, headCY, headRX, headRY, P.skinMid, P.skinLight);
+  _hoops(ctx, s, cx, headCY, headRX, headRY);
+  _face(ctx, s, cx, headCY, headRX, headRY, '#4a2a10', s * 0.024);
+  // bold tie-up headwrap over the crown, with a gold accent fold + a top knot
+  ctx.fillStyle = P.higglerWrap;
+  ctx.beginPath();
+  ctx.moveTo(cx - headRX * 1.02, headCY - headRY * 0.18);
+  ctx.quadraticCurveTo(cx, headCY - headRY * 1.55, cx + headRX * 1.02, headCY - headRY * 0.18);
+  ctx.quadraticCurveTo(cx, headCY - headRY * 0.78, cx - headRX * 1.02, headCY - headRY * 0.18);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = '#8a2016'; ctx.lineWidth = Math.max(1, s * 0.016); ctx.stroke();
+  // gold accent band across the wrap
+  ctx.strokeStyle = P.higglerWrapY; ctx.lineWidth = Math.max(2, s * 0.03);
+  ctx.beginPath(); ctx.arc(cx, headCY - headRY * 0.20, headRX * 0.95, 1.18 * Math.PI, 1.82 * Math.PI); ctx.stroke();
+  // top knot
+  ctx.fillStyle = P.higglerWrap;
+  ellipse(ctx, cx + headRX * 0.30, headCY - headRY * 1.28, headRX * 0.20, headRY * 0.16); ctx.fill();
+  ellipse(ctx, cx - headRX * 0.10, headCY - headRY * 1.34, headRX * 0.16, headRY * 0.13); ctx.fill();
+  ctx.strokeStyle = '#8a2016'; ctx.lineWidth = Math.max(1, s * 0.014); ctx.stroke();
+  _label(ctx, s, 'DI', 'HIGGLER', P.higglerWrapY, '#f0d9a8');
+}
+
 function _drawSilhouette(ctx, size) {
   const s = size;
   const cx = s * 0.50;

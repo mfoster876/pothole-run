@@ -10,13 +10,19 @@ test('every character has the required stat fields', () => {
     }
   }
 });
-test('roster: yute, rasta, conductor, taxi man, and the unlock-only politician', () => {
+test('roster: original five + three women (student, nurse, higgler)', () => {
   const ids = CHARACTERS.map(c => c.id);
-  assert.deepEqual(ids, ['yute', 'rasta', 'conductor', 'politician', 'taximan']);
+  assert.deepEqual(ids, ['yute', 'rasta', 'conductor', 'politician', 'taximan', 'student', 'nurse', 'higgler']);
   // the elite drivers are locked behind progression
-  for (const id of ['conductor', 'politician', 'taximan']) {
+  for (const id of ['conductor', 'politician', 'taximan', 'higgler']) {
     assert.equal(getCharacter(id).locked, true, `${id} is locked`);
   }
+});
+test('two women (student + nurse) are playable from the very start', () => {
+  assert.equal(getCharacter('student').locked, false);
+  assert.equal(getCharacter('nurse').locked, false);
+  // the Uni Girl, like the School Yute, is protected from debt
+  assert.equal(getCharacter('student').debtProof, true);
 });
 test('conductor is the reckless archetype: fastest, sluggish-handling, fragile', () => {
   const c = getCharacter('conductor');
@@ -40,9 +46,11 @@ test('every stage has required fields and a 3-lane hazard weight table', () => {
     for (const w of s.hazardWeights) assert.ok('type' in w && 'weight' in w);
   }
 });
-test('stage list incl. New Kingston; fern-gully unlocked by default', () => {
-  assert.deepEqual(STAGES.map(s => s.id), ['fern-gully', 'holland-bamboo', 'negril', 'new-kingston']);
+test('stage list incl. New Kingston + Bog Walk river mode; fern-gully unlocked by default', () => {
+  assert.deepEqual(STAGES.map(s => s.id), ['fern-gully', 'holland-bamboo', 'negril', 'new-kingston', 'bog-walk']);
   assert.equal(getStage('fern-gully').locked, false);
+  // Bog Walk is the river-mode stage
+  assert.equal(getStage('bog-walk').river, true);
 });
 test('JUTC buses run only in Kingston', () => {
   for (const s of STAGES) {

@@ -3,6 +3,7 @@ import { repair } from './wreck.js';
 import { CART, POWERUP, SUPERCHARGE, FRUIT } from './constants.js';
 import { applyDrink } from './drinks.js';
 import { applyItem } from './charitems.js';
+import { applyFood } from './foods.js';
 import { chargeRun } from './economy.js';
 
 export const POWERUPS = {
@@ -34,6 +35,9 @@ export function applyPowerup(fx, cart, run, kind, distance, info, save) {
     applyDrink(fx, cart, info && info.drink);
   } else if (kind === 'charitem') {
     applyItem(fx, cart, info && info.item, run, save);
+  } else if (kind === 'food') {
+    // Ackee / Patty — character-aware (Rasta ital). Free street food (no cash cost).
+    applyFood(fx, cart, info && info.food, run, cart && cart.character);
   } else if (kind === 'fruit') {
     // Street fruit: pay a little, get a quick STRENGTH top-up + a short dash. The cash
     // cost floors at zero for the debt-proof (Politician / School Yute) via chargeRun.

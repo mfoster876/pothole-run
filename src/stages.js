@@ -3,9 +3,13 @@ export const STAGES = [
     id: 'fern-gully', name: 'Fern Gully', locked: false, musicId: 'fern', scenery: 'fern',
     // a shaded, damp gorge — muted misty light, deep fern greens (not bright tropics)
     palette: { sky: '#a7bcae', hill: '#123417', ground: '#27592c', road: '#474b50', rumble: '#3f5836' },
-    // The real Fern Gully is a steep, hair-pinned former-riverbed gorge — the twistiest,
-    // hardest drive here. The winding road throws the cart toward the outside of each bend.
-    curveMult: 1.8,
+    // The real Fern Gully is a steep, hair-pinned former-riverbed gorge (~3 mi, 300 fern
+    // species) — the twistiest, hardest drive here. The winding road throws the cart toward
+    // the outside of each bend. Verified: heavy trucks are banned — it's a narrow, delicate
+    // road, so the fern walls press right to the edge with virtually NO soft shoulder.
+    curveMult: 2.2,
+    noShoulder: true,   // walls at the road edge — riding the shoulder bleeds & tips FAST
+    poles: false,       // no overhead power lines / light posts inside the gorge canopy
     hazardWeights: [
       { type: 'pothole', weight: 5 }, { type: 'coin', weight: 4 },
       { type: 'slick', weight: 2 }, { type: 'stall', weight: 2 }, { type: 'manhole', weight: 1 },
@@ -64,6 +68,24 @@ export const STAGES = [
       // New Kingston street life (all walk across the road)
       { type: 'beggar', weight: 1 }, { type: 'vendor', weight: 2 }, { type: 'peanutcart', weight: 1 },
       { type: 'broomman', weight: 0.6 },                          // broom-seller among the street vendors (no donkey cart in the city)
+      { type: 'tools', weight: 3 }, { type: 'water', weight: 1 }
+    ]
+  },
+  {
+    // Bog Walk Gorge — RIVER MODE. Float the Rio Cobre on a bamboo raft through a steep
+    // limestone gorge, under the single-lane Flat Bridge, dodging litter, crocodiles, car
+    // wrecks and the folklore River Mumma. The road renderer doubles as the water channel;
+    // the "shoulders" are the riverbanks (no real shoulder — walls press in). No power lines.
+    id: 'bog-walk', name: 'Bog Walk Gorge', locked: true, musicId: 'fern', scenery: 'river',
+    river: true, noShoulder: true, poles: false,
+    palette: { sky: '#bcd0cf', hill: '#233f30', ground: '#356048', road: '#3f7f88', rumble: '#2c5a5f' },
+    curveMult: 1.5,     // the Rio Cobre meanders — bendy, but the water carries you
+    hazardWeights: [
+      { type: 'coin', weight: 3 },
+      { type: 'floatbottle', weight: 4 }, { type: 'plasticbag', weight: 3 },
+      { type: 'croc', weight: 2 }, { type: 'limerock', weight: 2 },
+      { type: 'burntcar', weight: 1.5 }, { type: 'floatcar', weight: 1.5 },
+      { type: 'rivermumma', weight: 0.5 },                        // rare, dangerous folklore siren
       { type: 'tools', weight: 3 }, { type: 'water', weight: 1 }
     ]
   }

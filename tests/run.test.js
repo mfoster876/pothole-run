@@ -65,6 +65,19 @@ test('a vehicle in the same lane still collides (damages), no free pass', () => 
   resolveHits(run, cart, field);
   assert.ok(cart.condition.value < 100);
 });
+test('hitting a pothole JOLTS the ride: it bucks (jolted) and gets knocked sideways', () => {
+  const { cart, field, run } = setup();
+  spawn(field, 'pothole', 1, 0);   // middle lane, at the cart plane
+  resolveHits(run, cart, field);
+  assert.ok(cart.jolted > 0, 'pothole sets a jolt magnitude');
+  assert.ok(cart.vx !== 0, 'the jolt knocks the cart off its line');
+});
+test('a wet flooded patch splashes (flags splash) as well as jolting', () => {
+  const { cart, field, run } = setup();
+  spawn(field, 'flood', 1, 0);
+  resolveHits(run, cart, field);
+  assert.ok(cart.splashed > 0, 'wet hazard throws a splash');
+});
 test('SUPERCHARGE: a damaging hazard leaves condition unchanged while super is active', () => {
   const { cart, field, run } = setup();
   const effects = createEffects();

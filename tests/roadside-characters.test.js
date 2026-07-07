@@ -11,11 +11,12 @@ import { drawEntity } from '../src/sprites.js';
 const RURAL = ['fern-gully', 'holland-bamboo'];
 const URBANISH = ['negril', 'new-kingston'];
 
-test('broom man is a walking pedestrian on every stage', () => {
+test('broom man is a walking pedestrian on every ROAD stage', () => {
   const b = HAZARD_TYPES.broomman;
   assert.equal(b.category, 'pedestrian');
   assert.equal(b.walk, true);
   for (const s of STAGES) {
+    if (s.river) continue;   // river mode (Bog Walk) has no roadside broom seller
     assert.ok(s.hazardWeights.some(w => w.type === 'broomman'), `${s.id} should spawn the broom seller`);
   }
 });
