@@ -289,6 +289,7 @@ export function createGame(audio) {
   function finishRace(place) {
     save.condition = Math.max(0, cart.condition.value - UPKEEP.perRunWear);
     save.lifetimeRunOvers = (save.lifetimeRunOvers || 0) + run.runOvers;   // race carnage counts too
+    save.lifetimeRoadkill = (save.lifetimeRoadkill || 0) + (run.roadkill || 0);
     decayBlessing(save);
     // Bank the EXACT road coins (no MIN_EARN floor — a floor would make losing the
     // cheapest tier profitable). Races have no road money, so this is usually ≤0; any
@@ -314,8 +315,9 @@ export function createGame(audio) {
     // Persist the ending condition MINUS baseline wear-and-tear, so every ride always
     // needs at least some repair between plays (40% floor applied next run by createCart).
     save.condition = Math.max(0, cart.condition.value - UPKEEP.perRunWear);
-    // The run-over ledger follows you across runs — the toll doesn't reset with the cart.
+    // The run-over + roadkill ledgers follow you across runs — the toll doesn't reset.
     save.lifetimeRunOvers = (save.lifetimeRunOvers || 0) + run.runOvers;
+    save.lifetimeRoadkill = (save.lifetimeRoadkill || 0) + (run.roadkill || 0);
     // Blessing fades a little each run — keeps faithful giving a recurring choice.
     decayBlessing(save);
     // Bank earnings (debt-aware: a heavily-fined run can leave the wallet in the red).
@@ -482,7 +484,9 @@ export function createGame(audio) {
     if (cart.pickupLabel) pickupToast = { label: cart.pickupLabel, good: true, t: 1.4 };
     else if (cart.hitNegative) pickupToast = { label: cart.hitNegative, good: false, t: 1.8 };
     else if (cart.fined) pickupToast = { label: 'Police Fine −' + formatMoney(cart.fineAmount || POLICE.fine), good: false, t: 1.6 };
-    else if (cart.roadkill) pickupToast = { label: run.heat > 1 ? 'Yuh lick down smaddy — police a watch yuh!' : 'Yuh lick down smaddy!', good: false, t: 1.8 };
+    else if (cart.roadkill) pickupToast = cart.roadkill.cat === 'animal'
+      ? { label: 'Roadkill! ×' + (run.roadkill || 1), good: false, t: 1.5 }
+      : { label: run.heat > 1 ? 'Yuh lick down smaddy — police a watch yuh!' : 'Yuh lick down smaddy!', good: false, t: 1.8 };
     else if (cart.bribed) pickupToast = { label: 'Bribe di Police −' + formatMoney(POLITICIAN.bribe) + ' · roads clear!', good: false, t: 1.8 };
     else if (cart.washed) pickupToast = { label: 'Windscreen Wash −' + formatMoney(cart.washCharge || 0), good: false, t: 1.4 };
     else if (cart.sideswiped) pickupToast = { label: 'SIDE SWIPE — mind di flank!', good: false, t: 1.5 };
@@ -601,7 +605,7 @@ export function createGame(audio) {
     }
     drawCart(ctx, cart, cp.x + cartCurve + jitX, cp.y + 6 + bobPx, cp.size * 0.9);
     renderTouchZones(ctx, W, H);
-    renderHud(ctx, { stageName: stage.name, coins: run.coins, distance: run.distance, condition: cart.condition, effects, lite, speed: cart.speed, throttle: throttleInput, combo: race ? 0 : run.combo }, W, H);
+    renderHud(ctx, { stageName: stage.name, coins: run.coins, distance: run.distance, condition: cart.condition, effects, lite, speed: cart.speed, throttle: throttleInput, combo: race ? 0 : run.combo, roadkill: run.roadkill || 0 }, W, H);
     renderPickupToast(ctx, pickupToast, W, H);
     if (race) renderRaceHud(ctx);
     if (state.mode === 'play') renderPauseButton(ctx);
@@ -1266,10 +1270,19 @@ export function createGame(audio) {
     ctx.fillStyle = '#3fae54'; ctx.font = '700 20px "Courier New", monospace';
     ctx.fillText('rank: ' + rankFor(save.lifetimeEarned).label, W / 2, my(0.665), W * 0.9);
     // The run-over ledger — the human toll of the run, never glossed over.
+    // When both ledgers have entries they tighten into one band so the bust warning
+    // (my 0.76) and continue prompt (my 0.81) below keep their clearance.
+    const bothTolls = run.runOvers > 0 && (run.roadkill || 0) > 0;
     if (run.runOvers > 0) {
       ctx.fillStyle = '#e0584a'; ctx.font = '700 16px "Courier New", monospace';
       ctx.fillText('yuh lick down ' + run.runOvers + (run.runOvers === 1 ? ' smaddy' : ' people') +
-        ' dis run  ·  ' + (save.lifetimeRunOvers || 0) + ' altogether', W / 2, my(0.715), W * 0.94);
+        ' dis run  ·  ' + (save.lifetimeRunOvers || 0) + ' altogether', W / 2, my(bothTolls ? 0.706 : 0.715), W * 0.94);
+    }
+    // The roadkill tally is its own count — beasts, not people (and no police heat).
+    if ((run.roadkill || 0) > 0) {
+      ctx.fillStyle = '#e0a52a'; ctx.font = '700 16px "Courier New", monospace';
+      ctx.fillText('roadkill: ' + run.roadkill + ' dis run  ·  ' + (save.lifetimeRoadkill || 0) +
+        ' altogether', W / 2, my(bothTolls ? 0.734 : 0.715), W * 0.94);
     }
     // A crash that shook a tune-up loose is called out here — head to the Mech Shop to re-fit it.
     if (lastBust) {

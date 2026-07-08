@@ -10,7 +10,8 @@ import { chargeRun } from './economy.js';
 export function createRun() {
   // runOvers/heat: the run-over ledger — how many people/animals this run plowed
   // through, and the police attention it earned (see POLICE.heat* in constants.js).
-  return { distance: 0, coins: 0, combo: 0, runOvers: 0, heat: 0 };
+  // roadkill: the separate ANIMAL tally — beasts don't raise police heat.
+  return { distance: 0, coins: 0, combo: 0, runOvers: 0, heat: 0, roadkill: 0 };
 }
 
 // What a windscreen youth shakes you down for on contact. Starts at WIPER.baseCharge
@@ -82,10 +83,16 @@ export function resolveHits(run, cart, field, effects = cart._effects || {}, sav
       // Carry the victim's identity (type) so the reaction draws the SAME person/animal
       // that was hit — not a generic stand-in.
       cart.roadkill = { cat: info.category, type: e.type, variation: Math.floor((cart.x * 1000 + run.distance) % 4 + 4) % 4, x: e.x };
-      // The ledger: every run-over is counted, and police HEAT rises — cops spawn
-      // more often and fine harder for the rest of the run (Babylon a watch yuh).
-      run.runOvers = (run.runOvers || 0) + 1;
-      run.heat = Math.min(POLICE.heatMax, (run.heat || 0) + 1);
+      if (info.category === 'animal') {
+        // Animals count ONLY as roadkill — a separate tally, no police heat
+        // (Babylon nuh watch yuh fi a goat).
+        run.roadkill = (run.roadkill || 0) + 1;
+      } else {
+        // People: the run-over ledger counts the victim and police HEAT rises — cops
+        // spawn more often and fine harder for the rest of the run (Babylon a watch yuh).
+        run.runOvers = (run.runOvers || 0) + 1;
+        run.heat = Math.min(POLICE.heatMax, (run.heat || 0) + 1);
+      }
     }
     if (info.collectible) {
       const mult = 1 + run.combo * COMBO.bonusPer;

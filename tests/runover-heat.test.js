@@ -26,10 +26,20 @@ test('running over a pedestrian counts in the ledger and raises police heat', ()
 test('heat is capped at POLICE.heatMax but the ledger keeps counting', () => {
   const run = createRun(), cart = mkCart();
   for (let i = 0; i < POLICE.heatMax + 3; i++) {
-    resolveHits(run, cart, { pool: [contact('goat')] }, {});
+    resolveHits(run, cart, { pool: [contact('hustler')] }, {});
   }
   assert.equal(run.runOvers, POLICE.heatMax + 3, 'every run-over is remembered');
   assert.equal(run.heat, POLICE.heatMax, 'heat stops climbing at the cap');
+});
+
+test('animals count ONLY as roadkill — their own tally, no heat, no run-over ledger', () => {
+  const run = createRun(), cart = mkCart();
+  resolveHits(run, cart, { pool: [contact('goat')] }, {});
+  resolveHits(run, cart, { pool: [contact('dog')] }, {});
+  assert.equal(run.roadkill, 2, 'the roadkill counter tallies the beasts');
+  assert.equal(run.runOvers, 0, 'the human ledger stays clean');
+  assert.equal(run.heat, 0, 'Babylon nuh watch yuh fi a goat');
+  assert.ok(cart.roadkill && cart.roadkill.cat === 'animal', 'the reaction still draws the animal');
 });
 
 test('police fines grow with heat (di watched driver pays dearly)', () => {

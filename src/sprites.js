@@ -523,12 +523,12 @@ function drawCattle(ctx, x, y, r) {
   ctx.stroke();
 }
 
-// Dog: a JAMAICAN MONGREL ("pothound" / Caribbean potcake) — lean and rangy with a
-// smooth short tan coat, cocked upright ears, a long face, a white chest bib, and a
-// thin tail carried up in a curl. (See the Caribbean potcake type: smooth coat,
-// cocked ears, long face.)
+// Dog: the JAMAICAN "BROWNIE" — the island's classic yard mongrel: a smallish,
+// terrier-ish street dog in a solid short BROWN coat, lean and rangy, cocked upright
+// ears, long face, thin tail carried up in a curl. (The Observer: "a relatively small
+// dog with a short brown, tan, or sand-coloured coat… still the most common mongrel.")
 function drawDog(ctx, x, y, r) {
-  const mid = '#b08a52', shadow = '#6a4a26', hi = '#d2b382', bib = '#e8e0d0', nose = '#2a1a0a';
+  const mid = '#8f5c2c', shadow = '#573619', hi = '#b07f45', nose = '#2a1a0a';
   const by = y - r * 0.30;   // body carried high — long legs under a lean frame
 
   // long thin legs — the rangy street-dog stance
@@ -587,10 +587,6 @@ function drawDog(ctx, x, y, r) {
   // long face: muzzle reaching well forward
   ctx.fillStyle = mid;
   ctx.beginPath(); ctx.ellipse(hx - r * 0.22, hy + r * 0.05, r * 0.20, r * 0.10, 0.08, 0, Math.PI * 2); ctx.fill();
-  // white chest bib running up the throat (classic mongrel marking)
-  ctx.fillStyle = bib;
-  ctx.beginPath(); ctx.ellipse(x - r * 0.44, by + r * 0.04, r * 0.10, r * 0.17, 0.35, 0, Math.PI * 2); ctx.fill();
-  ctx.beginPath(); ctx.ellipse(hx + r * 0.02, hy + r * 0.19, r * 0.07, r * 0.10, 0.2, 0, Math.PI * 2); ctx.fill();
   // nose
   ctx.fillStyle = nose;
   ctx.beginPath(); ctx.arc(hx - r * 0.40, hy + r * 0.03, Math.max(1.5, r * 0.06), 0, Math.PI * 2); ctx.fill();
@@ -2008,7 +2004,7 @@ const ROADKILL_LOOK = {
   broomman:  { shirt: '#3a6a3a', brooms: true, tam: true },
   wiper:     { shirt: '#b8b83a' },
   goat:   { body: '#cfc0a0', legs: '#9a8a66', horns: true },
-  dog:    { body: '#b08a52', legs: '#6a4a26' },   // matches the live mongrel's tan coat
+  dog:    { body: '#8f5c2c', legs: '#573619' },   // matches the live brownie's coat
   cat:    { body: '#8a8a92', legs: '#5a5a62', scale: 0.75 },
   cattle: { body: '#5a3c28', legs: '#3a2418', scale: 1.3, horns: true },
   croc:   { body: '#4a7a3a', legs: '#2f5a26', scale: 1.2 },

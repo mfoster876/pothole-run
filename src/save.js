@@ -35,6 +35,7 @@ export function defaultSave() {
     settings: { muted: false, genre: 'reggae', radioStation: 0, graphics: 'smooth' },
     lifetimeEarned: 0,
     lifetimeRunOvers: 0,   // the run-over ledger — the human toll across every run
+    lifetimeRoadkill: 0,   // the roadkill tally — animals only (no police heat)
     wallet: 0,
     condition: 100,
     bounties: [],

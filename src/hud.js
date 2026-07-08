@@ -10,7 +10,7 @@ export const KMH_PER_UNIT = 0.7;
 export const URBAN_LIMIT_KMH = 50;
 export function speedToKmh(speed) { return Math.round(Math.max(0, speed || 0) * KMH_PER_UNIT); }
 
-export function renderHud(ctx, { stageName, coins, distance, condition, effects = {}, lite = false, speed = 0, throttle = 0, combo = 0 }, W, H = 540) {
+export function renderHud(ctx, { stageName, coins, distance, condition, effects = {}, lite = false, speed = 0, throttle = 0, combo = 0, roadkill = 0 }, W, H = 540) {
   ctx.font = '700 26px "Courier New", monospace';
   ctx.textBaseline = 'middle';
 
@@ -78,6 +78,14 @@ export function renderHud(ctx, { stageName, coins, distance, condition, effects 
   ctx.font = '700 17px "Courier New", monospace'; ctx.textAlign = 'left';
   ctx.fillStyle = kmh > URBAN_LIMIT_KMH ? '#e0584a' : '#cbe7cf';
   ctx.fillText(kmh + ' KM/H', 24, sy + 30);
+
+  // Roadkill tally (animals only — people go on the run-over ledger): appears under the
+  // speed readout once the first beast is hit, so the count is visible mid-run.
+  if (roadkill > 0) {
+    ctx.font = '700 14px "Courier New", monospace';
+    ctx.fillStyle = '#e0a52a';
+    ctx.fillText('ROADKILL ×' + roadkill, 24, sy + 52);
+  }
 
   // Supercharge (water / boozy drink boost): glowing frame + countdown so the
   // player can see they're invincible and exactly how long it lasts.
